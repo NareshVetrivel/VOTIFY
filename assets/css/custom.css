@@ -1,0 +1,979 @@
+/* ==========================================================
+   VOTIFY - Custom Global Styles
+   File : assets/css/custom.css
+   ========================================================== */
+
+/* ===========================
+   GOOGLE FONT
+=========================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ===========================
+   ROOT VARIABLES
+=========================== */
+:root{
+
+    --bg-primary:#0B1020;
+    --bg-secondary:#111827;
+
+    --text-primary:#FFFFFF;
+    --text-secondary:#CBD5E1;
+    --text-muted:#94A3B8;
+
+    --blue:#2563EB;
+    --purple:#7C3AED;
+    --pink:#EC4899;
+
+    --success:#22C55E;
+    --warning:#F59E0B;
+    --danger:#EF4444;
+    --info:#3B82F6;
+
+    --border:rgba(255,255,255,.08);
+
+    --glass:rgba(17,24,39,.70);
+
+}
+
+/* ===========================
+   RESET
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+
+    font-family:'Inter',sans-serif;
+
+    background:var(--bg-primary);
+
+    color:var(--text-primary);
+
+    overflow-x:hidden;
+
+    min-height:100vh;
+
+}
+
+/* ===========================
+   LINKS
+=========================== */
+
+a{
+
+    text-decoration:none;
+
+    transition:.3s ease;
+
+}
+
+button{
+
+    transition:.3s ease;
+
+    cursor:pointer;
+
+}
+
+/* ===========================
+   IMAGES
+=========================== */
+
+img{
+
+    max-width:100%;
+
+    display:block;
+
+}
+
+/* ===========================
+   TEXT COLORS
+=========================== */
+
+.text-muted{
+
+    color:var(--text-muted);
+
+}
+
+.text-secondary{
+
+    color:var(--text-secondary);
+
+}
+
+/* ===========================
+   GRADIENT TEXT
+=========================== */
+
+.gradient-text{
+
+    background:linear-gradient(
+        90deg,
+        var(--blue),
+        var(--purple),
+        var(--pink)
+    );
+
+    -webkit-background-clip:text;
+
+    -webkit-text-fill-color:transparent;
+
+}
+
+/* ===========================
+   GLASS EFFECT
+=========================== */
+
+.glass{
+
+    position:relative;
+
+    overflow:visible;
+
+    background:rgba(17,24,39,.72);
+
+    backdrop-filter:blur(24px);
+
+    -webkit-backdrop-filter:blur(24px);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:24px;
+
+    box-shadow:
+
+        0 15px 50px rgba(0,0,0,.35),
+
+        inset 0 1px rgba(255,255,255,.05);
+
+}
+
+/* ===========================
+   SECTION SPACING
+=========================== */
+
+.section{
+
+    padding:90px 0;
+
+}
+
+/* ===========================
+   BUTTONS
+=========================== */
+
+.btn-primary{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+
+    padding:14px 28px;
+
+    border-radius:14px;
+
+    font-weight:600;
+
+    color:white;
+
+    background:linear-gradient(
+        90deg,
+        var(--blue),
+        var(--pink)
+    );
+
+    box-shadow:
+
+        0 10px 25px rgba(124,58,237,.30);
+
+}
+
+.btn-primary:hover{
+
+    transform:
+
+        translateY(-6px)
+
+        scale(1.03);
+
+    box-shadow:
+
+        0 0 25px rgba(37,99,235,.35),
+
+        0 0 45px rgba(124,58,237,.30),
+
+        0 20px 60px rgba(236,72,153,.35);
+
+}
+
+.btn-outline{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+
+    padding:14px 28px;
+
+    border-radius:14px;
+
+    font-weight:600;
+
+    color:white;
+
+    background:rgba(255,255,255,.05);
+
+    border:1px solid rgba(255,255,255,.12);
+
+}
+
+.btn-outline:hover{
+
+    background:rgba(255,255,255,.10);
+
+}
+
+/* ===========================
+   CARD HOVER
+=========================== */
+
+.hover-card{
+
+    position:relative;
+
+    transition:
+
+        transform .45s ease,
+
+        box-shadow .45s ease,
+
+        border-color .45s ease;
+
+}
+
+.hover-card:hover{
+
+    transform:
+        translateY(-12px)
+        scale(1.02);
+
+    box-shadow:
+        0 25px 60px rgba(0,0,0,.45),
+        0 0 30px rgba(37,99,235,.20),
+        0 0 45px rgba(124,58,237,.25),
+        0 0 60px rgba(236,72,153,.15);
+
+}
+
+/* ===========================
+   GLOW BORDER
+=========================== */
+
+.glow{
+
+    position:relative;
+
+}
+
+.glow::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:-3px;
+
+    border-radius:inherit;
+
+    background:
+
+    linear-gradient(
+
+        90deg,
+
+        #2563EB,
+
+        #7C3AED,
+
+        #EC4899,
+
+        #2563EB
+
+    );
+
+    background-size:300%;
+
+    filter:blur(28px);
+
+    opacity:.55;
+
+    z-index:-1;
+
+    animation:glowMove 8s linear infinite;
+
+}
+
+@keyframes glowMove{
+
+    from{
+
+        background-position:0%;
+
+    }
+
+    to{
+
+        background-position:300%;
+
+    }
+
+}
+
+/* ===========================
+   ICON BOX
+=========================== */
+
+.icon-box{
+
+    width:60px;
+
+    height:60px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:16px;
+
+    background:rgba(255,255,255,.05);
+
+    font-size:28px;
+
+}
+
+/* ===========================
+   INPUTS
+=========================== */
+
+input,
+select,
+textarea{
+
+    width:100%;
+
+    height:52px;
+
+    background:#1B2233;
+
+    color:#FFFFFF;
+
+    border:1px solid rgba(255,255,255,.12);
+
+    border-radius:10px;
+
+    padding:0 16px;
+
+    outline:none;
+
+    transition:.3s;
+
+}
+
+input:focus,
+textarea:focus,
+select:focus{
+
+    border-color:#3B82F6;
+
+    background:#222B40;
+
+    box-shadow:
+
+        0 0 0 3px rgba(59,130,246,.20);
+
+}
+
+select{
+
+    background:#1B2233;
+
+    color:#FFFFFF;
+
+}
+
+select option{
+
+    background:#1B2233;
+
+    color:#FFFFFF;
+
+}
+
+/* ===========================
+   SCROLLBAR
+=========================== */
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#090E1B;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    border-radius:50px;
+
+    background:linear-gradient(
+
+        var(--blue),
+
+        var(--purple),
+
+        var(--pink)
+
+    );
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:linear-gradient(
+
+        #3B82F6,
+
+        #8B5CF6,
+
+        #F472B6
+
+    );
+
+}
+
+/* ===========================
+   TEXT SELECTION
+=========================== */
+
+::selection{
+
+    background:var(--blue);
+
+    color:white;
+
+}
+
+/* ===========================
+   HORIZONTAL LINE
+=========================== */
+
+.hr{
+
+    width:100%;
+
+    height:1px;
+
+    background:rgba(255,255,255,.08);
+
+}
+
+/* ===========================
+   SHADOWS
+=========================== */
+
+.shadow-soft{
+
+    box-shadow:
+
+        0 10px 40px rgba(0,0,0,.25);
+
+}
+
+.shadow-glow{
+
+    box-shadow:
+
+        0 0 35px rgba(124,58,237,.25);
+
+}
+
+/* ===========================
+   UTILITY
+=========================== */
+
+.rounded-xl{
+
+    border-radius:18px;
+
+}
+
+.rounded-2xl{
+
+    border-radius:24px;
+
+}
+
+.rounded-3xl{
+
+    border-radius:30px;
+
+}
+
+img{
+
+    transition:.4s;
+
+}
+
+img:hover{
+
+    transform:scale(1.05);
+
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media(max-width:768px){
+
+    .section{
+
+        padding:70px 0;
+
+    }
+
+    .btn-primary,
+    .btn-outline{
+
+        width:100%;
+
+    }
+
+}
+
+/* ===========================================
+   BUTTON RIPPLE
+=========================================== */
+
+.btn-primary{
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.ripple{
+
+    position:absolute;
+
+    border-radius:50%;
+
+    transform:scale(0);
+
+    animation:ripple .6s linear;
+
+    background:rgba(255,255,255,.35);
+
+}
+
+@keyframes ripple{
+
+    to{
+
+        transform:scale(4);
+
+        opacity:0;
+
+    }
+
+}
+
+.hero h1{
+
+    letter-spacing:-2px;
+
+    line-height:1;
+
+}
+
+body::before{
+
+    content:"";
+
+    position:fixed;
+
+    width:700px;
+
+    height:700px;
+
+    top:-250px;
+
+    right:-150px;
+
+    background:
+
+    radial-gradient(
+
+        rgba(37,99,235,.12),
+
+        transparent 70%
+
+    );
+
+    animation:moveGlow 16s linear infinite;
+
+    pointer-events:none;
+
+    z-index:-1;
+
+}
+
+@keyframes moveGlow{
+
+    50%{
+
+        transform:
+
+        translate(-100px,80px)
+
+        rotate(180deg);
+
+    }
+
+}
+
+.hero a{
+
+    min-width:220px;
+
+    justify-content:center;
+
+}
+
+/* ==========================================
+   FLOAT ONLY FEATURE CARD ICONS
+========================================== */
+
+.hover-card:hover .card-icon{
+
+    transform:translateY(-5px);
+
+    transition:.35s ease;
+
+}
+
+/* ==========================================
+   ICONS THAT SHOULD NOT FLOAT
+========================================== */
+
+.no-float{
+
+    transform:none !important;
+
+    transition:none !important;
+
+}
+
+.hover-card:hover .no-float{
+
+    transform:none !important;
+
+}
+
+/* ==========================================
+   MODERN GENDER CARD
+========================================== */
+
+.gender-card{
+
+    transition:.3s ease;
+
+}
+
+.gender-card:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:0 12px 25px rgba(0,0,0,.25);
+
+}
+
+.gender-card input:checked + div{
+
+    transform:scale(1.02);
+
+    box-shadow:
+
+    0 0 20px rgba(59,130,246,.18);
+
+}
+
+/* ==========================================================
+   CUSTOM DROPDOWN
+========================================================== */
+
+.custom-dropdown{
+
+    position:relative;
+
+}
+
+.dropdown-button{
+
+    width:100%;
+
+    height:56px;
+
+    padding:0 20px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    border-radius:14px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    background:rgba(255,255,255,.05);
+
+    color:#CBD5E1;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.dropdown-button:hover{
+
+    border-color:#3B82F6;
+
+}
+
+.dropdown-button i{
+
+    font-size:22px;
+
+    transition:.25s;
+
+}
+
+.dropdown-menu{
+
+    position:absolute;
+
+    top:calc(100% + 8px);
+
+    left:0;
+
+    width:100%;
+
+    background:#182236;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:14px;
+
+    overflow:hidden;
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transform:translateY(-10px);
+
+    transition:.25s;
+
+    z-index:1000;
+
+}
+
+.dropdown-menu.show{
+
+    opacity:1;
+
+    visibility:visible;
+
+    transform:translateY(0);
+
+}
+
+.dropdown-item{
+
+    padding:15px 20px;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.dropdown-item:hover{
+
+    background:#2563EB;
+
+    color:#fff;
+
+}
+
+.dropdown-item.selected{
+
+    background:#1D4ED8;
+
+    color:#fff;
+
+}
+
+/* ==========================================================
+   DROPDOWN ACTIVE
+========================================================== */
+
+.dropdown-item.active{
+
+    background:#3B82F6;
+
+    color:#fff;
+
+}
+
+
+/* ==========================================================
+   DROPDOWN ERROR
+========================================================== */
+
+.dropdown-error .dropdown-button{
+
+    border:1px solid #EF4444;
+
+    box-shadow:
+
+    0 0 0 4px
+
+    rgba(239,68,68,.15);
+
+}
+
+
+/* ==========================================================
+   DROPDOWN FOCUS
+========================================================== */
+
+.dropdown-button:focus{
+
+    outline:none;
+
+    border-color:#3B82F6;
+
+    box-shadow:
+
+    0 0 0 4px
+
+    rgba(59,130,246,.20);
+
+}
+
+.dashboard-card{
+
+transition:.35s;
+
+cursor:pointer;
+
+}
+
+.dashboard-card:hover{
+
+transform:
+
+translateY(-10px)
+
+scale(1.02);
+
+box-shadow:
+
+0 20px 50px rgba(59,130,246,.25);
+
+}
+
+/* ==========================================
+ADMIN SIDEBAR
+========================================== */
+
+.sidebar-link{
+
+display:flex;
+
+align-items:center;
+
+gap:16px;
+
+padding:16px 20px;
+
+border-radius:18px;
+
+font-weight:500;
+
+color:#CBD5E1;
+
+transition:.35s;
+
+}
+
+.sidebar-link i{
+
+font-size:22px;
+
+}
+
+.sidebar-link:hover{
+
+background:rgba(59,130,246,.12);
+
+border:1px solid rgba(59,130,246,.35);
+
+transform:translateX(8px);
+
+color:#fff;
+
+}
+
+.sidebar-link.active{
+
+background:linear-gradient(
+90deg,
+rgba(37,99,235,.35),
+rgba(236,72,153,.18)
+);
+
+border:1px solid
+rgba(59,130,246,.35);
+
+color:#fff;
+
+}

@@ -1,0 +1,534 @@
+/* ==========================================================
+   VOTIFY - Animation Library
+   File : assets/css/animations.css
+========================================================== */
+
+
+/* ==========================================================
+   FADE UP
+========================================================== */
+
+.fade-up{
+    animation:fadeUp .8s ease forwards;
+}
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+        transform:translateY(40px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateY(0);
+
+    }
+
+}
+
+
+/* ==========================================================
+   FADE DOWN
+========================================================== */
+
+.fade-down{
+
+    animation:fadeDown .8s ease forwards;
+
+}
+
+@keyframes fadeDown{
+
+    from{
+
+        opacity:0;
+        transform:translateY(-40px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateY(0);
+
+    }
+
+}
+
+
+/* ==========================================================
+   FADE LEFT
+========================================================== */
+
+.fade-left{
+
+    animation:fadeLeft .8s ease forwards;
+
+}
+
+@keyframes fadeLeft{
+
+    from{
+
+        opacity:0;
+        transform:translateX(-50px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateX(0);
+
+    }
+
+}
+
+
+/* ==========================================================
+   FADE RIGHT
+========================================================== */
+
+.fade-right{
+
+    animation:fadeRight .8s ease forwards;
+
+}
+
+@keyframes fadeRight{
+
+    from{
+
+        opacity:0;
+        transform:translateX(50px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateX(0);
+
+    }
+
+}
+
+
+/* ==========================================================
+   ZOOM IN
+========================================================== */
+
+.zoom-in{
+
+    animation:zoomIn .6s ease forwards;
+
+}
+
+@keyframes zoomIn{
+
+    from{
+
+        opacity:0;
+        transform:scale(.8);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:scale(1);
+
+    }
+
+}
+
+
+/* ==========================================================
+   FLOATING
+========================================================== */
+
+.float{
+
+    animation:floating 5s ease-in-out infinite;
+
+}
+
+@keyframes floating{
+
+    0%{
+
+        transform:translateY(0);
+
+    }
+
+    50%{
+
+        transform:translateY(-15px);
+
+    }
+
+    100%{
+
+        transform:translateY(0);
+
+    }
+
+}
+
+
+/* ==========================================================
+   PULSE
+========================================================== */
+
+.pulse{
+
+    animation:pulse 2.2s infinite;
+
+}
+
+@keyframes pulse{
+
+    0%{
+
+        transform:scale(1);
+
+    }
+
+    50%{
+
+        transform:scale(1.05);
+
+    }
+
+    100%{
+
+        transform:scale(1);
+
+    }
+
+}
+
+
+/* ==========================================================
+   ROTATE
+========================================================== */
+
+.rotate{
+
+    animation:rotate 15s linear infinite;
+
+}
+
+@keyframes rotate{
+
+    from{
+
+        transform:rotate(0deg);
+
+    }
+
+    to{
+
+        transform:rotate(360deg);
+
+    }
+
+}
+
+
+/* ==========================================================
+   GLOW
+========================================================== */
+
+.glow-animation{
+
+    animation:glow 2s ease-in-out infinite alternate;
+
+}
+
+@keyframes glow{
+
+    from{
+
+        box-shadow:
+
+        0 0 15px rgba(37,99,235,.25);
+
+    }
+
+    to{
+
+        box-shadow:
+
+        0 0 35px rgba(236,72,153,.45);
+
+    }
+
+}
+
+
+/* ==========================================================
+   BUTTON BOUNCE
+========================================================== */
+
+.bounce-hover{
+
+    transition:.3s;
+
+}
+
+.bounce-hover:hover{
+
+    transform:
+
+    translateY(-5px)
+    scale(1.03);
+
+}
+
+
+/* ==========================================================
+   CARD LIFT
+========================================================== */
+
+.card-hover{
+
+    transition:.35s ease;
+
+}
+
+.card-hover:hover{
+
+    transform:
+
+    translateY(-10px);
+
+}
+
+
+/* ==========================================================
+   SHIMMER
+========================================================== */
+
+.shimmer{
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.shimmer::after{
+
+    content:"";
+
+    position:absolute;
+
+    top:0;
+
+    left:-100%;
+
+    width:50%;
+
+    height:100%;
+
+    background:
+
+    linear-gradient(
+
+    90deg,
+
+    transparent,
+
+    rgba(255,255,255,.18),
+
+    transparent
+
+    );
+
+    animation:shimmer 2.5s infinite;
+
+}
+
+@keyframes shimmer{
+
+    100%{
+
+        left:150%;
+
+    }
+
+}
+
+
+/* ==========================================================
+   BACKGROUND BLOB
+========================================================== */
+
+.blob{
+
+    animation:blobMove 12s ease-in-out infinite;
+
+}
+
+@keyframes blobMove{
+
+    0%{
+
+        transform:
+
+        translate(0,0)
+        scale(1);
+
+    }
+
+    33%{
+
+        transform:
+
+        translate(40px,-30px)
+        scale(1.1);
+
+    }
+
+    66%{
+
+        transform:
+
+        translate(-30px,25px)
+        scale(.9);
+
+    }
+
+    100%{
+
+        transform:
+
+        translate(0,0)
+        scale(1);
+
+    }
+
+}
+
+
+/* ==========================================================
+   SPIN LOADER
+========================================================== */
+
+.loader{
+
+    width:55px;
+
+    height:55px;
+
+    border-radius:50%;
+
+    border:5px solid rgba(255,255,255,.15);
+
+    border-top-color:#2563EB;
+
+    animation:loader .8s linear infinite;
+
+}
+
+@keyframes loader{
+
+    to{
+
+        transform:rotate(360deg);
+
+    }
+
+}
+
+
+/* ==========================================================
+   TEXT GRADIENT FLOW
+========================================================== */
+
+.gradient-flow{
+
+    background-size:300%;
+
+    animation:gradientFlow 6s linear infinite;
+
+}
+
+@keyframes gradientFlow{
+
+    from{
+
+        background-position:left;
+
+    }
+
+    to{
+
+        background-position:right;
+
+    }
+
+}
+
+
+/* ==========================================================
+   REVEAL
+========================================================== */
+
+.reveal{
+
+    opacity:0;
+
+    transform:translateY(60px);
+
+    transition:.8s ease;
+
+}
+
+.reveal.active{
+
+    opacity:1;
+
+    transform:translateY(0);
+
+}
+
+
+/* ==========================================================
+   DELAY CLASSES
+========================================================== */
+
+.delay-1{
+
+    animation-delay:.2s;
+
+}
+
+.delay-2{
+
+    animation-delay:.4s;
+
+}
+
+.delay-3{
+
+    animation-delay:.6s;
+
+}
+
+.delay-4{
+
+    animation-delay:.8s;
+
+}
+
+.delay-5{
+
+    animation-delay:1s;
+
+}
