@@ -1,11 +1,10 @@
 <?php
 /* ==========================================================
    VOTIFY
-   Election Not Started
-   File : pages/student/election_not_started.php
+   Election Has Ended
 ========================================================== */
 
-require_once "../../backend/student/page_guard.php";
+require_once "check-election-ended.php";
 
 ?>
 <!DOCTYPE html>

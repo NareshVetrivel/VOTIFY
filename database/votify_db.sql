@@ -209,3 +209,6 @@ DEFAULT 'Unvoted';
     ALTER TABLE candidates
 MODIFY COLUMN year ENUM('I Year','II Year') NOT NULL;
 
+UPDATE election_settings
+SET updated_at = DATE_SUB(NOW(), INTERVAL 2 HOUR)
+WHERE id = 1;

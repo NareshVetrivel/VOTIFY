@@ -977,3 +977,1105 @@ rgba(59,130,246,.35);
 color:#fff;
 
 }
+
+/* ==========================================================
+   Candidate Selection V3
+   Part 1 - Layout & Premium 3D Flip
+========================================================== */
+
+/* ==========================================
+   RESPONSIVE GRID
+========================================== */
+
+#candidateGrid{
+
+    display:grid;
+
+    grid-template-columns:1fr;
+
+    gap:32px;
+
+    justify-items:center;
+
+    align-items:start;
+
+}
+
+@media(min-width:768px){
+
+    #candidateGrid{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+}
+
+@media(min-width:1280px){
+
+    #candidateGrid{
+
+        grid-template-columns:repeat(3,1fr);
+
+    }
+
+}
+
+/* ==========================================
+   CARD
+========================================== */
+
+.candidate-card{
+
+    width:100%;
+
+    max-width:340px;
+
+    height:560px;
+
+    perspective:1800px;
+
+    -webkit-perspective:1800px;
+
+    transition:transform .35s ease;
+
+}
+
+/* ==========================================
+   INNER
+========================================== */
+
+.candidate-inner{
+
+    position:relative;
+
+    width:100%;
+
+    height:100%;
+
+    transform-style:preserve-3d;
+
+    -webkit-transform-style:preserve-3d;
+
+    transition:
+
+        transform .75s cubic-bezier(.22,.61,.36,1);
+
+}
+
+/* ==========================================
+   FLIP
+========================================== */
+
+.candidate-inner.flipped{
+
+    transform:rotateY(180deg);
+
+}
+
+/* ==========================================
+   FRONT + BACK
+========================================== */
+
+.candidate-front,
+.candidate-back{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+    backface-visibility:hidden;
+
+    -webkit-backface-visibility:hidden;
+
+}
+
+/* ==========================================
+   BACK SIDE
+========================================== */
+
+.candidate-back{
+
+    transform:rotateY(180deg);
+
+}
+
+/* ==========================================
+   GPU
+========================================== */
+
+.candidate-card,
+.candidate-inner,
+.candidate-front,
+.candidate-back{
+
+    will-change:transform;
+
+}
+
+/* ==========================================
+   CARD SHADOW
+========================================== */
+
+.candidate-front,
+.candidate-back{
+
+    box-shadow:
+
+        0 18px 45px rgba(0,0,0,.30);
+
+}
+
+/* ==========================================
+   HOVER
+========================================== */
+
+.candidate-card:hover{
+
+    transform:translateY(-8px);
+
+}
+
+.candidate-card:hover .candidate-front{
+
+    border-color:rgba(59,130,246,.40);
+
+    box-shadow:
+
+        0 18px 50px rgba(37,99,235,.20),
+
+        0 0 35px rgba(124,58,237,.15);
+
+}
+
+/* ==========================================
+   IMAGE
+========================================== */
+
+.candidate-front img{
+
+    transition:
+
+        transform .8s ease,
+
+        filter .8s ease;
+
+}
+
+.candidate-card:hover img{
+
+    transform:scale(1.08);
+
+    filter:brightness(1.05);
+
+}
+
+/* ==========================================================
+   Candidate Selection V3
+   Part 2 - Selected State & Ribbon
+========================================================== */
+
+/* ==========================================
+   SELECTED CARD
+========================================== */
+
+.candidate-card.selected{
+
+    transform:translateY(-12px) scale(1.02);
+
+    z-index:20;
+
+}
+
+.candidate-card.selected .candidate-front{
+
+    border:2px solid #3B82F6;
+
+    box-shadow:
+
+        0 0 0 2px rgba(59,130,246,.20),
+
+        0 0 25px rgba(59,130,246,.40),
+
+        0 0 60px rgba(124,58,237,.25);
+
+}
+
+/* ==========================================
+   PREMIUM GLOW
+========================================== */
+
+.candidate-card.selected::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:-3px;
+
+    border-radius:32px;
+
+    pointer-events:none;
+
+    border:2px solid rgba(59,130,246,.25);
+
+    animation:selectedPulse 2s ease-in-out infinite;
+
+}
+
+@keyframes selectedPulse{
+
+    0%{
+
+        opacity:.3;
+
+        transform:scale(1);
+
+    }
+
+    50%{
+
+        opacity:1;
+
+        transform:scale(1.015);
+
+        box-shadow:
+
+            0 0 35px rgba(59,130,246,.35);
+
+    }
+
+    100%{
+
+        opacity:.3;
+
+        transform:scale(1);
+
+    }
+
+}
+
+/* ==========================================
+   SELECTED RIBBON
+========================================== */
+
+.selectedRibbon{
+
+    position:absolute;
+
+    top:20px;
+
+    left:-48px;
+
+    width:180px;
+
+    padding:10px 0;
+
+    text-align:center;
+
+    font-size:13px;
+
+    font-weight:700;
+
+    letter-spacing:.8px;
+
+    color:#fff;
+
+    background:
+
+        linear-gradient(
+
+            90deg,
+
+            #2563EB,
+
+            #7C3AED
+
+        );
+
+    transform:rotate(-45deg);
+
+    opacity:0;
+
+    visibility:hidden;
+
+    transition:
+
+        opacity .35s ease,
+
+        visibility .35s ease;
+
+    box-shadow:
+
+        0 10px 25px rgba(37,99,235,.35);
+
+    z-index:30;
+
+}
+
+.candidate-card.selected .selectedRibbon{
+
+    opacity:1;
+
+    visibility:visible;
+
+}
+
+/* ==========================================
+   DISABLED CARD
+========================================== */
+
+.candidate-card.disabled{
+
+    opacity:.45;
+
+    filter:grayscale(.5);
+
+    transform:scale(.96);
+
+    pointer-events:none;
+
+    transition:all .35s ease;
+
+}
+
+/* ==========================================
+   LOCKED CARD
+========================================== */
+
+.candidate-card.selected{
+
+    animation:selectedCard .45s ease;
+
+}
+
+@keyframes selectedCard{
+
+    0%{
+
+        transform:scale(.96);
+
+    }
+
+    50%{
+
+        transform:scale(1.04);
+
+    }
+
+    100%{
+
+        transform:translateY(-12px) scale(1.02);
+
+    }
+
+}
+
+/* ==========================================================
+   Candidate Selection V3
+   Part 3 - Final Polish & Responsive
+========================================================== */
+
+/* ==========================================
+   DESELECT BUTTON
+========================================== */
+
+.deselectCandidate{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:100%;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:18px;
+
+    font-weight:600;
+
+    color:#FFFFFF;
+
+    background:linear-gradient(
+        90deg,
+        #EF4444,
+        #DC2626
+    );
+
+    box-shadow:
+        0 12px 30px rgba(239,68,68,.25);
+
+    transition:all .35s ease;
+
+}
+
+.deselectCandidate:hover{
+
+    transform:
+        translateY(-3px)
+        scale(1.02);
+
+    box-shadow:
+        0 0 25px rgba(239,68,68,.35);
+
+}
+
+/* ==========================================
+   CONTINUE BUTTON
+========================================== */
+
+#continueButton{
+
+    transition:all .35s ease;
+
+}
+
+#continueButton:not(:disabled){
+
+    background:linear-gradient(
+        90deg,
+        #2563EB,
+        #7C3AED,
+        #EC4899
+    );
+
+    color:#FFFFFF;
+
+    box-shadow:
+        0 15px 40px rgba(37,99,235,.30);
+
+}
+
+#continueButton:not(:disabled):hover{
+
+    transform:
+        translateY(-5px)
+        scale(1.02);
+
+    box-shadow:
+        0 0 30px rgba(37,99,235,.35),
+        0 0 55px rgba(124,58,237,.25);
+
+}
+
+#continueButton:active,
+.selectCandidate:active,
+.deselectCandidate:active{
+
+    transform:scale(.96);
+
+}
+
+/* ==========================================
+   MANIFESTO SCROLLBAR
+========================================== */
+
+.candidate-back .flex-1{
+
+    overflow-y:auto;
+
+    scrollbar-width:thin;
+
+}
+
+.candidate-back .flex-1::-webkit-scrollbar{
+
+    width:6px;
+
+}
+
+.candidate-back .flex-1::-webkit-scrollbar-thumb{
+
+    background:rgba(59,130,246,.45);
+
+    border-radius:20px;
+
+}
+
+/* ==========================================
+   TEXT
+========================================== */
+
+.candidate-back p{
+
+    line-height:1.8;
+
+}
+
+/* ==========================================
+   FOCUS
+========================================== */
+
+.selectCandidate:focus,
+.deselectCandidate:focus,
+.closeCard:focus,
+#continueButton:focus{
+
+    outline:none;
+
+    box-shadow:
+        0 0 0 4px rgba(59,130,246,.25);
+
+}
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media(max-width:767px){
+
+    .candidate-card{
+
+        max-width:100%;
+
+        height:540px;
+
+    }
+
+    .selectedRibbon{
+
+        width:160px;
+
+        left:-42px;
+
+        font-size:11px;
+
+    }
+
+}
+
+/* ==========================================
+   TABLET
+========================================== */
+
+@media(min-width:768px) and (max-width:1279px){
+
+    .candidate-card{
+
+        max-width:340px;
+
+    }
+
+}
+
+/* ==========================================
+   DESKTOP
+========================================== */
+
+@media(min-width:1280px){
+
+    .candidate-card{
+
+        max-width:340px;
+
+    }
+
+}
+
+/* ==========================================================
+   Candidate Selection V3
+   Part 4 - Card Layout Components
+========================================================== */
+
+/* ==========================
+   FRONT CARD
+========================== */
+
+.candidate-front{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+/* ==========================
+   PHOTO
+========================== */
+
+.candidate-photo{
+    position:relative;
+    height:68%;
+    overflow:hidden;
+    flex-shrink:0;
+}
+
+.candidate-image{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+    object-position:center top;
+
+}
+
+/* ==========================
+   DETAILS
+========================== */
+
+.candidate-details{
+    position:relative;
+    height:22%;
+    padding:18px 24px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    gap:6px;
+    overflow:hidden;
+}
+
+.candidate-name{
+
+    font-size:28px;
+
+    font-weight:700;
+
+    line-height:1.2;
+
+    color:#fff;
+
+    overflow-wrap:anywhere;
+
+}
+
+.candidate-department{
+    color:#94A3B8;
+    font-size:16px;
+    margin:0;
+}
+
+.candidate-year{
+    color:#60A5FA;
+    font-size:17px;
+    font-weight:600;
+    margin-top:10px;
+    letter-spacing:.3px;
+}
+
+/* ==========================
+   FOOTER
+========================== */
+
+.candidate-footer{
+
+    height:10%;
+    flex-shrink:0; 
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:8px;
+
+    border-top:1px solid rgba(255,255,255,.08);
+
+    color:#60A5FA;
+
+    font-weight:600;
+
+}
+
+/* ==========================
+   BACK CARD
+========================== */
+
+.candidate-back{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+/* ==========================
+   BACK HEADER
+========================== */
+
+.candidate-back-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-start;
+
+    padding:24px;
+
+    border-bottom:1px solid rgba(255,255,255,.08);
+
+}
+
+/* ==========================
+   CLOSE BUTTON
+========================== */
+
+.closeCard{
+
+    width:44px;
+
+    height:44px;
+
+    border:none;
+
+    border-radius:14px;
+
+    background:rgba(255,255,255,.08);
+
+    color:#fff;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+.closeCard:hover{
+
+    background:rgba(239,68,68,.15);
+
+    color:#F87171;
+
+}
+
+/* ==========================
+   MANIFESTO
+========================== */
+
+.candidate-manifesto{
+
+    flex:1;
+
+    padding:24px;
+
+    overflow-y:auto;
+
+}
+
+.candidate-manifesto h4{
+
+    color:#60A5FA;
+
+    font-size:18px;
+
+    font-weight:700;
+
+    margin-bottom:16px;
+
+}
+
+.candidate-manifesto p{
+
+    color:#CBD5E1;
+
+    line-height:1.9;
+
+}
+
+/* ==========================
+   BUTTON AREA
+========================== */
+
+.candidate-buttons{
+
+    padding:24px;
+
+    border-top:1px solid rgba(255,255,255,.08);
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+.candidate-buttons button{
+
+    width:100%;
+
+}
+
+/* ==========================
+   TOASTS
+========================== */
+
+.toast-success,
+.toast-error{
+
+    position:fixed;
+
+    top:24px;
+
+    right:24px;
+
+    transform:translateX(140%);
+
+    transition:.45s;
+
+    padding:18px 22px;
+
+    border-radius:18px;
+
+    z-index:9999;
+
+    color:#fff;
+
+}
+
+.toast-success{
+
+    background:#16A34A;
+
+}
+
+.toast-error{
+
+    background:#DC2626;
+
+}
+
+/* ==========================================================
+   Candidate Selection V3
+   Part 5 - Premium Effects & Final Responsive Polish
+========================================================== */
+
+/* ==========================================
+   IMAGE OVERLAY
+========================================== */
+
+.candidate-photo::after{
+
+    content:"";
+
+    position:absolute;
+
+    left:0;
+
+    right:0;
+
+    bottom:0;
+
+    height:120px;
+
+    background:linear-gradient(
+        to top,
+        rgba(11,16,32,.95),
+        rgba(11,16,32,.45),
+        transparent
+    );
+
+    pointer-events:none;
+
+}
+
+/* ==========================================
+   NAME TRUNCATE
+========================================== */
+
+.candidate-name{
+    font-size:22px;
+    font-weight:700;
+    line-height:1.3;
+    color:#fff;
+    margin:0;
+    word-break:break-word;
+    overflow:visible;
+    display:block;
+}
+
+/* ==========================================
+   MANIFESTO SCROLLBAR
+========================================== */
+
+.candidate-manifesto{
+
+    scrollbar-width:thin;
+
+    scrollbar-color:#3B82F6 transparent;
+
+}
+
+.candidate-manifesto::-webkit-scrollbar{
+
+    width:6px;
+
+}
+
+.candidate-manifesto::-webkit-scrollbar-track{
+
+    background:transparent;
+
+}
+
+.candidate-manifesto::-webkit-scrollbar-thumb{
+
+    background:#3B82F6;
+
+    border-radius:20px;
+
+}
+
+/* ==========================================
+   BUTTON HOVER
+========================================== */
+
+.selectCandidate,
+.deselectCandidate{
+
+    transition:all .30s ease;
+
+}
+
+.selectCandidate:hover,
+.deselectCandidate:hover{
+
+    transform:translateY(-2px);
+
+}
+
+/* ==========================================
+   CLOSE BUTTON ICON
+========================================== */
+
+.closeCard i{
+
+    font-size:22px;
+
+}
+
+/* ==========================================
+   TOAST ANIMATION
+========================================== */
+
+.toast-success.show,
+.toast-error.show{
+
+    transform:translateX(0);
+
+}
+
+.toast-success.hide,
+.toast-error.hide{
+
+    transform:translateX(140%);
+
+}
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+@media(max-width:640px){
+
+    .candidate-card{
+
+        max-width:100%;
+
+        height:530px;
+
+    }
+
+    .candidate-details{
+
+        padding:18px;
+
+    }
+
+    .candidate-name{
+
+        font-size:22px;
+
+    }
+
+    .candidate-manifesto{
+
+        padding:18px;
+
+    }
+
+    .candidate-buttons{
+
+        padding:18px;
+
+    }
+
+}
+
+@media(min-width:641px) and (max-width:1023px){
+
+    .candidate-card{
+
+        max-width:340px;
+
+    }
+
+}
+
+@media(min-width:1024px){
+
+    .candidate-card{
+
+        max-width:340px;
+
+    }
+
+}
+
+/* ==========================================
+   ACCESSIBILITY
+========================================== */
+
+.closeCard:focus-visible,
+.selectCandidate:focus-visible,
+.deselectCandidate:focus-visible,
+#continueButton:focus-visible{
+
+    outline:2px solid #3B82F6;
+
+    outline-offset:3px;
+
+}
+
+/* ==========================================
+   REDUCED MOTION
+========================================== */
+
+@media(prefers-reduced-motion:reduce){
+
+    .candidate-card,
+    .candidate-inner,
+    .candidate-image,
+    .selectCandidate,
+    .deselectCandidate,
+    .toast-success,
+    .toast-error{
+
+        animation:none !important;
+
+        transition:none !important;
+
+    }
+
+}
+
+/* ==========================================================
+   END - Candidate Selection V3
+========================================================== */

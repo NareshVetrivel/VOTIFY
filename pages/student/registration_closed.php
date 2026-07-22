@@ -4,6 +4,7 @@
    Registration Closed
    File : pages/student/registration_closed.php
 ========================================================== */
+require_once "check-registration-closed.php";
 ?>
 
 <!DOCTYPE html>

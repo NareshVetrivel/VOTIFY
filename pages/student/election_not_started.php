@@ -2,10 +2,9 @@
 /* ==========================================================
    VOTIFY
    Election Not Started
-   File : pages/student/election_not_started.php
 ========================================================== */
 
-require_once "../../backend/student/page_guard.php";
+require_once "check-election-not-started.php";
 
 ?>
 
