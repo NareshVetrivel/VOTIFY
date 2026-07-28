@@ -1176,6 +1176,10 @@ Only one candidate can be selected.
 
 </div>
 
+<!-- SECURITY WARNING MODAL -->
+
+<?php require "../../components/security_warning_modal.php"; ?>
+
 </main>
 
 <!-- ==========================================================
@@ -1195,6 +1199,8 @@ CANDIDATE SELECTION JS
 ========================================================== -->
 
 <script src="../../assets/js/candidate_selection.js"></script>
+
+<script src="../../assets/js/fullscreen_guard.js"></script>
 
 </body>
 

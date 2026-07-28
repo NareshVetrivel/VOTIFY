@@ -831,57 +831,78 @@ selectButton.classList.remove(
 
                 }
 
-                /* ==========================================
-                   SAVE SESSION
-                ========================================== */
+/* ==========================================
+   BUTTON LOADING
+========================================== */
 
-                sessionStorage.setItem(
+continueButton.disabled = true;
 
-                    "selectedCandidateId",
+continueButton.innerHTML = `
+    <i class="ri-loader-4-line animate-spin"></i>
+    Processing...
+`;
 
-                    selectedCandidateId
+/* ==========================================
+   SAVE SELECTION TO PHP SESSION
+========================================== */
 
-                );
+fetch(
+    "../../backend/student/save_selection.php",
+    {
+        method: "POST",
 
-                sessionStorage.setItem(
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
 
-                    "selectedCandidateName",
+        body:
+            "candidate_id=" +
+            encodeURIComponent(selectedCandidateId) +
+            "&candidate_name=" +
+            encodeURIComponent(selectedCandidateName)
+    }
+)
 
-                    selectedCandidateName
+.then(response => response.json())
 
-                );
+.then(data => {
 
-                /* ==========================================
-                   BUTTON LOADING
-                ========================================== */
+    if(data.success){
 
-                continueButton.disabled = true;
+        window.location.href =
+            "candidate_confirmation.php";
 
-                continueButton.innerHTML = `
+    }
 
-                    <i class="ri-loader-4-line animate-spin"></i>
+    else{
 
-                    Processing...
+        continueButton.disabled = false;
 
-                `;
+        continueButton.innerHTML = `
+            Continue
+            <i class="ri-arrow-right-line ml-2"></i>
+        `;
 
-                /* ==========================================
-                   REDIRECT
-                ========================================== */
+        showErrorToast(data.message);
 
-                setTimeout(
+    }
 
-                    () => {
+})
 
-                        window.location.href =
+.catch(() => {
 
-                        "candidate_confirmation.php";
+    continueButton.disabled = false;
 
-                    },
+    continueButton.innerHTML = `
+        Continue
+        <i class="ri-arrow-right-line ml-2"></i>
+    `;
 
-                    700
+    showErrorToast(
+        "Unable to connect to the server."
+    );
 
-                );
+});
 
             }
 

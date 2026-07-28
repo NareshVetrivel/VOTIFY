@@ -212,3 +212,35 @@ MODIFY COLUMN year ENUM('I Year','II Year') NOT NULL;
 UPDATE election_settings
 SET updated_at = DATE_SUB(NOW(), INTERVAL 2 HOUR)
 WHERE id = 1;
+
+/* ==========================================
+   ADD VOTE COUNT
+========================================== */
+
+ALTER TABLE candidates
+
+ADD COLUMN vote_count INT NOT NULL DEFAULT 0
+AFTER status;
+
+/* ==========================================
+   CREATE VOTES TABLE
+========================================== */
+
+CREATE TABLE votes (
+
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    candidate_id INT NULL,
+
+    voted_at TIMESTAMP
+    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_vote_candidate
+
+    FOREIGN KEY (candidate_id)
+
+    REFERENCES candidates(id)
+
+    ON DELETE SET NULL
+
+);
