@@ -19,7 +19,7 @@ if(session_status() === PHP_SESSION_NONE){
 
 if(isset($_SESSION["student_id"])){
 
-    header("Location: candidate_selection.php");
+    header("Location: security_check.php");
 
     exit();
 

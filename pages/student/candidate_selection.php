@@ -142,6 +142,9 @@ href="../../assets/css/animations.css">
 </head>
 
 <body
+
+id="candidatePage"
+
 class="bg-[#0B1020] text-white min-h-screen overflow-x-hidden">
 
 <!-- ==========================================================
@@ -1176,11 +1179,19 @@ Only one candidate can be selected.
 
 </div>
 
-<!-- SECURITY WARNING MODAL -->
-
-<?php require "../../components/security_warning_modal.php"; ?>
-
 </main>
+
+<!-- ==========================================================
+SECURE ENTRY MODAL
+========================================================== -->
+
+<?php require "../../components/security_entry_modal.php"; ?>
+
+<!-- ==========================================================
+SECURITY MODAL
+========================================================== -->
+
+<?php require "../../components/security_modal.php"; ?>
 
 <!-- ==========================================================
 FOOTER
@@ -1200,7 +1211,11 @@ CANDIDATE SELECTION JS
 
 <script src="../../assets/js/candidate_selection.js"></script>
 
-<script src="../../assets/js/fullscreen_guard.js"></script>
+<!-- ==========================================================
+SECURITY GUARD JS
+========================================================== -->
+
+<script src="../../assets/js/security_guard.js"></script>
 
 </body>
 

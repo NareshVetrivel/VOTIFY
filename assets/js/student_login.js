@@ -96,7 +96,7 @@ const LOGIN_API =
 
 const DASHBOARD_URL =
 
-"candidate_selection.php";
+"security_check.php";
 
 /* ==========================================================
    SHOW ERROR
