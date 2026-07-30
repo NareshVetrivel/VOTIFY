@@ -21,10 +21,10 @@ backdrop-blur-xl">
 
     class="glass
     w-[92%]
-    max-w-xl
+    max-w-lg
     rounded-3xl
-    p-8
-    md:p-10
+    p-6
+    md:p-7
     text-center
     border
     border-white/10">
@@ -36,8 +36,8 @@ backdrop-blur-xl">
         <div
 
         class="mx-auto
-        w-24
-        h-24
+        w-16
+        h-16
         rounded-full
         bg-blue-500/20
         flex
@@ -48,7 +48,7 @@ backdrop-blur-xl">
             <i
 
             class="ri-shield-check-line
-            text-5xl
+            text-4xl
             text-blue-400">
 
             </i>
@@ -61,8 +61,8 @@ backdrop-blur-xl">
 
         <h2
 
-        class="text-3xl
-        md:text-4xl
+        class="text-2xl
+        md:text-3xl
         font-bold">
 
             Secure Voting Mode
@@ -75,14 +75,14 @@ backdrop-blur-xl">
 
         <p
 
-        class="mt-5
-        text-slate-300
-        leading-8">
+        class="mt-4
+        text-sm
+        leading-7">
 
             Click the button below to enter the secure
             fullscreen voting environment.
 
-            <br><br>
+            <br>
 
             Once voting starts, security monitoring will
             remain active until your vote is submitted.
@@ -95,9 +95,9 @@ backdrop-blur-xl">
 
         <div
 
-        class="mt-8
-        space-y-4
-        text-left">
+        class="mt-6
+        space-y-2
+        text-sm">
 
             <div class="flex items-start gap-3">
 
@@ -165,12 +165,12 @@ backdrop-blur-xl">
 
         type="button"
 
-        class="mt-10
+        class="mt-7
         w-full
-        py-4
+        py-3
         rounded-2xl
         font-semibold
-        text-lg
+        text-base
         text-white
         bg-gradient-to-r
         from-blue-600

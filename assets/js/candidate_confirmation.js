@@ -32,10 +32,8 @@ document.addEventListener(
 
         );
 
-        const confirmationCheckbox = document.getElementById(
-
-            "confirmationCheckbox"
-
+        const modalConfirmationCheckbox = document.getElementById(
+            "modalConfirmationCheckbox"
         );
 
         const submitVoteButton = document.getElementById(
@@ -44,23 +42,88 @@ document.addEventListener(
 
         );
 
+if (
+
+    !backButton ||
+
+    !confirmVoteButton ||
+
+    !confirmationModal ||
+
+    !cancelConfirmation ||
+
+    !modalConfirmationCheckbox ||
+
+    !submitVoteButton
+
+){
+    return;
+}
+
         /* ==================================================
            BACK BUTTON
         ================================================== */
 
-        backButton.addEventListener(
+backButton.addEventListener(
 
-            "click",
+    "click",
 
-            () => {
+    () => {
 
-                window.location.href =
+        closeModal();
 
-                "candidate_selection.php";
+        /* Reset Confirmation */
 
-            }
+        modalConfirmationCheckbox.checked = false;
+
+        submitVoteButton.disabled = true;
+
+        submitVoteButton.classList.add(
+
+            "opacity-50",
+
+            "cursor-not-allowed"
 
         );
+
+const continueButton = document.getElementById("continueButton");
+
+if (continueButton) {
+
+    continueButton.disabled = false;
+
+    continueButton.innerHTML = `
+        Continue
+        <i class="ri-arrow-right-line ml-2"></i>
+    `;
+
+    continueButton.classList.remove(
+        "cursor-not-allowed",
+        "bg-slate-700",
+        "text-slate-400"
+    );
+
+}
+
+        document
+            .getElementById("candidateConfirmationSection")
+            .classList.add("hidden");
+
+        document
+            .getElementById("candidateSelectionSection")
+            .classList.remove("hidden");
+
+        window.scrollTo({
+
+            top: 0,
+
+            behavior: "smooth"
+
+        });
+
+    }
+
+);
 
         /* ==================================================
            OPEN MODAL
@@ -70,7 +133,15 @@ document.addEventListener(
 
             "click",
 
-            () => {
+            async () => {
+
+                await requestFullscreen();
+
+                if (!document.fullscreenElement) {
+
+                    return;
+
+                }
 
                 confirmationModal.classList.remove(
 
@@ -141,34 +212,10 @@ document.addEventListener(
         );
 
         /* ==================================================
-           ESC KEY
-        ================================================== */
-
-        document.addEventListener(
-
-            "keydown",
-
-            (event)=>{
-
-                if(
-
-                    event.key==="Escape"
-
-                ){
-
-                    closeModal();
-
-                }
-
-            }
-
-        );
-
-        /* ==================================================
            CHECKBOX ENABLE
         ================================================== */
 
-        confirmationCheckbox.addEventListener(
+        modalConfirmationCheckbox.addEventListener(
 
             "change",
 
@@ -176,7 +223,7 @@ document.addEventListener(
 
                 if(
 
-                    confirmationCheckbox.checked
+                    modalConfirmationCheckbox.checked
 
                 ){
 
@@ -222,12 +269,10 @@ document.addEventListener(
 
                 if(
 
-                    !confirmationCheckbox.checked
+                    !modalConfirmationCheckbox.checked
 
                 ){
-
                     return;
-
                 }
 
                 /* Disable Multiple Click */

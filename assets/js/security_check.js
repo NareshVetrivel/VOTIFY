@@ -34,9 +34,9 @@ const checkboxIcon = document.getElementById(
    CONFIGURATION
 ========================================================== */
 
-const CANDIDATE_SELECTION_URL =
+const VOTING_URL =
 
-"candidate_selection.php";
+"voting.php";
 
 /* ==========================================================
    BUTTON STATE
@@ -292,7 +292,7 @@ async function requestSecureFullscreen(){
 
         window.location.href =
 
-        CANDIDATE_SELECTION_URL;
+        VOTING_URL;
 
     }
 

@@ -252,6 +252,9 @@ href="../../assets/css/animations.css">
 </head>
 
 <body
+
+id="candidateConfirmationPage"
+
 class="bg-[#0B1020] text-white min-h-screen overflow-x-hidden">
 
 <!-- ==========================================================
@@ -737,6 +740,12 @@ require "../../components/student_vote_confirmation_modal.php";
 
 ?>
 
+<!-- ==========================================================
+SECURITY MODAL
+========================================================== -->
+
+<?php require "../../components/security_modal.php"; ?>
+
 </main>
 <!-- ==========================================================
 FOOTER
@@ -745,7 +754,10 @@ FOOTER
 <div id="footer"></div>
 
 <script src="../../assets/js/app.js"></script>
+
 <script src="../../assets/js/candidate_confirmation.js"></script>
+
+<script src="../../assets/js/security_guard.js"></script>
 
 </body>
 </html>

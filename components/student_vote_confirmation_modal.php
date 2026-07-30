@@ -1,11 +1,3 @@
-<?php
-
-if (!isset($selectedCandidate)) {
-    return;
-}
-
-?>
-
 <!-- ==========================================================
 STUDENT VOTE CONFIRMATION MODAL
 ========================================================== -->
@@ -33,7 +25,7 @@ p-4">
     class="glass
     rounded-2xl
     w-full
-    max-w-lg
+    max-w-xl
     overflow-hidden
     zoom-in">
 
@@ -112,12 +104,10 @@ p-4">
             </p>
 
             <h3
-            class="mt-2
-            text-lg
-            font-bold
-            text-blue-400">
+                id="modalCandidateName"
+                class="mt-2 text-lg font-bold text-blue-400">
 
-                <?php echo htmlspecialchars($selectedCandidate["full_name"]); ?>
+                Selected Candidate
 
             </h3>
 
@@ -140,7 +130,7 @@ select-none">
 
     <input
     type="checkbox"
-    id="confirmationCheckbox"
+    id="modalConfirmationCheckbox"
     class="sr-only peer">
 
     <div
