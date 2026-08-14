@@ -6,6 +6,7 @@
 
 "use strict";
 
+
 /* ==========================================================
    DOM ELEMENTS
 ========================================================== */
@@ -42,6 +43,7 @@ const loginButton = document.getElementById(
     "loginButton"
 );
 
+
 /* ==========================================================
    ERROR ELEMENTS
 ========================================================== */
@@ -61,6 +63,7 @@ const emailError = document.getElementById(
 const passwordError = document.getElementById(
     "passwordError"
 );
+
 
 /* ==========================================================
    TOAST ELEMENTS
@@ -82,33 +85,45 @@ const errorToastMessage = document.getElementById(
     "errorToastMessage"
 );
 
+
 /* ==========================================================
    BACKEND URL
 ========================================================== */
 
 const LOGIN_API =
+    "../../backend/student/login.php";
 
-"../../backend/student/login.php";
 
 /* ==========================================================
    REDIRECT PAGE
 ========================================================== */
 
 const DASHBOARD_URL =
+    "security_check.php";
 
-"security_check.php";
+
+/* ==========================================================
+   ALREADY VOTED PAGE
+========================================================== */
+
+const ALREADY_VOTED_URL =
+    "already_voted.php";
+
 
 /* ==========================================================
    SHOW ERROR
 ========================================================== */
 
 function showError(
-
     element,
-
     message
-
 ){
+
+    if(!element){
+
+        return;
+
+    }
 
     element.textContent = message;
 
@@ -116,21 +131,27 @@ function showError(
 
 }
 
+
 /* ==========================================================
    HIDE ERROR
 ========================================================== */
 
 function hideError(
-
     element
-
 ){
+
+    if(!element){
+
+        return;
+
+    }
 
     element.textContent = "";
 
     element.classList.add("hidden");
 
 }
+
 
 /* ==========================================================
    CLEAR ALL ERRORS
@@ -148,25 +169,35 @@ function clearErrors(){
 
 }
 
+
 /* ==========================================================
    TRIM INPUT
 ========================================================== */
 
 function clean(
-
     value
-
 ){
 
-    return value.trim();
+    return String(value || "").trim();
 
 }
+
 
 /* ==========================================================
    PASSWORD VISIBILITY TOGGLE
 ========================================================== */
 
 function togglePasswordVisibility(){
+
+    if(
+        !passwordInput ||
+        !togglePasswordIcon
+    ){
+
+        return;
+
+    }
+
 
     if(passwordInput.type === "password"){
 
@@ -198,6 +229,7 @@ function togglePasswordVisibility(){
 
 }
 
+
 /* ==========================================================
    PASSWORD TOGGLE EVENT
 ========================================================== */
@@ -214,11 +246,15 @@ if(togglePassword){
 
 }
 
+
 /* ==========================================================
    ENTER KEY SUPPORT
 ========================================================== */
 
-if(passwordInput){
+if(
+    passwordInput &&
+    loginForm
+){
 
     passwordInput.addEventListener(
 
@@ -239,6 +275,8 @@ if(passwordInput){
     );
 
 }
+
+
 /* ==========================================================
    AUTO HIDE ERROR ON INPUT
 ========================================================== */
@@ -259,6 +297,7 @@ if(admissionInput){
 
 }
 
+
 if(dobInput){
 
     dobInput.addEventListener(
@@ -274,6 +313,7 @@ if(dobInput){
     );
 
 }
+
 
 if(emailInput){
 
@@ -291,6 +331,7 @@ if(emailInput){
 
 }
 
+
 if(passwordInput){
 
     passwordInput.addEventListener(
@@ -307,6 +348,7 @@ if(passwordInput){
 
 }
 
+
 /* ==========================================================
    VALIDATE LOGIN FORM
 ========================================================== */
@@ -317,33 +359,27 @@ function validateForm(){
 
     let isValid = true;
 
+
     /* ======================================================
        GET VALUES
     ====================================================== */
 
     const admissionNo = clean(
-
-        admissionInput.value
-
+        admissionInput?.value
     );
 
     const dob = clean(
-
-        dobInput.value
-
+        dobInput?.value
     );
 
     const email = clean(
-
-        emailInput.value
-
+        emailInput?.value
     ).toLowerCase();
 
     const password = clean(
-
-        passwordInput.value
-
+        passwordInput?.value
     );
+
 
     /* ======================================================
        ADMISSION NUMBER
@@ -352,11 +388,8 @@ function validateForm(){
     if(admissionNo === ""){
 
         showError(
-
             admissionError,
-
             "Admission Number is required."
-
         );
 
         isValid = false;
@@ -366,16 +399,14 @@ function validateForm(){
     else if(admissionNo.length < 3){
 
         showError(
-
             admissionError,
-
             "Enter a valid Admission Number."
-
         );
 
         isValid = false;
 
     }
+
 
     /* ======================================================
        DATE OF BIRTH
@@ -384,33 +415,28 @@ function validateForm(){
     if(dob === ""){
 
         showError(
-
             dobError,
-
             "Date of Birth is required."
-
         );
 
         isValid = false;
 
     }
 
+
     /* ======================================================
        COLLEGE EMAIL
     ====================================================== */
 
     const emailPattern =
+        /^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/;
 
-    /^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/;
 
     if(email === ""){
 
         showError(
-
             emailError,
-
             "College Email is required."
-
         );
 
         isValid = false;
@@ -418,22 +444,18 @@ function validateForm(){
     }
 
     else if(
-
         !emailPattern.test(email)
-
     ){
 
         showError(
-
             emailError,
-
             "Enter a valid College Email."
-
         );
 
         isValid = false;
 
     }
+
 
     /* ======================================================
        PASSWORD
@@ -442,11 +464,8 @@ function validateForm(){
     if(password === ""){
 
         showError(
-
             passwordError,
-
             "Password is required."
-
         );
 
         isValid = false;
@@ -456,16 +475,14 @@ function validateForm(){
     else if(password.length < 8){
 
         showError(
-
             passwordError,
-
             "Password must contain at least 8 characters."
-
         );
 
         isValid = false;
 
     }
+
 
     /* ======================================================
        RESULT
@@ -480,30 +497,40 @@ function validateForm(){
 ========================================================== */
 
 function showSuccessToast(
-
     message = "Login Successful"
-
 ){
 
-    successToast.querySelector(
+    if(!successToast){
 
-        "p.font-semibold"
+        return;
 
-    ).textContent = message;
+    }
+
+
+    const messageElement =
+        successToast.querySelector(
+            "p.font-semibold"
+        );
+
+
+    if(messageElement){
+
+        messageElement.textContent =
+            message;
+
+    }
+
 
     successToast.classList.remove(
-
         "translate-x-[120%]"
-
     );
 
     successToast.classList.add(
-
         "translate-x-0"
-
     );
 
 }
+
 
 /* ==========================================================
    HIDE SUCCESS TOAST
@@ -511,47 +538,59 @@ function showSuccessToast(
 
 function hideSuccessToast(){
 
+    if(!successToast){
+
+        return;
+
+    }
+
+
     successToast.classList.remove(
-
         "translate-x-0"
-
     );
 
     successToast.classList.add(
-
         "translate-x-[120%]"
-
     );
 
 }
+
 
 /* ==========================================================
    SHOW ERROR TOAST
 ========================================================== */
 
 function showErrorToast(
-
     title,
-
     message
-
 ){
 
-    errorToastTitle.textContent = title;
+    if(
+        !errorToast ||
+        !errorToastTitle ||
+        !errorToastMessage
+    ){
 
-    errorToastMessage.textContent = message;
+        return;
+
+    }
+
+
+    errorToastTitle.textContent =
+        title;
+
+    errorToastMessage.textContent =
+        message;
+
 
     errorToast.classList.remove(
-
         "translate-x-[120%]"
-
     );
 
     errorToast.classList.add(
-
         "translate-x-0"
-
     );
+
 
     setTimeout(
 
@@ -563,25 +602,30 @@ function showErrorToast(
 
 }
 
+
 /* ==========================================================
    HIDE ERROR TOAST
 ========================================================== */
 
 function hideErrorToast(){
 
+    if(!errorToast){
+
+        return;
+
+    }
+
+
     errorToast.classList.remove(
-
         "translate-x-0"
-
     );
 
     errorToast.classList.add(
-
         "translate-x-[120%]"
-
     );
 
 }
+
 
 /* ==========================================================
    DISABLE LOGIN BUTTON
@@ -589,7 +633,15 @@ function hideErrorToast(){
 
 function disableLoginButton(){
 
+    if(!loginButton){
+
+        return;
+
+    }
+
+
     loginButton.disabled = true;
+
 
     loginButton.innerHTML = `
 
@@ -601,13 +653,22 @@ function disableLoginButton(){
 
 }
 
+
 /* ==========================================================
    ENABLE LOGIN BUTTON
 ========================================================== */
 
 function enableLoginButton(){
 
+    if(!loginButton){
+
+        return;
+
+    }
+
+
     loginButton.disabled = false;
+
 
     loginButton.innerHTML = `
 
@@ -619,147 +680,302 @@ function enableLoginButton(){
 
 }
 
+
+/* ==========================================================
+   CHECK ALREADY VOTED RESPONSE
+========================================================== */
+
+function isAlreadyVotedResponse(
+    result
+){
+
+    if(!result){
+
+        return false;
+
+    }
+
+
+    /* ======================================================
+       DIRECT BACKEND FLAG
+       ------------------------------------------------------
+       Supported if backend returns:
+       already_voted: true
+    ====================================================== */
+
+    if(
+        result.already_voted === true ||
+        result.already_voted === "true"
+    ){
+
+        return true;
+
+    }
+
+
+    /* ======================================================
+       MESSAGE CHECK
+       ------------------------------------------------------
+       Handles minor differences in:
+       - Capitalization
+       - Full stop
+       - Extra spaces
+    ====================================================== */
+
+    const message =
+        String(
+            result.message || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    if(
+
+        message.includes(
+            "already cast your vote"
+        )
+
+        ||
+
+        message.includes(
+            "already voted"
+        )
+
+        ||
+
+        message.includes(
+            "vote already cast"
+        )
+
+    ){
+
+        return true;
+
+    }
+
+
+    return false;
+
+}
+
+
 /* ==========================================================
    LOGIN REQUEST
 ========================================================== */
 
-loginForm.addEventListener(
+if(loginForm){
 
-    "submit",
+    loginForm.addEventListener(
 
-    async function(event){
+        "submit",
 
-        event.preventDefault();
+        async function(event){
 
-        clearErrors();
+            event.preventDefault();
 
-        /* ==============================================
-           FRONTEND VALIDATION
-        ============================================== */
+            clearErrors();
 
-        if(!validateForm()){
 
-            return;
+            /* ==============================================
+               FRONTEND VALIDATION
+            ============================================== */
 
-        }
+            if(!validateForm()){
 
-        disableLoginButton();
-
-        /* ==============================================
-           FORM DATA
-        ============================================== */
-
-        const formData = new FormData();
-
-        formData.append(
-
-            "admissionNo",
-
-            clean(
-
-                admissionInput.value
-
-            )
-
-        );
-
-        formData.append(
-
-            "dob",
-
-            clean(
-
-                dobInput.value
-
-            )
-
-        );
-
-        formData.append(
-
-            "collegeEmail",
-
-            clean(
-
-                emailInput.value
-
-            ).toLowerCase()
-
-        );
-
-        formData.append(
-
-            "password",
-
-            passwordInput.value
-
-        );
-
-        try{
-
-            /* ==========================================
-               FETCH REQUEST
-            ========================================== */
-
-            const response = await fetch(
-
-                LOGIN_API,
-
-                {
-
-                    method : "POST",
-
-                    body : formData
-
-                }
-
-            );
-
-            const result = await response.json();
-
-            /* ==========================================
-               LOGIN SUCCESS
-            ========================================== */
-
-            if(result.success){
-
-                loginButton.disabled = true;
-
-                showSuccessToast(
-
-                    result.message
-
-                );
-
-                setTimeout(
-
-                    function(){
-
-                        window.location.href =
-
-                        DASHBOARD_URL;
-
-                    },
-
-                    1500
-
-                );
+                return;
 
             }
 
-            /* ==========================================
-               LOGIN FAILED
-            ========================================== */
 
-            else{
+            /* ==============================================
+               DISABLE LOGIN BUTTON
+            ============================================== */
+
+            disableLoginButton();
+
+
+            /* ==============================================
+               FORM DATA
+            ============================================== */
+
+            const formData =
+                new FormData();
+
+
+            formData.append(
+
+                "admissionNo",
+
+                clean(
+                    admissionInput?.value
+                )
+
+            );
+
+
+            formData.append(
+
+                "dob",
+
+                clean(
+                    dobInput?.value
+                )
+
+            );
+
+
+            formData.append(
+
+                "collegeEmail",
+
+                clean(
+                    emailInput?.value
+                ).toLowerCase()
+
+            );
+
+
+            formData.append(
+
+                "password",
+
+                passwordInput?.value || ""
+
+            );
+
+
+            try{
+
+
+                /* ==========================================
+                   FETCH LOGIN REQUEST
+                ========================================== */
+
+                const response =
+                    await fetch(
+
+                        LOGIN_API,
+
+                        {
+                            method : "POST",
+                            body : formData,
+                            cache : "no-store"
+                        }
+
+                    );
+
+
+                /* ==========================================
+                   RESPONSE JSON
+                ========================================== */
+
+                const result =
+                    await response.json();
+
+
+                /* ==========================================
+                   ALREADY VOTED CHECK
+                   ------------------------------------------------
+                   IMPORTANT:
+                   This check happens BEFORE showing
+                   any error toast.
+                ========================================== */
+
+                if(
+                    isAlreadyVotedResponse(
+                        result
+                    )
+                ){
+
+                    window.location.replace(
+                        ALREADY_VOTED_URL
+                    );
+
+                    return;
+
+                }
+
+
+                /* ==========================================
+                   LOGIN SUCCESS
+                ========================================== */
+
+                if(result.success){
+
+                    if(loginButton){
+
+                        loginButton.disabled =
+                            true;
+
+                    }
+
+
+                    showSuccessToast(
+                        result.message ||
+                        "Login Successful"
+                    );
+
+
+                    setTimeout(
+
+                        function(){
+
+                            window.location.replace(
+                                DASHBOARD_URL
+                            );
+
+                        },
+
+                        1500
+
+                    );
+
+
+                    return;
+
+                }
+
+
+                /* ==========================================
+                   LOGIN FAILED
+                ========================================== */
 
                 showErrorToast(
 
                     "Login Failed",
 
-                    result.message
+                    result.message ||
+                    "Invalid login credentials."
 
                 );
+
+
+                enableLoginButton();
+
+            }
+
+
+            /* ==============================================
+               SERVER / NETWORK ERROR
+            ============================================== */
+
+            catch(error){
+
+                console.error(
+                    "VOTIFY Login Error:",
+                    error
+                );
+
+
+                showErrorToast(
+
+                    "Server Error",
+
+                    "Unable to connect to the server. Please try again."
+
+                );
+
 
                 enableLoginButton();
 
@@ -767,29 +983,10 @@ loginForm.addEventListener(
 
         }
 
-        /* ==============================================
-           SERVER ERROR
-        ============================================== */
+    );
 
-        catch(error){
+}
 
-            console.error(error);
-
-            showErrorToast(
-
-                "Server Error",
-
-                "Unable to connect to the server. Please try again."
-
-            );
-
-            enableLoginButton();
-
-        }
-
-    }
-
-);
 
 /* ==========================================================
    INITIALIZE STUDENT LOGIN
@@ -801,6 +998,7 @@ document.addEventListener(
 
     function(){
 
+
         /* ==============================================
            HIDE TOASTS
         ============================================== */
@@ -809,17 +1007,20 @@ document.addEventListener(
 
         hideErrorToast();
 
+
         /* ==============================================
            CLEAR FORM ERRORS
         ============================================== */
 
         clearErrors();
 
+
         /* ==============================================
            ENABLE LOGIN BUTTON
         ============================================== */
 
         enableLoginButton();
+
 
         /* ==============================================
            AUTO FOCUS
@@ -831,14 +1032,13 @@ document.addEventListener(
 
         }
 
+
         /* ==============================================
            CONSOLE LOG
         ============================================== */
 
         console.log(
-
             "VOTIFY Student Login Initialized"
-
         );
 
     }
