@@ -6,6 +6,8 @@ header("Content-Type: application/json");
 
 require_once "../../config/database.php";
 
+/** @var mysqli $conn */
+
 if($_SERVER["REQUEST_METHOD"]!=="POST"){
 
     echo json_encode([

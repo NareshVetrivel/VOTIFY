@@ -5,9 +5,6 @@
 # Aiven SSL Certificate
 config/ca.pem
 
-# Local database connection test
-test-aiven.php
-
 # Environment files
 .env
 .env.*
@@ -26,6 +23,5 @@ folder-structure.txt
 project_tree.txt
 
 # Test files
-test-aiven.php
 test.html
 test.php

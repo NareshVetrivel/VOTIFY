@@ -37,6 +37,7 @@ if (!isset($_SESSION["admin_id"])) {
 
 require_once "../../config/database.php";
 
+/** @var mysqli $conn */
 
 /* ==========================================================
    BASIC ELECTION INFORMATION

@@ -14,6 +14,9 @@ header("Content-Type: application/json");
 ========================================== */
 
 require_once "../../config/database.php";
+
+/** @var mysqli $conn */
+
 require_once "log_activity.php";
 
 

@@ -13,6 +13,8 @@ header("Content-Type: application/json");
 
 require_once("../../config/database.php");
 
+/** @var mysqli $conn */
+
 /* ==========================================
    ELECTION STATUS CHECK
 ========================================== */

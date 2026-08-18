@@ -77,6 +77,11 @@ mysqli_report(MYSQLI_REPORT_OFF);
 
 $conn = mysqli_init();
 
+$conn->options(
+    MYSQLI_OPT_CONNECT_TIMEOUT,
+    10
+);
+
 $conn->ssl_set(
     null,       // Client key
     null,       // Client certificate

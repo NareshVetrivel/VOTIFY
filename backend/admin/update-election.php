@@ -21,6 +21,8 @@ if (!isset($_SESSION["admin_id"])) {
 
 require_once "../../config/database.php";
 
+/** @var mysqli $conn */
+
 require_once "log_activity.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {

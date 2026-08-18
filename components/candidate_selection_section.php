@@ -308,11 +308,14 @@ CANDIDATE LOOP
 
 <?php
 
-while (
-
-    $candidate = mysqli_fetch_assoc($result)
-
+if (
+    isset($result) &&
+    $result instanceof mysqli_result
 ) {
+
+    while (
+        $candidate = mysqli_fetch_assoc($result)
+    ) {
 
 ?>
 
@@ -591,7 +594,7 @@ data-manifesto="<?php echo htmlspecialchars($candidate["manifesto"]); ?>">
 <?php
 
 }
-
+}
 ?>
 
 <!-- ==========================================================

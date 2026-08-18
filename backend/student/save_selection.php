@@ -20,9 +20,7 @@ if(session_status() === PHP_SESSION_NONE){
 ========================================================== */
 
 header(
-
     "Content-Type: application/json"
-
 );
 
 /* ==========================================================
@@ -77,6 +75,8 @@ if(
 
 require_once "../../config/database.php";
 
+$conn = $GLOBALS["conn"];
+
 /* ==========================================================
    HELPER FUNCTION
 ========================================================== */
@@ -114,6 +114,15 @@ function response(
 $candidateId =
 
     $_POST["candidate_id"] ?? "";
+
+/*
+   Initialize candidate variable.
+
+   This ensures the variable is defined
+   before it is used later in the file.
+*/
+
+$candidate = [];
 
 $candidateName =
 

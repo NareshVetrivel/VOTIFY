@@ -17,6 +17,8 @@ if(session_status() === PHP_SESSION_NONE){
 
 require_once "../../config/database.php";
 
+/** @var mysqli $conn */
+
 /* ==========================================================
    GET ELECTION STATUS
 ========================================================== */

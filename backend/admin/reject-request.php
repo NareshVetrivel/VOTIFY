@@ -20,6 +20,9 @@ if (!isset($_SESSION["admin_id"])) {
 }
 
 require_once "../../config/database.php";
+
+/** @var mysqli $conn */
+
 require_once "log_activity.php";
 
 $id = intval($_POST["id"] ?? 0);
