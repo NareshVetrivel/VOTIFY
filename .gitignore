@@ -1,0 +1,31 @@
+# ==========================================
+# VOTIFY - Local / Sensitive Files
+# ==========================================
+
+# Aiven SSL Certificate
+config/ca.pem
+
+# Local database connection test
+test-aiven.php
+
+# Environment files
+.env
+.env.*
+
+# Local IDE / OS files
+.vscode/
+.idea/
+*.log
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# Local project documentation / generated files
+folder-structure.txt
+project_tree.txt
+
+# Test files
+test-aiven.php
+test.html
+test.php
