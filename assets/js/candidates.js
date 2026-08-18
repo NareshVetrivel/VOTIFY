@@ -1300,7 +1300,8 @@ async function viewCandidate(id){
         const candidate = result.candidate;
 
         document.getElementById("viewCandidatePhoto").src =
-        "../../uploads/candidates/" + candidate.photo;
+        "../../backend/candidate-photo.php?id=" +
+        encodeURIComponent(candidate.id);
 
         document.getElementById("viewCandidateName").textContent =
         candidate.full_name;
@@ -1401,7 +1402,8 @@ async function editCandidate(id){
         document.getElementById("photoPreview");
 
         preview.src =
-        "../../uploads/candidates/" + candidate.photo;
+        "../../backend/candidate-photo.php?id=" +
+        encodeURIComponent(candidate.id);
 
         preview.classList.remove("hidden");
 

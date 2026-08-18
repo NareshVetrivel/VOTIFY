@@ -3,11 +3,13 @@
    VOTIFY
    Delete Candidate
    File : backend/admin/delete-candidate.php
+   Storage : Aiven Cloud MySQL
 ========================================================== */
 
 session_start();
 
 header("Content-Type: application/json");
+
 
 /* ==========================================================
    SESSION PROTECTION
@@ -24,6 +26,7 @@ if (!isset($_SESSION["admin_id"])) {
 
 }
 
+
 /* ==========================================================
    DATABASE
 ========================================================== */
@@ -31,6 +34,7 @@ if (!isset($_SESSION["admin_id"])) {
 require_once "../../config/database.php";
 
 /** @var mysqli $conn */
+
 
 /* ==========================================================
    REQUEST VALIDATION
@@ -47,7 +51,11 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 }
 
-$candidateId = intval($_POST["candidateId"] ?? 0);
+
+$candidateId = intval(
+    $_POST["candidateId"] ?? 0
+);
+
 
 if ($candidateId <= 0) {
 
@@ -60,6 +68,7 @@ if ($candidateId <= 0) {
 
 }
 
+
 /* ==========================================================
    FETCH CANDIDATE
 ========================================================== */
@@ -68,9 +77,8 @@ $query = "
 
 SELECT
 
-full_name,
-admission_no,
-photo
+    full_name,
+    admission_no
 
 FROM candidates
 
@@ -80,7 +88,24 @@ LIMIT 1
 
 ";
 
-$stmt = mysqli_prepare($conn, $query);
+
+$stmt = mysqli_prepare(
+    $conn,
+    $query
+);
+
+
+if (!$stmt) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Database error."
+    ]);
+
+    exit();
+
+}
+
 
 mysqli_stmt_bind_param(
 
@@ -92,11 +117,35 @@ mysqli_stmt_bind_param(
 
 );
 
-mysqli_stmt_execute($stmt);
 
-$result = mysqli_stmt_get_result($stmt);
+if (!mysqli_stmt_execute($stmt)) {
 
-if (mysqli_num_rows($result) === 0) {
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to find candidate."
+    ]);
+
+    exit();
+
+}
+
+
+$result = mysqli_stmt_get_result(
+    $stmt
+);
+
+
+if (
+
+    !$result ||
+
+    mysqli_num_rows($result) === 0
+
+) {
+
+    mysqli_stmt_close($stmt);
 
     echo json_encode([
         "success" => false,
@@ -107,7 +156,14 @@ if (mysqli_num_rows($result) === 0) {
 
 }
 
-$candidate = mysqli_fetch_assoc($result);
+
+$candidate = mysqli_fetch_assoc(
+    $result
+);
+
+
+mysqli_stmt_close($stmt);
+
 
 /* ==========================================================
    DELETE DATABASE RECORD
@@ -121,7 +177,24 @@ WHERE id = ?
 
 ";
 
-$stmt = mysqli_prepare($conn, $query);
+
+$stmt = mysqli_prepare(
+    $conn,
+    $query
+);
+
+
+if (!$stmt) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to prepare delete."
+    ]);
+
+    exit();
+
+}
+
 
 mysqli_stmt_bind_param(
 
@@ -133,112 +206,125 @@ mysqli_stmt_bind_param(
 
 );
 
+
 if (!mysqli_stmt_execute($stmt)) {
+
+    $error = mysqli_stmt_error(
+        $stmt
+    );
+
+    mysqli_stmt_close($stmt);
 
     echo json_encode([
         "success" => false,
-        "message" => "Unable to delete candidate."
+        "message" => $error
     ]);
 
     exit();
 
 }
 
+
+mysqli_stmt_close($stmt);
+
+
 /* ==========================================================
-   DELETE PHOTO
+   NOTE
+   Candidate photo is stored inside the candidates table
+   as MEDIUMBLOB.
+
+   Therefore deleting the candidate row automatically
+   removes the stored photo from Aiven MySQL.
+
+   No local file deletion is required.
 ========================================================== */
 
-$photoPath =
-
-"../../uploads/candidates/"
-
-.
-
-$candidate["photo"];
-
-if (
-
-    !empty($candidate["photo"])
-
-    &&
-
-    file_exists($photoPath)
-
-) {
-
-    unlink($photoPath);
-
-}
 
 /* ==========================================================
    ADMIN LOG
 ========================================================== */
 
-$adminId = $_SESSION["admin_id"];
+$adminId =
+
+    $_SESSION["admin_id"];
+
 
 $admin =
 
-$_SESSION["admin_username"]
+    $_SESSION["admin_username"]
 
-??
+    ??
 
-"Admin";
+    "Admin";
+
 
 $ip =
 
-$_SERVER["REMOTE_ADDR"]
+    $_SERVER["REMOTE_ADDR"]
 
-??
+    ??
 
-"Unknown";
+    "Unknown";
+
 
 $action =
 
-"Candidate Deleted";
+    "Candidate Deleted";
+
 
 $description =
 
-"Deleted candidate : "
+    "Deleted candidate : "
 
-.
+    .
 
-$candidate["full_name"]
+    $candidate["full_name"]
 
-.
+    .
 
-" ("
+    " ("
 
-.
+    .
 
-$candidate["admission_no"]
+    $candidate["admission_no"]
 
-.
+    .
 
-")";
+    ")";
+
 
 $logQuery = "
 
-INSERT INTO admin_logs(
+INSERT INTO admin_logs (
 
-admin_id,
+    admin_id,
 
-admin_username,
+    admin_username,
 
-action,
+    action,
 
-description,
+    description,
 
-ip_address
+    ip_address
 
 )
 
-VALUES(
+VALUES (
 
-?,?,?,?,?
+    ?,
+
+    ?,
+
+    ?,
+
+    ?,
+
+    ?
 
 )
 
 ";
+
 
 $logStmt = mysqli_prepare(
 
@@ -248,25 +334,39 @@ $logStmt = mysqli_prepare(
 
 );
 
-mysqli_stmt_bind_param(
 
-    $logStmt,
+if ($logStmt) {
 
-    "issss",
+    mysqli_stmt_bind_param(
 
-    $adminId,
+        $logStmt,
 
-    $admin,
+        "issss",
 
-    $action,
+        $adminId,
 
-    $description,
+        $admin,
 
-    $ip
+        $action,
 
-);
+        $description,
 
-mysqli_stmt_execute($logStmt);
+        $ip
+
+    );
+
+
+    mysqli_stmt_execute(
+        $logStmt
+    );
+
+
+    mysqli_stmt_close(
+        $logStmt
+    );
+
+}
+
 
 /* ==========================================================
    SUCCESS
@@ -281,3 +381,5 @@ echo json_encode([
 ]);
 
 exit();
+
+?>

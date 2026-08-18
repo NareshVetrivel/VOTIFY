@@ -62,13 +62,14 @@ $candidates = [];
 
 $query = "
 
-    SELECT
+SELECT
 
-        id,
-        full_name,
-        year,
-        photo,
-        vote_count
+    id,
+    full_name,
+    year,
+    photo,
+    photo_type,
+    vote_count
 
     FROM candidates
 
@@ -217,25 +218,23 @@ $generatedTime =
    SAFE CANDIDATE PHOTO PATH
 ========================================================== */
 
-function candidatePhoto($photo)
+function candidatePhoto($photo, $photoType = "image/jpeg")
 {
 
-    if (
-        empty($photo)
-    ) {
+    if (empty($photo)) {
 
         return "../../assets/images/logo.png";
 
     }
 
-
-    return
-        "../../uploads/candidates/" .
+    return "data:" .
         htmlspecialchars(
-            $photo,
+            $photoType,
             ENT_QUOTES,
             "UTF-8"
-        );
+        ) .
+        ";base64," .
+        base64_encode($photo);
 
 }
 
@@ -3684,7 +3683,8 @@ body {
                 <img
 
                     src="<?= candidatePhoto(
-                        $jointSecretary["photo"]
+                        $jointSecretary["photo"],
+                        $jointSecretary["photo_type"]
                     ); ?>"
 
                     alt="<?= safeText(
@@ -3941,7 +3941,8 @@ body {
                 <img
 
                     src="<?= candidatePhoto(
-                        $chairman["photo"]
+                        $chairman["photo"],
+                        $chairman["photo_type"]
                     ); ?>"
 
                     alt="<?= safeText(
@@ -4120,8 +4121,9 @@ body {
                 <img
 
                     src="<?= candidatePhoto(
-                        $viceChairman["photo"]
-                    ); ?>"
+                    $viceChairman["photo"],
+                    $viceChairman["photo_type"]
+                ); ?>"
 
                     alt="<?= safeText(
                         $viceChairman["full_name"]

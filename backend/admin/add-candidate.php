@@ -1,10 +1,13 @@
 <?php
+
 error_reporting(E_ALL);
 ini_set("display_errors", 1);
+
 /* ==========================================================
    VOTIFY
    Add Candidate
    File : backend/admin/add-candidate.php
+   Storage : Aiven Cloud MySQL
 ========================================================== */
 
 session_start();
@@ -31,7 +34,10 @@ if (!isset($_SESSION["admin_id"])) {
 ========================================================== */
 
 require_once "../../config/database.php";
+
 /** @var mysqli $conn */
+
+
 /* ==========================================================
    REQUEST VALIDATION
 ========================================================== */
@@ -47,11 +53,14 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 }
 
+
 /* ==========================================================
    RECEIVE FORM DATA
 ========================================================== */
 
-$studentId = trim($_POST["studentId"] ?? "");
+$studentId = trim(
+    $_POST["studentId"] ?? ""
+);
 
 $admissionNo = strtoupper(
     trim($_POST["admissionNo"] ?? "")
@@ -60,6 +69,7 @@ $admissionNo = strtoupper(
 $manifesto = trim(
     $_POST["manifesto"] ?? ""
 );
+
 
 /* ==========================================================
    REQUIRED FIELD VALIDATION
@@ -73,7 +83,7 @@ if (
 
     empty($manifesto)
 
-){
+) {
 
     echo json_encode([
         "success" => false,
@@ -83,6 +93,7 @@ if (
     exit();
 
 }
+
 
 /* ==========================================================
    PHOTO VALIDATION
@@ -94,7 +105,7 @@ if (
 
     $_FILES["candidatePhoto"]["error"] !== UPLOAD_ERR_OK
 
-){
+) {
 
     echo json_encode([
         "success" => false,
@@ -105,6 +116,7 @@ if (
 
 }
 
+
 /* ==========================================================
    VERIFY STUDENT
 ========================================================== */
@@ -113,35 +125,40 @@ $query = "
 
 SELECT
 
-id,
-full_name,
-admission_no,
-department,
-year,
-status
+    id,
+    full_name,
+    admission_no,
+    department,
+    year,
+    status
 
 FROM students
 
 WHERE
 
-id = ?
+    id = ?
 
 AND
 
-admission_no = ?
+    admission_no = ?
 
 LIMIT 1
 
 ";
 
-$stmt = mysqli_prepare($conn, $query);
+$stmt = mysqli_prepare(
+    $conn,
+    $query
+);
 
-if(!$stmt){
+if (!$stmt) {
 
-    die(json_encode([
-        "success"=>false,
-        "message"=>mysqli_error($conn)
-    ]));
+    echo json_encode([
+        "success" => false,
+        "message" => mysqli_error($conn)
+    ]);
+
+    exit();
 
 }
 
@@ -157,11 +174,39 @@ mysqli_stmt_bind_param(
 
 );
 
-mysqli_stmt_execute($stmt);
+if (!mysqli_stmt_execute($stmt)) {
+
+    $error = mysqli_stmt_error($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => $error
+    ]);
+
+    exit();
+
+}
 
 $result = mysqli_stmt_get_result($stmt);
 
+if (!$result) {
+
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to verify student."
+    ]);
+
+    exit();
+
+}
+
 if (mysqli_num_rows($result) === 0) {
+
+    mysqli_stmt_close($stmt);
 
     echo json_encode([
         "success" => false,
@@ -173,6 +218,9 @@ if (mysqli_num_rows($result) === 0) {
 }
 
 $student = mysqli_fetch_assoc($result);
+
+mysqli_stmt_close($stmt);
+
 
 /* ==========================================================
    APPROVED STUDENT CHECK
@@ -188,6 +236,7 @@ if ($student["status"] !== "Approved") {
     exit();
 
 }
+
 
 /* ==========================================================
    DUPLICATE CANDIDATE CHECK
@@ -205,7 +254,21 @@ LIMIT 1
 
 ";
 
-$stmt = mysqli_prepare($conn, $query);
+$stmt = mysqli_prepare(
+    $conn,
+    $query
+);
+
+if (!$stmt) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => mysqli_error($conn)
+    ]);
+
+    exit();
+
+}
 
 mysqli_stmt_bind_param(
 
@@ -217,11 +280,39 @@ mysqli_stmt_bind_param(
 
 );
 
-mysqli_stmt_execute($stmt);
+if (!mysqli_stmt_execute($stmt)) {
+
+    $error = mysqli_stmt_error($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => $error
+    ]);
+
+    exit();
+
+}
 
 $result = mysqli_stmt_get_result($stmt);
 
+if (!$result) {
+
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to check candidate."
+    ]);
+
+    exit();
+
+}
+
 if (mysqli_num_rows($result) > 0) {
+
+    mysqli_stmt_close($stmt);
 
     echo json_encode([
         "success" => false,
@@ -232,10 +323,8 @@ if (mysqli_num_rows($result) > 0) {
 
 }
 
-/* ==========================================================
-   PART 2
-   Image Validation & Upload
-========================================================== */
+mysqli_stmt_close($stmt);
+
 
 /* ==========================================================
    IMAGE VALIDATION
@@ -243,145 +332,93 @@ if (mysqli_num_rows($result) > 0) {
 
 $photo = $_FILES["candidatePhoto"];
 
-$allowedExtensions = [
-
-    "jpg",
-
-    "jpeg",
-
-    "png"
-
-];
-
-$fileName = $photo["name"];
-
 $fileSize = $photo["size"];
 
 $fileTmp = $photo["tmp_name"];
 
-$fileExtension = strtolower(
-
-    pathinfo(
-
-        $fileName,
-
-        PATHINFO_EXTENSION
-
-    )
-
-);
-
-if(
-
-    !in_array(
-
-        $fileExtension,
-
-        $allowedExtensions
-
-    )
-
-){
-
-    echo json_encode([
-
-        "success" => false,
-
-        "message" =>
-
-        "Only JPG, JPEG and PNG files are allowed."
-
-    ]);
-
-    exit();
-
-}
-
-if($fileSize > 2 * 1024 * 1024){
-
-    echo json_encode([
-
-        "success" => false,
-
-        "message" =>
-
-        "Photo size must be less than 2 MB."
-
-    ]);
-
-    exit();
-
-}
 
 /* ==========================================================
-   UPLOAD PHOTO
+   FILE SIZE CHECK
 ========================================================== */
 
-$newFileName =
-
-"candidate_"
-
-.
-
-time()
-
-.
-
-"_"
-
-.
-
-bin2hex(
-
-    random_bytes(4)
-
-)
-
-.
-
-"."
-
-.
-
-$fileExtension;
-
-$uploadDirectory =
-
-"../../uploads/candidates/";
-
-$uploadPath =
-
-$uploadDirectory
-
-.
-
-$newFileName;
-
-if(
-
-    !move_uploaded_file(
-
-        $fileTmp,
-
-        $uploadPath
-
-    )
-
-){
+if ($fileSize <= 0) {
 
     echo json_encode([
-
         "success" => false,
-
-        "message" =>
-
-        "Unable to upload candidate photo."
-
+        "message" => "Invalid candidate photo."
     ]);
 
     exit();
 
 }
+
+if ($fileSize > 2 * 1024 * 1024) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Photo size must be less than 2 MB."
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   REAL IMAGE TYPE CHECK
+========================================================== */
+
+if (!is_uploaded_file($fileTmp)) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid uploaded photo."
+    ]);
+
+    exit();
+
+}
+
+$finfo = new finfo(FILEINFO_MIME_TYPE);
+
+$photoType = $finfo->file($fileTmp);
+
+$allowedTypes = [
+
+    "image/jpeg",
+    "image/png"
+
+];
+
+if (!in_array($photoType, $allowedTypes, true)) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Only JPG, JPEG and PNG files are allowed."
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   READ IMAGE
+========================================================== */
+
+$photoData = file_get_contents($fileTmp);
+
+if ($photoData === false) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to read candidate photo."
+    ]);
+
+    exit();
+
+}
+
 
 /* ==========================================================
    INSERT CANDIDATE
@@ -389,63 +426,60 @@ if(
 
 $query = "
 
-INSERT INTO candidates(
+INSERT INTO candidates (
 
-student_id,
-
-admission_no,
-
-full_name,
-
-department,
-
-year,
-
-manifesto,
-
-photo
+    student_id,
+    admission_no,
+    full_name,
+    department,
+    year,
+    manifesto,
+    photo,
+    photo_type
 
 )
 
-VALUES(
+VALUES (
 
-?,
-
-?,
-
-?,
-
-?,
-
-?,
-
-?,
-
-?
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?,
+    ?
 
 )
 
 ";
 
-$stmt = mysqli_prepare($conn, $query);
+$stmt = mysqli_prepare(
+    $conn,
+    $query
+);
 
-if(!$stmt){
+if (!$stmt) {
 
-    die(json_encode([
+    echo json_encode([
+        "success" => false,
+        "message" => mysqli_error($conn)
+    ]);
 
-        "success"=>false,
-
-        "message"=>mysqli_error($conn)
-
-    ]));
+    exit();
 
 }
 
-$bind = mysqli_stmt_bind_param(
+
+/* ==========================================================
+   BIND CANDIDATE DATA
+========================================================== */
+
+mysqli_stmt_bind_param(
 
     $stmt,
 
-    "issssss",
+    "isssssss",
 
     $student["id"],
 
@@ -459,60 +493,56 @@ $bind = mysqli_stmt_bind_param(
 
     $manifesto,
 
-    $newFileName
+    $photoData,
+
+    $photoType
 
 );
 
-if(!$bind){
-
-    die(json_encode([
-
-        "success"=>false,
-
-        "message"=>mysqli_stmt_error($stmt)
-
-    ]));
-
-}
-
-$insertSuccess = mysqli_stmt_execute($stmt);
-
-if(!$insertSuccess){
-
-    die(json_encode([
-
-        "success"=>false,
-
-        "message"=>mysqli_stmt_error($stmt)
-
-    ]));
-
-}
 
 /* ==========================================================
-   PART 3
-   Admin Logs + JSON Response
+   EXECUTE INSERT
 ========================================================== */
+
+if (!mysqli_stmt_execute($stmt)) {
+
+    $error = mysqli_stmt_error($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => $error
+    ]);
+
+    exit();
+
+}
+
+mysqli_stmt_close($stmt);
+
 
 /* ==========================================================
    ADMIN LOG
 ========================================================== */
 
-if($insertSuccess){
+$admin =
 
-    $admin =
+    $_SESSION["admin_username"]
 
-    $_SESSION["admin_username"] ?? "Admin";
+    ?? "Admin";
 
-    $ip =
+$ip =
 
-    $_SERVER["REMOTE_ADDR"] ?? "Unknown";
+    $_SERVER["REMOTE_ADDR"]
 
-    $action =
+    ?? "Unknown";
+
+$action =
 
     "Candidate Added";
 
-    $description =
+$description =
 
     "Added candidate : "
 
@@ -532,102 +562,83 @@ if($insertSuccess){
 
     ")";
 
-$adminId = $_SESSION["admin_id"];
+$adminId =
+
+    $_SESSION["admin_id"];
+
+
+/* ==========================================================
+   INSERT ADMIN LOG
+========================================================== */
 
 $logQuery = "
 
-INSERT INTO admin_logs(
+INSERT INTO admin_logs (
 
-admin_id,
-
-admin_username,
-
-action,
-
-description,
-
-ip_address
+    admin_id,
+    admin_username,
+    action,
+    description,
+    ip_address
 
 )
 
-VALUES(
+VALUES (
 
-?,?,?,?,?
+    ?,
+    ?,
+    ?,
+    ?,
+    ?
 
 )
 
 ";
 
-$logStmt = mysqli_prepare($conn,$logQuery);
-
-mysqli_stmt_bind_param(
-
-    $logStmt,
-
-    "issss",
-
-    $adminId,
-
-    $admin,
-
-    $action,
-
-    $description,
-
-    $ip
-
+$logStmt = mysqli_prepare(
+    $conn,
+    $logQuery
 );
 
-    mysqli_stmt_execute(
+if ($logStmt) {
 
-        $logStmt
+    mysqli_stmt_bind_param(
+
+        $logStmt,
+
+        "issss",
+
+        $adminId,
+
+        $admin,
+
+        $action,
+
+        $description,
+
+        $ip
 
     );
 
-    echo json_encode([
+    mysqli_stmt_execute($logStmt);
 
-        "success" => true,
-
-        "message" =>
-
-        "Candidate added successfully."
-
-    ]);
-
-    exit();
+    mysqli_stmt_close($logStmt);
 
 }
+
 
 /* ==========================================================
-   INSERT FAILED
+   SUCCESS RESPONSE
 ========================================================== */
-
-if(
-
-    file_exists(
-
-        $uploadPath
-
-    )
-
-){
-
-    unlink(
-
-        $uploadPath
-
-    );
-
-}
 
 echo json_encode([
 
-    "success" => false,
+    "success" => true,
 
-    "message" =>
-
-    "Unable to add candidate."
+    "message" => "Candidate added successfully."
 
 ]);
 
 exit();
+
+?>

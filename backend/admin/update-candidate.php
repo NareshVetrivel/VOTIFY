@@ -3,11 +3,13 @@
    VOTIFY
    Update Candidate
    File : backend/admin/update-candidate.php
+   Storage : Aiven Cloud MySQL
 ========================================================== */
 
 session_start();
 
 header("Content-Type: application/json");
+
 
 /* ==========================================================
    SESSION
@@ -24,6 +26,7 @@ if (!isset($_SESSION["admin_id"])) {
 
 }
 
+
 /* ==========================================================
    DATABASE
 ========================================================== */
@@ -32,8 +35,9 @@ require_once "../../config/database.php";
 
 /** @var mysqli $conn */
 
+
 /* ==========================================================
-   VALIDATION
+   REQUEST VALIDATION
 ========================================================== */
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -47,11 +51,23 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 }
 
-$candidateId = intval($_POST["candidateId"] ?? 0);
 
-$manifesto = trim($_POST["manifesto"] ?? "");
+$candidateId = intval(
+    $_POST["candidateId"] ?? 0
+);
 
-if ($candidateId <= 0 || $manifesto === "") {
+$manifesto = trim(
+    $_POST["manifesto"] ?? ""
+);
+
+
+if (
+
+    $candidateId <= 0 ||
+
+    $manifesto === ""
+
+) {
 
     echo json_encode([
         "success" => false,
@@ -62,13 +78,18 @@ if ($candidateId <= 0 || $manifesto === "") {
 
 }
 
+
 /* ==========================================================
-   GET OLD PHOTO
+   GET CANDIDATE
 ========================================================== */
 
 $query = "
 
-SELECT photo, full_name, admission_no
+SELECT
+
+    id,
+    full_name,
+    admission_no
 
 FROM candidates
 
@@ -78,15 +99,56 @@ LIMIT 1
 
 ";
 
-$stmt = mysqli_prepare($conn, $query);
 
-mysqli_stmt_bind_param($stmt, "i", $candidateId);
+$stmt = mysqli_prepare(
+    $conn,
+    $query
+);
 
-mysqli_stmt_execute($stmt);
+
+if (!$stmt) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Database error."
+    ]);
+
+    exit();
+
+}
+
+
+mysqli_stmt_bind_param(
+
+    $stmt,
+
+    "i",
+
+    $candidateId
+
+);
+
+
+if (!mysqli_stmt_execute($stmt)) {
+
+    mysqli_stmt_close($stmt);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to find candidate."
+    ]);
+
+    exit();
+
+}
+
 
 $result = mysqli_stmt_get_result($stmt);
 
-if (mysqli_num_rows($result) === 0) {
+
+if (!$result || mysqli_num_rows($result) === 0) {
+
+    mysqli_stmt_close($stmt);
 
     echo json_encode([
         "success" => false,
@@ -97,50 +159,125 @@ if (mysqli_num_rows($result) === 0) {
 
 }
 
+
 $candidate = mysqli_fetch_assoc($result);
 
-$newPhoto = $candidate["photo"];
+mysqli_stmt_close($stmt);
+
 
 /* ==========================================================
-   PHOTO UPDATE
+   CHECK WHETHER NEW PHOTO IS UPLOADED
 ========================================================== */
 
-if (
+$hasNewPhoto = (
 
     isset($_FILES["candidatePhoto"]) &&
 
     $_FILES["candidatePhoto"]["error"] === UPLOAD_ERR_OK
 
-) {
+);
 
-    $photo = $_FILES["candidatePhoto"];
 
-    $allowed = ["jpg","jpeg","png"];
+/* ==========================================================
+   UPDATE MANIFESTO ONLY
+   IF NO NEW PHOTO
+========================================================== */
 
-    $extension = strtolower(
+if (!$hasNewPhoto) {
 
-        pathinfo(
+    $query = "
 
-            $photo["name"],
+    UPDATE candidates
 
-            PATHINFO_EXTENSION
+    SET
 
-        )
+        manifesto = ?
 
+    WHERE id = ?
+
+    ";
+
+
+    $stmt = mysqli_prepare(
+        $conn,
+        $query
     );
 
-    if (!in_array($extension, $allowed)) {
+
+    if (!$stmt) {
 
         echo json_encode([
             "success" => false,
-            "message" => "Only JPG, JPEG and PNG files are allowed."
+            "message" => "Unable to prepare update."
         ]);
 
         exit();
 
     }
 
-    if ($photo["size"] > 2 * 1024 * 1024) {
+
+    mysqli_stmt_bind_param(
+
+        $stmt,
+
+        "si",
+
+        $manifesto,
+
+        $candidateId
+
+    );
+
+
+    if (!mysqli_stmt_execute($stmt)) {
+
+        mysqli_stmt_close($stmt);
+
+        echo json_encode([
+            "success" => false,
+            "message" => "Unable to update candidate."
+        ]);
+
+        exit();
+
+    }
+
+
+    mysqli_stmt_close($stmt);
+
+}
+
+
+/* ==========================================================
+   UPDATE PHOTO + MANIFESTO
+========================================================== */
+
+else {
+
+    $photo = $_FILES["candidatePhoto"];
+
+    $fileSize = $photo["size"];
+
+    $fileTmp = $photo["tmp_name"];
+
+
+    /* ======================================================
+       FILE SIZE
+    ====================================================== */
+
+    if ($fileSize <= 0) {
+
+        echo json_encode([
+            "success" => false,
+            "message" => "Invalid candidate photo."
+        ]);
+
+        exit();
+
+    }
+
+
+    if ($fileSize > 2 * 1024 * 1024) {
 
         echo json_encode([
             "success" => false,
@@ -151,191 +288,289 @@ if (
 
     }
 
-    $newPhoto =
 
-    "candidate_"
+    /* ======================================================
+       VERIFY UPLOADED FILE
+    ====================================================== */
 
-    .
-
-    time()
-
-    .
-
-    "_"
-
-    .
-
-    bin2hex(random_bytes(4))
-
-    .
-
-    "."
-
-    .
-
-    $extension;
-
-    $uploadPath =
-
-    "../../uploads/candidates/"
-
-    .
-
-    $newPhoto;
-
-    if (!move_uploaded_file($photo["tmp_name"], $uploadPath)) {
+    if (!is_uploaded_file($fileTmp)) {
 
         echo json_encode([
             "success" => false,
-            "message" => "Unable to upload photo."
+            "message" => "Invalid uploaded photo."
         ]);
 
         exit();
 
     }
 
-    $oldPhoto =
 
-    "../../uploads/candidates/"
+    /* ======================================================
+       REAL IMAGE TYPE CHECK
+    ====================================================== */
 
-    .
+    $finfo = new finfo(
+        FILEINFO_MIME_TYPE
+    );
 
-    $candidate["photo"];
 
-    if (
+    $photoType = $finfo->file(
+        $fileTmp
+    );
 
-        file_exists($oldPhoto)
 
-    ) {
+    $allowedTypes = [
 
-        unlink($oldPhoto);
+        "image/jpeg",
+
+        "image/png"
+
+    ];
+
+
+    if (!in_array(
+
+        $photoType,
+
+        $allowedTypes,
+
+        true
+
+    )) {
+
+        echo json_encode([
+            "success" => false,
+            "message" => "Only JPG, JPEG and PNG files are allowed."
+        ]);
+
+        exit();
 
     }
 
+
+    /* ======================================================
+       READ PHOTO
+    ====================================================== */
+
+    $photoData = file_get_contents(
+        $fileTmp
+    );
+
+
+    if ($photoData === false) {
+
+        echo json_encode([
+            "success" => false,
+            "message" => "Unable to read candidate photo."
+        ]);
+
+        exit();
+
+    }
+
+
+    /* ======================================================
+       UPDATE DATABASE
+    ====================================================== */
+
+    $query = "
+
+    UPDATE candidates
+
+    SET
+
+        manifesto = ?,
+
+        photo = ?,
+
+        photo_type = ?
+
+    WHERE id = ?
+
+    ";
+
+
+    $stmt = mysqli_prepare(
+        $conn,
+        $query
+    );
+
+
+    if (!$stmt) {
+
+        echo json_encode([
+            "success" => false,
+            "message" => "Unable to prepare photo update."
+        ]);
+
+        exit();
+
+    }
+
+
+    mysqli_stmt_bind_param(
+
+        $stmt,
+
+        "sssi",
+
+        $manifesto,
+
+        $photoData,
+
+        $photoType,
+
+        $candidateId
+
+    );
+
+
+    if (!mysqli_stmt_execute($stmt)) {
+
+        $error = mysqli_stmt_error(
+            $stmt
+        );
+
+        mysqli_stmt_close($stmt);
+
+        echo json_encode([
+            "success" => false,
+            "message" => $error
+        ]);
+
+        exit();
+
+    }
+
+
+    mysqli_stmt_close($stmt);
+
 }
 
-/* ==========================================================
-   UPDATE
-========================================================== */
-
-$query = "
-
-UPDATE candidates
-
-SET
-
-manifesto = ?,
-
-photo = ?
-
-WHERE id = ?
-
-";
-
-$stmt = mysqli_prepare($conn, $query);
-
-mysqli_stmt_bind_param(
-
-    $stmt,
-
-    "ssi",
-
-    $manifesto,
-
-    $newPhoto,
-
-    $candidateId
-
-);
-
-if (!mysqli_stmt_execute($stmt)) {
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Unable to update candidate."
-    ]);
-
-    exit();
-
-}
 
 /* ==========================================================
    ADMIN LOG
 ========================================================== */
 
-$adminId = $_SESSION["admin_id"];
+$adminId =
 
-$admin = $_SESSION["admin_username"] ?? "Admin";
+    $_SESSION["admin_id"];
 
-$ip = $_SERVER["REMOTE_ADDR"] ?? "Unknown";
 
-$action = "Candidate Updated";
+$admin =
+
+    $_SESSION["admin_username"]
+
+    ?? "Admin";
+
+
+$ip =
+
+    $_SERVER["REMOTE_ADDR"]
+
+    ?? "Unknown";
+
+
+$action =
+
+    "Candidate Updated";
+
 
 $description =
 
-"Updated candidate : "
+    "Updated candidate : "
 
-.
+    .
 
-$candidate["full_name"]
+    $candidate["full_name"]
 
-.
+    .
 
-" ("
+    " ("
 
-.
+    .
 
-$candidate["admission_no"]
+    $candidate["admission_no"]
 
-.
+    .
 
-")";
+    ")";
 
-$log = "
 
-INSERT INTO admin_logs(
+$logQuery = "
 
-admin_id,
+INSERT INTO admin_logs (
 
-admin_username,
+    admin_id,
 
-action,
+    admin_username,
 
-description,
+    action,
 
-ip_address
+    description,
+
+    ip_address
 
 )
 
-VALUES(
+VALUES (
 
-?,?,?,?,?
+    ?,
+
+    ?,
+
+    ?,
+
+    ?,
+
+    ?
 
 )
 
 ";
 
-$logStmt = mysqli_prepare($conn, $log);
 
-mysqli_stmt_bind_param(
+$logStmt = mysqli_prepare(
 
-    $logStmt,
+    $conn,
 
-    "issss",
-
-    $adminId,
-
-    $admin,
-
-    $action,
-
-    $description,
-
-    $ip
+    $logQuery
 
 );
 
-mysqli_stmt_execute($logStmt);
+
+if ($logStmt) {
+
+    mysqli_stmt_bind_param(
+
+        $logStmt,
+
+        "issss",
+
+        $adminId,
+
+        $admin,
+
+        $action,
+
+        $description,
+
+        $ip
+
+    );
+
+
+    mysqli_stmt_execute(
+        $logStmt
+    );
+
+
+    mysqli_stmt_close(
+        $logStmt
+    );
+
+}
+
 
 /* ==========================================================
    SUCCESS
@@ -350,3 +585,5 @@ echo json_encode([
 ]);
 
 exit();
+
+?>

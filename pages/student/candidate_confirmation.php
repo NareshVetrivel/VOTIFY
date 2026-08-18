@@ -91,21 +91,19 @@ if(!$isNOTA){
 
     $query = "
 
-        SELECT
+SELECT
 
-            id,
+    id,
 
-            full_name,
+    full_name,
 
-            department,
+    department,
 
-            year,
+    year,
 
-            manifesto,
+    manifesto
 
-            photo
-
-        FROM candidates
+FROM candidates
 
         WHERE
 
@@ -385,31 +383,33 @@ lg:grid-cols-2">
 
         <?php if(!$isNOTA){ ?>
 
-            <img
+<img
 
-            src="../../uploads/candidates/<?php
+src="../../backend/candidate-photo.php?id=<?php
 
-            echo htmlspecialchars(
+echo (int) $candidate["id"];
 
-                $candidate["photo"]
+?>"
 
-            );
+alt="<?php
 
-            ?>"
+echo htmlspecialchars(
 
-            alt="<?php
+    $candidate["full_name"],
 
-            echo htmlspecialchars(
+    ENT_QUOTES,
 
-                $candidate["full_name"]
+    "UTF-8"
 
-            );
+);
 
-            ?>"
+?>"
 
-            class="w-full
-            h-full
-            object-cover">
+class="w-full
+h-full
+object-cover"
+
+loading="lazy">
 
             <div
             class="absolute

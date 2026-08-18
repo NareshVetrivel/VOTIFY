@@ -35,7 +35,19 @@ $candidates = [];
 
 $query = "
 
-SELECT *
+SELECT
+
+    id,
+    student_id,
+    admission_no,
+    full_name,
+    department,
+    year,
+    manifesto,
+    status,
+    vote_count,
+    created_at,
+    updated_at
 
 FROM candidates
 
@@ -992,9 +1004,9 @@ $candidate["manifesto"]
 
 <img
 
-src="../../uploads/candidates/<?= htmlspecialchars($candidate["photo"]); ?>"
+src="../../backend/candidate-photo.php?id=<?= (int) $candidate["id"]; ?>"
 
-alt="Candidate"
+alt="<?= htmlspecialchars($candidate["full_name"], ENT_QUOTES, "UTF-8"); ?>"
 
 class="
 
@@ -1010,7 +1022,9 @@ mx-auto
 
 border
 
-border-white/10">
+border-white/10"
+
+loading="lazy">
 
 </td>
 
@@ -1122,8 +1136,6 @@ hover:bg-blue-500/30
 transition"
 
 data-id="<?= $candidate["id"]; ?>"
-
-data-photo="<?= htmlspecialchars($candidate["photo"]); ?>"
 
 data-manifesto="<?= htmlspecialchars($candidate["manifesto"]); ?>"
 

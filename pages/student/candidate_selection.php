@@ -54,20 +54,12 @@ $query = "
 SELECT
 
     id,
-
     student_id,
-
     admission_no,
-
     full_name,
-
     department,
-
     year,
-
-    manifesto,
-
-    photo
+    manifesto
 
 FROM candidates
 
@@ -548,29 +540,31 @@ class="candidate-front glass absolute inset-0">
 
             <div class="candidate-photo relative overflow-hidden">
 
-                <img
+<img
 
-                src="../../uploads/candidates/<?php
+src="../../backend/candidate-photo.php?id=<?php
 
-                echo htmlspecialchars(
+echo (int) $candidate["id"];
 
-                $candidate["photo"]
+?>"
 
-                );
+alt="<?php
 
-                ?>"
+echo htmlspecialchars(
 
-                alt="<?php
+$candidate["full_name"],
 
-                echo htmlspecialchars(
+ENT_QUOTES,
 
-                $candidate["full_name"]
+"UTF-8"
 
-                );
+);
 
-                ?>"
+?>"
 
-                class="candidate-image w-full h-full object-cover">
+class="candidate-image w-full h-full object-cover"
+
+loading="lazy">
 
             </div>
 
