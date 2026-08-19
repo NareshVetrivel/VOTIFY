@@ -6,17 +6,22 @@
 
 "use strict";
 
+
 /* ==========================================================
    DOM READY
 ========================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const form = document.getElementById("adminLoginForm");
+    const form =
+        document.getElementById("adminLoginForm");
 
     if (!form) return;
 
-    form.addEventListener("submit", loginAdmin);
+    form.addEventListener(
+        "submit",
+        loginAdmin
+    );
 
     initializePasswordToggle();
 
@@ -33,15 +38,29 @@ async function loginAdmin(event) {
 
     clearErrors();
 
+
+    /* ======================================================
+       GET FORM VALUES
+    ====================================================== */
+
     const username =
-        document.getElementById("username").value.trim();
+        document
+            .getElementById("username")
+            .value
+            .trim();
 
     const password =
-        document.getElementById("password").value;
+        document
+            .getElementById("password")
+            .value;
+
 
     let valid = true;
 
-    /* Username */
+
+    /* ======================================================
+       USERNAME VALIDATION
+    ====================================================== */
 
     if (username === "") {
 
@@ -54,7 +73,10 @@ async function loginAdmin(event) {
 
     }
 
-    /* Password */
+
+    /* ======================================================
+       PASSWORD VALIDATION
+    ====================================================== */
 
     if (password === "") {
 
@@ -67,62 +89,318 @@ async function loginAdmin(event) {
 
     }
 
-    if (!valid) return;
 
-    const formData = new FormData();
+    /* ======================================================
+       STOP IF VALIDATION FAILS
+    ====================================================== */
 
-    formData.append("username", username);
+    if (!valid) {
 
-    formData.append("password", password);
+        return;
+
+    }
+
+
+    /* ======================================================
+       FORM DATA
+    ====================================================== */
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "username",
+        username
+    );
+
+    formData.append(
+        "password",
+        password
+    );
+
+
+    /* ======================================================
+       START LOADING STATE
+    ====================================================== */
+
+    setLoginLoading(true);
+
+
+    /* ======================================================
+       BACKEND LOGIN REQUEST
+    ====================================================== */
 
     try {
 
-        const response = await fetch(
+        const response =
+            await fetch(
 
-            "../../backend/admin/login.php",
+                "../../backend/admin/login.php",
 
-            {
+                {
+                    method: "POST",
+                    body: formData
+                }
 
-                method: "POST",
+            );
 
-                body: formData
 
-            }
+        /* ==================================================
+           PARSE RESPONSE
+        ================================================== */
 
-        );
+        const result =
+            await response.json();
 
-        const result = await response.json();
 
-        if (result.status === "success") {
+        /* ==================================================
+           LOGIN SUCCESS
+        ================================================== */
+
+        if (
+            result.status === "success"
+        ) {
+
+            /*
+             * Keep loading state active
+             * until dashboard redirect.
+             */
 
             showSuccessToast();
+
+
+            /*
+             * Existing redirect timing
+             * preserved.
+             */
 
             setTimeout(() => {
 
                 window.location.href =
-                "../admin/dashboard.php";
+                    "../admin/dashboard.php";
 
             }, 1800);
 
-        }
 
-        else {
-
-            showErrorToast(result.message);
+            return;
 
         }
+
+
+        /* ==================================================
+           LOGIN FAILED
+        ================================================== */
+
+        showErrorToast(
+            result.message ||
+            "Invalid Username or Password"
+        );
+
+
+        /*
+         * Allow another attempt.
+         */
+
+        setLoginLoading(false);
 
     }
 
+
+    /* ======================================================
+       SERVER / NETWORK ERROR
+    ====================================================== */
+
     catch (error) {
 
-        console.error(error);
+        console.error(
+            "Admin Login Error:",
+            error
+        );
+
 
         showErrorToast(
-
             "Server Connection Failed."
-
         );
+
+
+        /*
+         * Restore login button.
+         */
+
+        setLoginLoading(false);
+
+    }
+
+}
+
+
+/* ==========================================================
+   LOGIN BUTTON LOADING STATE
+========================================================== */
+
+function setLoginLoading(isLoading) {
+
+    const button =
+        document.getElementById(
+            "loginButton"
+        );
+
+    if (!button) return;
+
+
+    const icon =
+        document.getElementById(
+            "loginButtonIcon"
+        );
+
+    const text =
+        document.getElementById(
+            "loginButtonText"
+        );
+
+
+    /* ======================================================
+       START LOADING
+    ====================================================== */
+
+    if (isLoading) {
+
+        /* ----------------------------------------------
+           Disable button
+        ---------------------------------------------- */
+
+        button.disabled = true;
+
+
+        /* ----------------------------------------------
+           Accessibility
+        ---------------------------------------------- */
+
+        button.setAttribute(
+            "aria-busy",
+            "true"
+        );
+
+
+        /* ----------------------------------------------
+           FORCE NOT-ALLOWED CURSOR
+           
+           Do NOT use pointer-events:none here.
+           Otherwise the button cannot properly display
+           its own cursor state.
+        ---------------------------------------------- */
+
+        button.style.setProperty(
+            "cursor",
+            "not-allowed",
+            "important"
+        );
+
+
+        /* ----------------------------------------------
+           Visual disabled state
+        ---------------------------------------------- */
+
+        button.style.setProperty(
+            "opacity",
+            "0.65",
+            "important"
+        );
+
+
+        /* ----------------------------------------------
+           Prevent normal hover visual state
+        ---------------------------------------------- */
+
+        button.classList.add(
+            "opacity-65"
+        );
+
+
+        /* ----------------------------------------------
+           Loading spinner
+        ---------------------------------------------- */
+
+        if (icon) {
+
+            icon.className =
+                "ri-loader-4-line animate-spin text-lg";
+
+        }
+
+
+        /* ----------------------------------------------
+           Loading text
+        ---------------------------------------------- */
+
+        if (text) {
+
+            text.textContent =
+                "Logging in...";
+
+        }
+
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       STOP LOADING
+    ====================================================== */
+
+    button.disabled = false;
+
+
+    button.removeAttribute(
+        "aria-busy"
+    );
+
+
+    /* ----------------------------------------------
+       Restore cursor
+    ---------------------------------------------- */
+
+    button.style.removeProperty(
+        "cursor"
+    );
+
+
+    /* ----------------------------------------------
+       Restore opacity
+    ---------------------------------------------- */
+
+    button.style.removeProperty(
+        "opacity"
+    );
+
+
+    button.classList.remove(
+        "opacity-65"
+    );
+
+
+    /* ----------------------------------------------
+       Restore icon
+    ---------------------------------------------- */
+
+    if (icon) {
+
+        icon.className =
+            "ri-login-circle-line";
+
+    }
+
+
+    /* ----------------------------------------------
+       Restore text
+    ---------------------------------------------- */
+
+    if (text) {
+
+        text.textContent =
+            "Login Securely";
 
     }
 
@@ -136,30 +414,50 @@ async function loginAdmin(event) {
 function initializePasswordToggle() {
 
     const password =
-        document.getElementById("password");
+        document.getElementById(
+            "password"
+        );
 
     const toggle =
-        document.getElementById("togglePassword");
+        document.getElementById(
+            "togglePassword"
+        );
 
-    if (!password || !toggle) return;
+
+    if (
+        !password ||
+        !toggle
+    ) {
+
+        return;
+
+    }
+
 
     toggle.onclick = function () {
 
-        if (password.type === "password") {
+        if (
+            password.type ===
+            "password"
+        ) {
 
-            password.type = "text";
+            password.type =
+                "text";
+
 
             this.innerHTML =
-            '<i class="ri-eye-off-line text-xl"></i>';
+                '<i class="ri-eye-off-line text-xl"></i>';
 
         }
 
         else {
 
-            password.type = "password";
+            password.type =
+                "password";
+
 
             this.innerHTML =
-            '<i class="ri-eye-line text-xl"></i>';
+                '<i class="ri-eye-line text-xl"></i>';
 
         }
 
@@ -172,16 +470,25 @@ function initializePasswordToggle() {
    FIELD ERROR
 ========================================================== */
 
-function showFieldError(id, message) {
+function showFieldError(
+    id,
+    message
+) {
 
     const error =
         document.getElementById(id);
 
+
     if (!error) return;
 
-    error.innerText = message;
 
-    error.classList.remove("hidden");
+    error.innerText =
+        message;
+
+
+    error.classList.remove(
+        "hidden"
+    );
 
 }
 
@@ -193,16 +500,18 @@ function showFieldError(id, message) {
 function clearErrors() {
 
     document
+        .querySelectorAll(
+            "[id$='Error']"
+        )
+        .forEach(error => {
 
-    .querySelectorAll("[id$='Error']")
+            error.innerText = "";
 
-    .forEach(error => {
+            error.classList.add(
+                "hidden"
+            );
 
-        error.innerText = "";
-
-        error.classList.add("hidden");
-
-    });
+        });
 
 }
 
@@ -214,12 +523,16 @@ function clearErrors() {
 function showSuccessToast() {
 
     const toast =
-        document.getElementById("successToast");
+        document.getElementById(
+            "successToast"
+        );
+
+
+    if (!toast) return;
+
 
     toast.classList.remove(
-
         "translate-x-[120%]"
-
     );
 
 }
@@ -229,28 +542,44 @@ function showSuccessToast() {
    ERROR TOAST
 ========================================================== */
 
-function showErrorToast(message) {
+function showErrorToast(
+    message
+) {
 
     const toast =
-        document.getElementById("errorToast");
+        document.getElementById(
+            "errorToast"
+        );
 
     const text =
-        document.getElementById("errorToastMessage");
+        document.getElementById(
+            "errorToastMessage"
+        );
 
-    text.innerText = message;
+
+    if (
+        !toast ||
+        !text
+    ) {
+
+        return;
+
+    }
+
+
+    text.innerText =
+        message;
+
 
     toast.classList.remove(
-
         "translate-x-[120%]"
-
     );
+
 
     setTimeout(() => {
 
         toast.classList.add(
-
             "translate-x-[120%]"
-
         );
 
     }, 2500);
