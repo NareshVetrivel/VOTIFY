@@ -21,596 +21,594 @@
 
 <body class="bg-[#0B1020] text-white overflow-x-hidden min-h-screen flex flex-col">
 
-<div id="scrollProgress"
-class="fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 z-[9999]"
-style="width:0%">
-</div>
+    <!-- =========================================================
+         SCROLL PROGRESS
+    ========================================================== -->
 
-    <!-- Background Glow -->
-    <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div id="scrollProgress"
+        class="fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 z-[9999]"
+        style="width:0%">
+    </div>
+
+
+    <!-- =========================================================
+         BACKGROUND GLOW
+    ========================================================== -->
+
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
 
         <div class="absolute w-96 h-96 bg-blue-600/20 blur-[130px] rounded-full top-0 left-0"></div>
 
         <div class="absolute w-96 h-96 bg-pink-600/20 blur-[150px] rounded-full bottom-0 right-0"></div>
 
         <div class="absolute w-80 h-80 bg-purple-600/20 blur-[120px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-<div class="absolute left-1/4 top-1/4 w-[500px] h-[500px] bg-cyan-500/10 blur-[200px] rounded-full"></div>
 
-<div class="absolute right-1/4 bottom-1/4 w-[500px] h-[500px] bg-violet-500/10 blur-[200px] rounded-full"></div>
+        <div class="absolute left-1/4 top-1/4 w-[500px] h-[500px] bg-cyan-500/10 blur-[200px] rounded-full"></div>
+
+        <div class="absolute right-1/4 bottom-1/4 w-[500px] h-[500px] bg-violet-500/10 blur-[200px] rounded-full"></div>
+
     </div>
 
-    <!-- Header -->
-<div id="loader-container"></div>
 
-<div id="header"></div>
+    <!-- =========================================================
+         COMMON COMPONENTS
+    ========================================================== -->
 
-    <!-- ========================= -->
-    <!-- HERO SECTION -->
-    <!-- ========================= -->
+    <div id="loader-container"></div>
+
+    <div id="header"></div>
+
+
+    <!-- =========================================================
+         HERO SECTION
+    ========================================================== -->
 
     <section class="hero flex-1">
 
-        <div class="max-w-7xl mx-auto px-6 py-16">
-
-            <div class="grid lg:grid-cols-5 gap-8 items-center">
-                <!-- Left Side -->
-
-<div class="lg:col-span-3">
-
-<div class="glass hover-card fade-up rounded-3xl p-10 shadow-2xl">
-
-<div
-class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm">
-
-<i class="ri-shield-check-line no-float"></i>
-
-Secure • Transparent • Smart Digital Election
-
-</div>
-
-<h1 class="mt-8 text-5xl lg:text-7xl font-extrabold leading-tight">
-
-<span class="gradient-text">
-
-VOTIFY
-
-</span>
-
-<br>
-
-<span
-class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-
-Smart Online
-
-</span>
-
-<br>
-
-<span
-class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-
-Voting System
-
-</span>
-
-</h1>
-
-<p class="mt-8 text-slate-300 text-lg leading-9">
-
-Conduct secure, transparent and efficient department elections digitally.
-
-Designed exclusively for
-
-<b class="text-white">
-
-Sona College of Technology
-
-</b>
-
-with modern authentication, secure voting and real-time election management.
-
-</p>
-
-<div class="mt-10 flex flex-wrap gap-5">
-
-<a href="pages/student/student_register.php"
-class="btn-primary px-7 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-pink-500 font-semibold">
-
-<i class="ri-user-add-line no-float"></i>
-
-Student Registration
-
-</a>
-
-<a href="pages/student/student_login.php"
-class="px-7 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(59,130,246,.35)] transition-all duration-300">
-
-<i class="ri-login-box-line"></i>
-
-Student Login
-
-</a>
-
-<a href="pages/admin/login.html"
-class="px-7 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(236,72,153,.35)] transition-all duration-300">
-
-<i class="ri-admin-line"></i>
-
-Admin Login
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- Right Side -->
-
-<div class="lg:col-span-2">
-
-<div class="grid sm:grid-cols-2 lg:grid-cols-1 gap-6">
-
-<!-- Card 1 -->
-
-<div class="glass hover-card rounded-3xl p-6">
-
-<div class="text-blue-400 text-4xl">
-
-    <i class="ri-graduation-cap-line card-icon"></i>
-
-</div>
-
-<h3 class="mt-4 text-2xl font-bold">
-
-Student Portal
-
-</h3>
-
-<p class="mt-3 text-slate-400">
-
-Register, Login and Cast your vote securely during election.
-
-</p>
-
-</div>
-
-<!-- Card 2 -->
-
-<div class="glass hover-card rounded-3xl p-6">
-
-<div class="text-pink-400 text-4xl">
-
-<i class="ri-shield-user-line card-icon"></i>
-
-</div>
-
-<h3 class="mt-4 text-2xl font-bold">
-
-Admin Portal
-
-</h3>
-
-<p class="mt-3 text-slate-400">
-
-Manage candidates, approve students and control election workflow.
-
-</p>
-
-</div>
-
-<!-- Card 3 -->
-
-<div class="grid grid-cols-2 gap-6">
-
-<div class="glass hover-card rounded-3xl p-6 transition-all duration-500 cursor-pointer">
-
-<div class="text-green-400 text-3xl">
-
-<i class="ri-shield-check-line card-icon"></i>
-
-</div>
-
-<h2
-class="mt-3 text-5xl font-bold text-green-400"
-data-count="100">
-
-0
-
-</h2>
-
-<p class="mt-3 text-slate-300">
-
-Secure Voting
-
-</p>
-
-</div>
-
-<div class="glass hover-card rounded-3xl p-6 transition-all duration-500 cursor-pointer">
-
-<div class="text-blue-400 text-3xl">
-
-<i class="ri-time-line"></i>
-
-</div>
-
-<h2 class="mt-3 text-5xl font-bold text-blue-400">
-
-24/7
-
-</h2>
-
-<p class="mt-3 text-slate-300">
-
-System Access
-
-</p>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- ========================================================= -->
-<!-- ELECTION RULES -->
-<!-- ========================================================= -->
-
-<section class="py-20">
-
-    <div class="max-w-7xl mx-auto px-6">
-
-        <div class="text-center">
-
-            <span
-                class="px-5 py-2 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/20">
-
-                Election Guidelines
-
-            </span>
-
-            <h2 class="mt-6 text-4xl lg:text-5xl font-bold">
-
-                Election Rules &
-                <span
-                    class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    Regulations
-                </span>
-
-            </h2>
-
-            <p class="mt-5 text-slate-400 max-w-3xl mx-auto">
-
-                Every student must follow the election rules to ensure
-                a secure, transparent and fair voting process.
-
-            </p>
-
-        </div>
-
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-7 mt-14">
+        <div
+            class="max-w-7xl mx-auto px-6 py-16 max-md:px-4 max-md:py-8">
 
             <div
-                class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer">
+                class="grid lg:grid-cols-5 gap-8 items-center max-md:gap-5">
 
-                <div class="text-4xl text-green-400">
 
-                    <i class="ri-checkbox-circle-line"></i>
+                <!-- =================================================
+                     HERO LEFT
+                ================================================== -->
+
+                <div class="lg:col-span-3">
+
+                    <div
+                        class="glass hover-card fade-up rounded-3xl p-10 shadow-2xl
+                        max-md:rounded-2xl max-md:p-5">
+
+
+                        <!-- Badge -->
+
+                        <div
+                            class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-sm
+                            max-md:px-3 max-md:py-1.5 max-md:text-[11px] max-md:leading-4">
+
+                            <i class="ri-shield-check-line no-float"></i>
+
+                            Secure • Transparent • Smart Digital Election
+
+                        </div>
+
+
+                        <!-- Heading -->
+
+                        <h1
+                            class="mt-8 text-5xl lg:text-7xl font-extrabold leading-tight
+                            max-md:mt-5 max-md:text-4xl max-md:leading-[1.08]">
+
+                            <span class="gradient-text">
+
+                                VOTIFY
+
+                            </span>
+
+                            <br>
+
+                            <span
+                                class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+
+                                Smart Online
+
+                            </span>
+
+                            <br>
+
+                            <span
+                                class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+
+                                Voting System
+
+                            </span>
+
+                        </h1>
+
+
+                        <!-- Description -->
+
+                        <p
+                            class="mt-8 text-slate-300 text-lg leading-9
+                            max-md:mt-5 max-md:text-[14px] max-md:leading-6">
+
+                            Conduct secure, transparent and efficient department elections digitally.
+
+                            Designed exclusively for
+
+                            <b class="text-white">
+
+                                Sona College of Technology
+
+                            </b>
+
+                            with modern authentication, secure voting and real-time election management.
+
+                        </p>
+
+
+                        <!-- =================================================
+                             HERO BUTTONS
+                        ================================================== -->
+
+                        <div
+                            class="mt-10 flex flex-wrap gap-5
+                            max-md:mt-5 max-md:gap-2.5">
+
+                            <!-- Student Registration -->
+
+                            <a href="pages/student/student_register.php"
+                                class="btn-primary w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl bg-gradient-to-r from-blue-600 to-pink-500 font-semibold
+                                max-md:!w-full max-md:!h-[52px] max-md:px-4 max-md:text-[13px]">
+
+                                <i class="ri-user-add-line no-float"></i>
+
+                                Student Registration
+
+                            </a>
+
+
+                            <!-- Student Login -->
+
+                            <a href="pages/student/student_login.php"
+                                class="w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(59,130,246,.35)] transition-all duration-300
+                                max-md:!w-full max-md:!h-[52px] max-md:px-4 max-md:text-[13px]">
+
+                                <i class="ri-login-box-line"></i>
+
+                                Student Login
+
+                            </a>
+
+
+                            <!-- Admin Login -->
+
+                            <a href="pages/admin/login.html"
+                                class="w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(236,72,153,.35)] transition-all duration-300
+                                max-md:!w-full max-md:!h-[52px] max-md:px-4 max-md:text-[13px]">
+
+                                <i class="ri-admin-line"></i>
+
+                                Admin Login
+
+                            </a>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
-                <h3 class="mt-5 text-xl font-bold">
 
-                    One Student • One Vote
+                <!-- =================================================
+                     HERO RIGHT
+                ================================================== -->
 
-                </h3>
+                <div class="lg:col-span-2">
 
-                <p class="mt-3 text-slate-400">
+                    <div
+                        class="grid sm:grid-cols-2 lg:grid-cols-1 gap-6
+                        max-md:gap-4">
 
-                    Every registered student can vote only once.
 
-                </p>
+                        <!-- Student Portal -->
 
-            </div>
+                        <div
+                            class="glass hover-card rounded-3xl p-6
+                            max-md:rounded-2xl max-md:p-5">
 
-            <div
-                class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer">
+                            <div class="text-blue-400 text-4xl max-md:text-3xl">
 
-                <div class="text-4xl text-pink-400">
+                                <i class="ri-graduation-cap-line card-icon"></i>
 
-                    <i class="ri-lock-password-line"></i>
+                            </div>
+
+                            <h3
+                                class="mt-4 text-2xl font-bold
+                                max-md:mt-3 max-md:text-xl">
+
+                                Student Portal
+
+                            </h3>
+
+                            <p
+                                class="mt-3 text-slate-400
+                                max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                                Register, Login and Cast your vote securely during election.
+
+                            </p>
+
+                        </div>
+
+
+                        <!-- Admin Portal -->
+
+                        <div
+                            class="glass hover-card rounded-3xl p-6
+                            max-md:rounded-2xl max-md:p-5">
+
+                            <div class="text-pink-400 text-4xl max-md:text-3xl">
+
+                                <i class="ri-shield-user-line card-icon"></i>
+
+                            </div>
+
+                            <h3
+                                class="mt-4 text-2xl font-bold
+                                max-md:mt-3 max-md:text-xl">
+
+                                Admin Portal
+
+                            </h3>
+
+                            <p
+                                class="mt-3 text-slate-400
+                                max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                                Manage candidates, approve students and control election workflow.
+
+                            </p>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             STATISTICS
+                        ================================================== -->
+
+                        <div
+                            class="grid grid-cols-2 gap-6
+                            max-md:gap-3">
+
+
+                            <!-- Secure Voting -->
+
+                            <div
+                                class="glass hover-card rounded-3xl p-6 transition-all duration-500 cursor-pointer
+                                max-md:rounded-2xl max-md:p-4">
+
+                                <div
+                                    class="text-green-400 text-3xl max-md:text-2xl">
+
+                                    <i class="ri-shield-check-line card-icon"></i>
+
+                                </div>
+
+                                <h2
+                                    class="mt-3 text-5xl font-bold text-green-400
+                                    max-md:mt-2 max-md:text-4xl"
+                                    data-count="100">
+
+                                    0
+
+                                </h2>
+
+                                <p
+                                    class="mt-3 text-slate-300
+                                    max-md:mt-2 max-md:text-xs">
+
+                                    Secure Voting
+
+                                </p>
+
+                            </div>
+
+
+                            <!-- System Access -->
+
+                            <div
+                                class="glass hover-card rounded-3xl p-6 transition-all duration-500 cursor-pointer
+                                max-md:rounded-2xl max-md:p-4">
+
+                                <div
+                                    class="text-blue-400 text-3xl max-md:text-2xl">
+
+                                    <i class="ri-time-line"></i>
+
+                                </div>
+
+                                <h2
+                                    class="mt-3 text-5xl font-bold text-blue-400
+                                    max-md:mt-2 max-md:text-4xl"
+                                    data-count="24"
+                                    data-suffix="/7">
+
+                                    0
+
+                                </h2>
+
+                                <p
+                                    class="mt-3 text-slate-300
+                                    max-md:mt-2 max-md:text-xs">
+
+                                    System Access
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
 
                 </div>
-
-                <h3 class="mt-5 text-xl font-bold">
-
-                    Secure Authentication
-
-                </h3>
-
-                <p class="mt-3 text-slate-400">
-
-                    Login requires Admission Number, DOB, College Email
-                    and Password.
-
-                </p>
-
-            </div>
-
-            <div
-                class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer">
-
-                <div class="text-4xl text-blue-400">
-
-                    <i class="ri-eye-off-line"></i>
-
-                </div>
-
-                <h3 class="mt-5 text-xl font-bold">
-
-                    Anonymous Voting
-
-                </h3>
-
-                <p class="mt-3 text-slate-400">
-
-                    Your identity is never linked with your vote.
-
-                </p>
-
-            </div>
-
-            <div
-                class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer">
-
-                <div class="text-4xl text-yellow-400">
-
-                    <i class="ri-time-line"></i>
-
-                </div>
-
-                <h3 class="mt-5 text-xl font-bold">
-
-                    Vote Within Election Time
-
-                </h3>
-
-                <p class="mt-3 text-slate-400">
-
-                    Voting is allowed only while the election is active.
-
-                </p>
-
-            </div>
-
-            <div
-                class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer">
-
-                <div class="text-4xl text-purple-400">
-
-                    <i class="ri-shield-check-line"></i>
-
-                </div>
-
-                <h3 class="mt-5 text-xl font-bold">
-
-                    Fair Election
-
-                </h3>
-
-                <p class="mt-3 text-slate-400">
-
-                    Every vote is protected using secure authentication.
-
-                </p>
-
-            </div>
-
-            <div
-                class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer">
-
-                <div class="text-4xl text-cyan-400">
-
-                    <i class="ri-file-chart-line"></i>
-
-                </div>
-
-                <h3 class="mt-5 text-xl font-bold">
-
-                    Transparent Results
-
-                </h3>
-
-                <p class="mt-3 text-slate-400">
-
-                    Results are calculated automatically after election ends.
-
-                </p>
 
             </div>
 
         </div>
 
-    </div>
+    </section>
 
-</section>
 
-<!-- ========================================================= -->
-<!-- ABOUT -->
-<!-- ========================================================= -->
+    <!-- =========================================================
+         ELECTION RULES
+    ========================================================== -->
 
-<section class="py-24">
+    <section class="py-20 max-md:py-10">
 
-    <div class="max-w-7xl mx-auto px-6">
+        <div
+            class="max-w-7xl mx-auto px-6 max-md:px-4">
 
-        <div class="grid lg:grid-cols-2 gap-14 items-center">
 
-            <div>
+            <!-- Section Heading -->
+
+            <div class="text-center">
 
                 <span
-                    class="px-5 py-2 rounded-full bg-pink-500/20 text-pink-300">
+                    class="px-5 py-2 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/20
+                    max-md:px-4 max-md:py-2 max-md:text-xs">
 
-                    About VOTIFY
+                    Election Guidelines
 
                 </span>
 
-                <h2 class="mt-6 text-5xl font-bold">
+                <h2
+                    class="mt-6 text-4xl lg:text-5xl font-bold
+                    max-md:mt-5 max-md:text-3xl max-md:leading-tight">
 
-                    Modern Digital Election
-                    Platform
+                    Election Rules &
+
+                    <span
+                        class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+
+                        Regulations
+
+                    </span>
 
                 </h2>
 
-                <p class="mt-8 text-slate-400 leading-8">
+                <p
+                    class="mt-5 text-slate-400 max-w-3xl mx-auto
+                    max-md:mt-4 max-md:text-sm max-md:leading-6">
 
-                    VOTIFY is a secure online voting platform developed
-                    for Sona College of Technology to conduct department
-                    elections digitally.
-
-                    It provides secure authentication,
-                    transparent voting,
-                    candidate management,
-                    voter approval,
-                    live election status
-                    and result publication.
+                    Every student must follow the election rules to ensure
+                    a secure, transparent and fair voting process.
 
                 </p>
 
             </div>
 
-            <div
-                class="glass hover-card rounded-3xl p-10 transition-all duration-500 cursor-pointer">
 
-                <div class="grid grid-cols-2 gap-8">
-
-                    <div>
-
-                        <h2 class="text-5xl font-bold text-blue-400">
-
-                            100%
-
-                        </h2>
-
-                        <p class="mt-2 text-slate-400">
-
-                            Secure Voting
-
-                        </p>
-
-                    </div>
-
-                    <div>
-
-                        <h2 class="text-5xl font-bold text-pink-400">
-
-                            24/7
-
-                        </h2>
-
-                        <p class="mt-2 text-slate-400">
-
-                            Platform
-
-                        </p>
-
-                    </div>
-
-                    <div>
-
-                        <h2 class="text-5xl font-bold text-green-400">
-
-                            Easy
-
-                        </h2>
-
-                        <p class="mt-2 text-slate-400">
-
-                            Authentication
-
-                        </p>
-
-                    </div>
-
-                    <div>
-
-                        <h2 class="text-5xl font-bold text-purple-400">
-
-                            Live
-
-                        </h2>
-
-                        <p class="mt-2 text-slate-400">
-
-                            Election Status
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-<!-- ========================================================= -->
-<!-- CTA -->
-<!-- ========================================================= -->
-
-<section class="pb-24">
-
-    <div class="max-w-7xl mx-auto px-6">
-
-<div
-class="glow hover-card rounded-[35px] overflow-hidden bg-gradient-to-r from-blue-700 via-purple-700 to-pink-700 p-[2px] transition-all duration-500 cursor-pointer">
+            <!-- Rules Cards -->
 
             <div
-                class="bg-[#111827] rounded-[35px] px-10 py-16 text-center">
+                class="grid md:grid-cols-2 lg:grid-cols-3 gap-7 mt-14
+                max-md:gap-4 max-md:mt-8">
 
-                <h2 class="text-4xl font-bold">
 
-                    Ready to Participate in the Election?
-
-                </h2>
-
-                <p class="mt-6 text-slate-300 max-w-2xl mx-auto">
-
-                    Register now and become a part of the secure,
-                    transparent and digital election system.
-
-                </p>
+                <!-- Rule 1 -->
 
                 <div
-                    class="mt-10 flex flex-wrap justify-center gap-5">
+                    class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-5">
 
-                    <a href="pages/student/student_register.php"
-                        class="btn-primary px-7 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-pink-500 font-semibold">
+                    <div
+                        class="text-4xl text-green-400 max-md:text-3xl">
 
-                        Student Registration
+                        <i class="ri-checkbox-circle-line"></i>
 
-                    </a>
+                    </div>
 
-                    <a href="pages/student/student_login.php"
-                        class="px-7 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(59,130,246,.35)] transition-all duration-300">
+                    <h3
+                        class="mt-5 text-xl font-bold
+                        max-md:mt-4 max-md:text-lg">
 
-                        Student Login
+                        One Student • One Vote
 
-                    </a>
+                    </h3>
+
+                    <p
+                        class="mt-3 text-slate-400
+                        max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                        Every registered student can vote only once.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Rule 2 -->
+
+                <div
+                    class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-5">
+
+                    <div
+                        class="text-4xl text-pink-400 max-md:text-3xl">
+
+                        <i class="ri-lock-password-line"></i>
+
+                    </div>
+
+                    <h3
+                        class="mt-5 text-xl font-bold
+                        max-md:mt-4 max-md:text-lg">
+
+                        Secure Authentication
+
+                    </h3>
+
+                    <p
+                        class="mt-3 text-slate-400
+                        max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                        Login requires Admission Number, DOB, College Email
+                        and Password.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Rule 3 -->
+
+                <div
+                    class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-5">
+
+                    <div
+                        class="text-4xl text-blue-400 max-md:text-3xl">
+
+                        <i class="ri-eye-off-line"></i>
+
+                    </div>
+
+                    <h3
+                        class="mt-5 text-xl font-bold
+                        max-md:mt-4 max-md:text-lg">
+
+                        Anonymous Voting
+
+                    </h3>
+
+                    <p
+                        class="mt-3 text-slate-400
+                        max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                        Your identity is never linked with your vote.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Rule 4 -->
+
+                <div
+                    class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-5">
+
+                    <div
+                        class="text-4xl text-yellow-400 max-md:text-3xl">
+
+                        <i class="ri-time-line"></i>
+
+                    </div>
+
+                    <h3
+                        class="mt-5 text-xl font-bold
+                        max-md:mt-4 max-md:text-lg">
+
+                        Vote Within Election Time
+
+                    </h3>
+
+                    <p
+                        class="mt-3 text-slate-400
+                        max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                        Voting is allowed only while the election is active.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Rule 5 -->
+
+                <div
+                    class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-5">
+
+                    <div
+                        class="text-4xl text-purple-400 max-md:text-3xl">
+
+                        <i class="ri-shield-check-line"></i>
+
+                    </div>
+
+                    <h3
+                        class="mt-5 text-xl font-bold
+                        max-md:mt-4 max-md:text-lg">
+
+                        Fair Election
+
+                    </h3>
+
+                    <p
+                        class="mt-3 text-slate-400
+                        max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                        Every vote is protected using secure authentication.
+
+                    </p>
+
+                </div>
+
+
+                <!-- Rule 6 -->
+
+                <div
+                    class="glass hover-card rounded-3xl p-7 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-5">
+
+                    <div
+                        class="text-4xl text-cyan-400 max-md:text-3xl">
+
+                        <i class="ri-file-chart-line"></i>
+
+                    </div>
+
+                    <h3
+                        class="mt-5 text-xl font-bold
+                        max-md:mt-4 max-md:text-lg">
+
+                        Transparent Results
+
+                    </h3>
+
+                    <p
+                        class="mt-3 text-slate-400
+                        max-md:mt-2 max-md:text-sm max-md:leading-6">
+
+                        Results are calculated automatically after election ends.
+
+                    </p>
 
                 </div>
 
@@ -618,22 +616,270 @@ class="glow hover-card rounded-[35px] overflow-hidden bg-gradient-to-r from-blue
 
         </div>
 
-    </div>
+    </section>
 
-</section>
 
-<!-- Footer -->
+    <!-- =========================================================
+         ABOUT
+    ========================================================== -->
 
-<div id="footer"></div>
+    <section class="py-24 max-md:py-10">
 
-<script src="assets/js/app.js"></script>
+        <div
+            class="max-w-7xl mx-auto px-6 max-md:px-4">
 
-<button
-id="backToTop"
-class="hidden fixed bottom-6 right-6 w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-pink-500 text-white shadow-lg hover:scale-110 transition-all z-50">
+            <div
+                class="grid lg:grid-cols-2 gap-14 items-center
+                max-md:gap-7">
 
-<i class="ri-arrow-up-line"></i>
 
-</button>
+                <!-- About Content -->
+
+                <div>
+
+                    <span
+                        class="px-5 py-2 rounded-full bg-pink-500/20 text-pink-300
+                        max-md:px-4 max-md:py-2 max-md:text-xs">
+
+                        About VOTIFY
+
+                    </span>
+
+                    <h2
+                        class="mt-6 text-5xl font-bold
+                        max-md:mt-5 max-md:text-3xl max-md:leading-tight">
+
+                        Modern Digital Election
+                        Platform
+
+                    </h2>
+
+                    <p
+                        class="mt-8 text-slate-400 leading-8
+                        max-md:mt-5 max-md:text-sm max-md:leading-7">
+
+                        VOTIFY is a secure online voting platform developed
+                        for Sona College of Technology to conduct department
+                        elections digitally.
+
+                        It provides secure authentication,
+                        transparent voting,
+                        candidate management,
+                        voter approval,
+                        live election status
+                        and result publication.
+
+                    </p>
+
+                </div>
+
+
+                <!-- About Statistics -->
+
+                <div
+                    class="glass hover-card rounded-3xl p-10 transition-all duration-500 cursor-pointer
+                    max-md:rounded-2xl max-md:p-6">
+
+                    <div
+                        class="grid grid-cols-2 gap-8
+                        max-md:gap-5">
+
+                        <div>
+
+                            <h2
+                                class="text-5xl font-bold text-blue-400
+                                max-md:text-3xl">
+
+                                100%
+
+                            </h2>
+
+                            <p
+                                class="mt-2 text-slate-400
+                                max-md:mt-1 max-md:text-xs">
+
+                                Secure Voting
+
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <h2
+                                class="text-5xl font-bold text-pink-400
+                                max-md:text-3xl">
+
+                                24/7
+
+                            </h2>
+
+                            <p
+                                class="mt-2 text-slate-400
+                                max-md:mt-1 max-md:text-xs">
+
+                                Platform
+
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <h2
+                                class="text-5xl font-bold text-green-400
+                                max-md:text-3xl">
+
+                                Easy
+
+                            </h2>
+
+                            <p
+                                class="mt-2 text-slate-400
+                                max-md:mt-1 max-md:text-xs">
+
+                                Authentication
+
+                            </p>
+
+                        </div>
+
+
+                        <div>
+
+                            <h2
+                                class="text-5xl font-bold text-purple-400
+                                max-md:text-3xl">
+
+                                Live
+
+                            </h2>
+
+                            <p
+                                class="mt-2 text-slate-400
+                                max-md:mt-1 max-md:text-xs">
+
+                                Election Status
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================================
+         CTA
+    ========================================================== -->
+
+    <section class="pb-24 max-md:pb-10">
+
+        <div
+            class="max-w-7xl mx-auto px-6 max-md:px-4">
+
+            <div
+                class="glow hover-card rounded-[35px] overflow-hidden bg-gradient-to-r from-blue-700 via-purple-700 to-pink-700 p-[2px] transition-all duration-500 cursor-pointer
+                max-md:rounded-3xl">
+
+                <div
+                    class="bg-[#111827] rounded-[35px] px-10 py-16 text-center
+                    max-md:rounded-3xl max-md:px-5 max-md:py-9">
+
+                    <h2
+                        class="text-4xl font-bold
+                        max-md:text-2xl max-md:leading-tight">
+
+                        Ready to Participate in the Election?
+
+                    </h2>
+
+                    <p
+                        class="mt-6 text-slate-300 max-w-2xl mx-auto
+                        max-md:mt-4 max-md:text-sm max-md:leading-6">
+
+                        Register now and become a part of the secure,
+                        transparent and digital election system.
+
+                    </p>
+
+
+                    <div
+                        class="mt-10 flex flex-wrap justify-center gap-5
+                        max-md:mt-6 max-md:gap-3">
+
+
+                        <!-- Student Registration -->
+
+                        <a href="pages/student/student_register.php"
+                            class="btn-primary w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl bg-gradient-to-r from-blue-600 to-pink-500 font-semibold
+                            max-md:!w-full max-md:!h-[56px] max-md:text-sm">
+
+                            Student Registration
+
+                        </a>
+
+
+                        <!-- Student Login -->
+
+                        <a href="pages/student/student_login.php"
+                            class="w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(59,130,246,.35)] transition-all duration-300
+                            max-md:!w-full max-md:!h-[56px] max-md:text-sm">
+
+                            Student Login
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================================
+         FOOTER
+    ========================================================== -->
+
+    <div id="footer"></div>
+
+
+    <!-- =========================================================
+         BACK TO TOP
+    ========================================================== -->
+
+    <button
+        id="backToTop"
+        type="button"
+        aria-label="Back to top"
+        title="Back to top"
+        class="hidden fixed bottom-6 right-6 w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-pink-500 text-white shadow-lg hover:scale-110 transition-all z-50
+        max-md:bottom-4 max-md:right-4 max-md:w-11 max-md:h-11">
+
+        <i class="ri-arrow-up-line" aria-hidden="true"></i>
+
+    </button>
+
+
+    <!-- =========================================================
+         JAVASCRIPT
+    ========================================================== -->
+
+    <script src="assets/js/app.js"></script>
+
 </body>
+
 </html>

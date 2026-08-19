@@ -435,11 +435,16 @@ function initializeCounters() {
 
             const counter = entry.target;
 
-            const target = Number(counter.dataset.count);
+            const target =
+                Number(counter.dataset.count);
+
+            const suffix =
+                counter.dataset.suffix || "";
 
             let current = 0;
 
-            const increment = Math.ceil(target / 80);
+            const increment =
+                Math.ceil(target / 80);
 
             const timer = setInterval(() => {
 
@@ -453,7 +458,8 @@ function initializeCounters() {
 
                 }
 
-                counter.innerText = current;
+                counter.innerText =
+                    current + suffix;
 
             }, 20);
 
