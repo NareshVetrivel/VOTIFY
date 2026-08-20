@@ -77,10 +77,45 @@ async function loadComponent(id, file) {
 
 async function initializeComponents() {
 
-    const basePath =
-        window.location.pathname.includes("/pages/")
-            ? "../../"
-            : "";
+    const path =
+        window.location.pathname;
+
+    let basePath = "";
+
+    /*
+       ROOT LEVEL PAGES
+       Example:
+       /VOTIFY/pages/database-unavailable.php
+    */
+
+    if (
+        path.includes("/pages/")
+        &&
+        !path.includes("/pages/admin/")
+        &&
+        !path.includes("/pages/student/")
+    ) {
+
+        basePath = "../";
+
+    }
+
+    /*
+       NESTED PAGES
+       Example:
+       /VOTIFY/pages/admin/dashboard.php
+       /VOTIFY/pages/student/thank_you.php
+    */
+
+    else if (
+        path.includes("/pages/admin/")
+        ||
+        path.includes("/pages/student/")
+    ) {
+
+        basePath = "../../";
+
+    }
 
     await loadComponent(
         "header",
@@ -102,22 +137,67 @@ async function initializeComponents() {
 async function initializeLoader() {
 
     const loaderContainer =
-        document.getElementById("loader-container");
+        document.getElementById(
+            "loader-container"
+        );
 
     if (!loaderContainer) return;
 
-    const basePath =
-        window.location.pathname.includes("/pages/")
-            ? "../../"
-            : "";
 
-    fetch(basePath + "components/loader.html")
+    const path =
+        window.location.pathname;
+
+    let basePath = "";
+
+
+    /*
+       ROOT LEVEL PAGES
+       Example:
+       /VOTIFY/pages/database-unavailable.php
+    */
+
+    if (
+        path.includes("/pages/")
+        &&
+        !path.includes("/pages/admin/")
+        &&
+        !path.includes("/pages/student/")
+    ) {
+
+        basePath = "../";
+
+    }
+
+
+    /*
+       NESTED PAGES
+       Example:
+       /VOTIFY/pages/admin/dashboard.php
+       /VOTIFY/pages/student/thank_you.php
+    */
+
+    else if (
+        path.includes("/pages/admin/")
+        ||
+        path.includes("/pages/student/")
+    ) {
+
+        basePath = "../../";
+
+    }
+
+
+    fetch(
+        basePath + "components/loader.html"
+    )
 
         .then(response => {
 
             if (!response.ok) {
 
-                throw new Error("Loader not found");
+                throw new Error(
+                    "Loader not found"
+                );
 
             }
 
@@ -127,7 +207,8 @@ async function initializeLoader() {
 
         .then(html => {
 
-            loaderContainer.innerHTML = html;
+            loaderContainer.innerHTML =
+                html;
 
             showLoader();
 
