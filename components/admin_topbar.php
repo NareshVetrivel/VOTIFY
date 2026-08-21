@@ -9,6 +9,28 @@ if (!isset($pageTitle)) {
     $pageTitle = "Dashboard";
 
 }
+
+
+/* ==========================================================
+   ADMIN SESSION DATA
+========================================================== */
+
+$adminUsername =
+    $_SESSION["admin_username"] ?? "Administrator";
+
+$adminRole =
+    $_SESSION["admin_role"] ?? "Admin";
+
+
+/* ==========================================================
+   ROLE DISPLAY LABEL
+========================================================== */
+
+$roleLabel =
+    ($adminRole === "Super Admin")
+        ? "Super Admin"
+        : "Admin";
+
 ?>
 
 <!-- ==========================================================
@@ -49,11 +71,17 @@ justify-between">
 
     gap-5">
 
-        <!-- Mobile Menu -->
+        <!-- ==================================
+        MOBILE MENU
+        =================================== -->
 
         <button
 
         id="menuButton"
+
+        type="button"
+
+        aria-label="Open Sidebar"
 
         class="
 
@@ -87,7 +115,10 @@ justify-between">
 
         </button>
 
-        <!-- Page Title -->
+
+        <!-- ==================================
+        PAGE TITLE
+        =================================== -->
 
         <div>
 
@@ -103,21 +134,47 @@ justify-between">
 
                 <?php
 
-                echo $pageTitle;
+                echo htmlspecialchars(
+                    $pageTitle,
+                    ENT_QUOTES,
+                    "UTF-8"
+                );
 
                 ?>
 
             </h1>
 
-            <p
+
+            <!-- ==================================
+            WELCOME MESSAGE
+            =================================== -->
+
+            <div
 
             class="
 
             mt-2
 
-            text-slate-400">
+            flex
 
-                Welcome back,
+            flex-wrap
+
+            items-center
+
+            gap-2">
+
+                <p
+
+                class="
+
+                text-slate-400">
+
+                    Welcome back,
+
+                </p>
+
+
+                <!-- Admin Username -->
 
                 <span
 
@@ -129,65 +186,146 @@ justify-between">
 
                     <?php
 
-                    echo htmlspecialchars($_SESSION["admin_username"]);
+                    echo htmlspecialchars(
+                        $adminUsername,
+                        ENT_QUOTES,
+                        "UTF-8"
+                    );
 
                     ?>
 
                 </span>
 
-            </p>
+
+                <!-- Role Badge -->
+
+                <span
+
+                class="
+
+                inline-flex
+
+                items-center
+
+                gap-1.5
+
+                px-3
+
+                py-1
+
+                rounded-full
+
+                text-xs
+
+                font-semibold
+
+                border
+
+                <?php
+
+                if ($adminRole === "Super Admin") {
+
+                    echo "
+                    bg-purple-500/10
+                    border-purple-500/30
+                    text-purple-300
+                    ";
+
+                }
+
+                else {
+
+                    echo "
+                    bg-blue-500/10
+                    border-blue-500/30
+                    text-blue-300
+                    ";
+
+                }
+
+                ?>">
+
+                    <i
+
+                    class="<?php
+
+                    echo ($adminRole === "Super Admin")
+
+                        ? "ri-shield-star-line"
+
+                        : "ri-shield-user-line";
+
+                    ?>">
+
+                    </i>
+
+                    <?php
+
+                    echo htmlspecialchars(
+                        $roleLabel,
+                        ENT_QUOTES,
+                        "UTF-8"
+                    );
+
+                    ?>
+
+                </span>
+
+            </div>
 
         </div>
 
     </div>
 
+
     <!-- ======================================
-    RIGHT
+    RIGHT - LOGOUT
     ======================================= -->
 
-<a
+    <a
 
-href="../../backend/admin/logout.php"
+    href="../../backend/admin/logout.php"
 
-id="desktopLogout"
+    id="desktopLogout"
 
-class="
+    class="
 
-hidden
+    hidden
 
-md:flex
+    md:flex
 
-items-center
+    items-center
 
-gap-3
+    gap-3
 
-px-6
+    px-6
 
-py-3
+    py-3
 
-rounded-2xl
+    rounded-2xl
 
-font-semibold
+    font-semibold
 
-text-white
+    text-white
 
-bg-gradient-to-r
+    bg-gradient-to-r
 
-from-red-500
+    from-red-500
 
-via-red-600
+    via-red-600
 
-to-pink-600
+    to-pink-600
 
-hover:scale-105
+    hover:scale-105
 
-transition-all
+    transition-all
 
-duration-300
+    duration-300
 
-shadow-xl
+    shadow-xl
 
-shadow-red-500/30">
+    shadow-red-500/30">
+
         <i
 
         class="
@@ -203,6 +341,7 @@ shadow-red-500/30">
     </a>
 
 </div>
+
 
 <!-- ==========================================================
 DESKTOP LOGOUT MODAL
@@ -230,104 +369,150 @@ backdrop-blur-sm
 
 z-[9999]">
 
-<div
+    <div
 
-class="
+    class="
 
-glass
+    glass
 
-rounded-3xl
+    rounded-3xl
 
-w-[420px]
+    w-[420px]
 
-max-w-[90%]
+    max-w-[90%]
 
-p-8">
+    p-8">
 
-<div class="text-center">
+        <div
 
-<i
+        class="text-center">
 
-class="ri-logout-box-r-line
+            <!-- Logout Icon -->
 
-text-6xl
+            <i
 
-text-red-400">
+            class="
 
-</i>
+            ri-logout-box-r-line
 
-<h2
+            text-6xl
 
-class="text-3xl font-bold mt-5">
+            text-red-400">
 
-Logout
+            </i>
 
-</h2>
 
-<p
+            <!-- Title -->
 
-class="text-slate-400 mt-3">
+            <h2
 
-Are you sure you want to logout?
+            class="
 
-</p>
+            text-3xl
 
-<div
+            font-bold
 
-class="flex gap-4 mt-8">
+            mt-5">
 
-<button
+                Logout
 
-id="cancelLogout"
+            </h2>
 
-class="
 
-flex-1
+            <!-- Description -->
 
-py-4
+            <p
 
-rounded-2xl
+            class="
 
-bg-white/10
+            text-slate-400
 
-hover:bg-white/20">
+            mt-3">
 
-Cancel
+                Are you sure you want to logout?
 
-</button>
+            </p>
 
-<a
 
-href="../../backend/admin/logout.php"
+            <!-- ==================================
+            ACTION BUTTONS
+            =================================== -->
 
-class="
+            <div
 
-flex-1
+            class="
 
-text-center
+            flex
 
-py-4
+            gap-4
 
-rounded-2xl
+            mt-8">
 
-font-semibold
+                <!-- Cancel -->
 
-text-white
+                <button
 
-bg-gradient-to-r
+                id="cancelLogout"
 
-from-red-500
+                type="button"
 
-to-pink-600">
+                class="
 
-Logout
+                flex-1
 
-</a>
+                py-4
 
-</div>
+                rounded-2xl
 
-</div>
+                bg-white/10
 
-</div>
+                hover:bg-white/20
+
+                transition-all">
+
+                    Cancel
+
+                </button>
+
+
+                <!-- Confirm Logout -->
+
+                <a
+
+                href="../../backend/admin/logout.php"
+
+                class="
+
+                flex-1
+
+                text-center
+
+                py-4
+
+                rounded-2xl
+
+                font-semibold
+
+                text-white
+
+                bg-gradient-to-r
+
+                from-red-500
+
+                to-pink-600
+
+                hover:scale-[1.02]
+
+                transition-all">
+
+                    Logout
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>

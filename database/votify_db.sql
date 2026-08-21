@@ -248,3 +248,85 @@ CREATE TABLE votes (
 ALTER TABLE candidates
 MODIFY COLUMN photo MEDIUMBLOB NOT NULL,
 ADD COLUMN photo_type VARCHAR(50) NOT NULL AFTER photo;
+
+
+/* ==========================================================
+   VOTIFY
+   Admin Role & Access Migration
+========================================================== */
+
+
+/* ==========================================================
+   1. ADD EMAIL
+========================================================== */
+
+ALTER TABLE admins
+ADD COLUMN email VARCHAR(150) NULL
+AFTER username;
+
+
+/* ==========================================================
+   2. ADD ROLE
+========================================================== */
+
+ALTER TABLE admins
+ADD COLUMN role ENUM(
+    'Super Admin',
+    'Admin'
+)
+NOT NULL DEFAULT 'Admin'
+AFTER password;
+
+
+/* ==========================================================
+   3. ADD ACCOUNT STATUS
+========================================================== */
+
+ALTER TABLE admins
+ADD COLUMN is_active TINYINT(1)
+NOT NULL DEFAULT 1
+AFTER role;
+
+
+/* ==========================================================
+   4. ADD LAST LOGIN TIME
+========================================================== */
+
+ALTER TABLE admins
+ADD COLUMN last_login DATETIME NULL
+AFTER is_active;
+
+
+/* ==========================================================
+   5. ADD LAST LOGIN IP
+========================================================== */
+
+ALTER TABLE admins
+ADD COLUMN last_login_ip VARCHAR(45) NULL
+AFTER last_login;
+
+
+/* ==========================================================
+   6. MAKE EMAIL UNIQUE
+========================================================== */
+
+ALTER TABLE admins
+ADD UNIQUE KEY unique_admin_email (email);
+
+
+/* ==========================================================
+   7. CHECK UPDATED STRUCTURE
+========================================================== */
+
+DESCRIBE admins;
+
+SELECT
+    id,
+    username,
+    email,
+    role,
+    is_active,
+    last_login,
+    last_login_ip,
+    created_at
+FROM admins;

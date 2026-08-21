@@ -4,7 +4,31 @@
    Admin Sidebar
 ========================================================== */
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+
+/* ==========================================================
+   CURRENT PAGE
+========================================================== */
+
 $currentPage = basename($_SERVER["PHP_SELF"]);
+
+
+/* ==========================================================
+   ADMIN ROLE
+========================================================== */
+
+$adminRole = $_SESSION["admin_role"] ?? "Admin";
+
+
+/* ==========================================================
+   SUPER ADMIN CHECK
+========================================================== */
+
+$isSuperAdmin = ($adminRole === "Super Admin");
+
 ?>
 
 <!-- ==========================================================
@@ -49,46 +73,54 @@ LOGO
 
 <div class="relative px-8 py-8 border-b border-white/10">
 
-    <!-- Mobile Close -->
+    <!-- ==========================================
+    MOBILE CLOSE
+    ========================================== -->
 
     <div
     class="flex justify-end lg:hidden mb-4">
 
-<button
-    id="closeSidebar"
-    type="button"
-    aria-label="Close Sidebar"
-    class="
-    absolute
-    top-5
-    right-5
-    z-[9999]
+        <button
+        id="closeSidebar"
+        type="button"
+        aria-label="Close Sidebar"
 
-    flex
-    items-center
-    justify-center
+        class="
+        absolute
+        top-5
+        right-5
+        z-[9999]
 
-    w-11
-    h-11
+        flex
+        items-center
+        justify-center
 
-    rounded-xl
+        w-11
+        h-11
 
-    bg-white/10
+        rounded-xl
 
-    border
-    border-white/20
+        bg-white/10
 
-    text-white
+        border
+        border-white/20
 
-    hover:bg-red-500/30
+        text-white
 
-    transition-all">
+        hover:bg-red-500/30
 
-    <i class="ri-close-line text-2xl pointer-events-none"></i>
+        transition-all">
 
-</button>
+            <i class="ri-close-line text-2xl pointer-events-none"></i>
+
+        </button>
 
     </div>
+
+
+    <!-- ==========================================
+    VOTIFY LOGO
+    ========================================== -->
 
     <h2
     class="text-4xl font-bold gradient-text">
@@ -96,6 +128,11 @@ LOGO
         VOTIFY
 
     </h2>
+
+
+    <!-- ==========================================
+    ADMINISTRATION PANEL
+    ========================================== -->
 
     <p
     class="text-slate-400 mt-2">
@@ -106,6 +143,7 @@ LOGO
 
 </div>
 
+
 <!-- ==========================================
 MENU
 ========================================== -->
@@ -113,7 +151,6 @@ MENU
 <nav
 
 class="
-
 flex-1
 
 px-5
@@ -124,140 +161,241 @@ space-y-3
 
 overflow-y-auto">
 
-<!-- Dashboard -->
+
+<!-- ==========================================
+DASHBOARD
+========================================== -->
 
 <a
 
 href="dashboard.php"
 
-class="sidebar-link <?php echo ($currentPage=="dashboard.php") ? "active" : ""; ?>">
+class="
+sidebar-link
+<?php echo ($currentPage === "dashboard.php") ? "active" : ""; ?>">
 
-<i class="ri-dashboard-line"></i>
+    <i class="ri-dashboard-line"></i>
 
-<span>
+    <span>
 
-Dashboard
+        Dashboard
 
-</span>
+    </span>
 
 </a>
 
-<!-- Requests -->
+
+<!-- ==========================================
+VOTER REQUESTS
+========================================== -->
 
 <a
 
 href="requests.php"
 
-class="sidebar-link <?php echo ($currentPage=="requests.php") ? "active" : ""; ?>">
+class="
+sidebar-link
+<?php echo ($currentPage === "requests.php") ? "active" : ""; ?>">
 
-<i class="ri-user-follow-line"></i>
+    <i class="ri-user-follow-line"></i>
 
-<span>
+    <span>
 
-Voters Requests
+        Voters Requests
 
-</span>
+    </span>
 
 </a>
 
-<!-- Voters -->
+
+<!-- ==========================================
+VOTERS MANAGEMENT
+========================================== -->
 
 <a
 
 href="voters.php"
 
-class="sidebar-link <?php echo ($currentPage=="voters.php") ? "active" : ""; ?>">
+class="
+sidebar-link
+<?php echo ($currentPage === "voters.php") ? "active" : ""; ?>">
 
-<i class="ri-team-line"></i>
+    <i class="ri-team-line"></i>
 
-<span>
+    <span>
 
-Voters Management
+        Voters Management
 
-</span>
+    </span>
 
 </a>
 
-<!-- Candidates -->
+
+<!-- ==========================================
+CANDIDATE MANAGEMENT
+========================================== -->
 
 <a
 
 href="candidates.php"
 
-class="sidebar-link <?php echo ($currentPage=="candidates.php") ? "active" : ""; ?>">
+class="
+sidebar-link
+<?php echo ($currentPage === "candidates.php") ? "active" : ""; ?>">
 
-<i class="ri-award-line"></i>
+    <i class="ri-award-line"></i>
 
-<span>
+    <span>
 
-Candidate Management
+        Candidate Management
 
-</span>
+    </span>
 
 </a>
 
-<!-- Canvassing -->
+
+<!-- ==========================================
+CANVASSING REPORTS
+========================================== -->
 
 <a
 
 href="canvassing.php"
 
-class="sidebar-link <?php echo ($currentPage=="canvassing.php") ? "active" : ""; ?>">
+class="
+sidebar-link
+<?php echo ($currentPage === "canvassing.php") ? "active" : ""; ?>">
 
-<i class="ri-megaphone-line"></i>
+    <i class="ri-megaphone-line"></i>
 
-<span>
+    <span>
 
-Canvassing Reports
+        Canvassing Reports
 
-</span>
-
-</a>
-
-<!-- History -->
-
-<a
-
-href="history.php"
-
-class="sidebar-link <?php echo ($currentPage=="history.php") ? "active" : ""; ?>">
-
-<i class="ri-history-line"></i>
-
-<span>
-
-History Log
-
-</span>
+    </span>
 
 </a>
 
-<!-- About -->
 
-<a
+<!-- ==========================================
+SUPER ADMIN ONLY
+HISTORY LOG
+========================================== -->
 
-href="about.php"
+<?php if ($isSuperAdmin): ?>
 
-class="sidebar-link <?php echo ($currentPage=="about.php") ? "active" : ""; ?>">
+    <div
+    class="
+    pt-4
+    mt-4
 
-<i class="ri-information-line"></i>
+    border-t
+    border-white/10">
 
-<span>
+        <p
+        class="
+        px-4
+        mb-3
 
-About Us
+        text-[10px]
 
-</span>
+        uppercase
+        tracking-[0.2em]
 
-</a>
+        font-semibold
+
+        text-slate-500">
+
+            System Control
+
+        </p>
+
+
+        <!-- HISTORY -->
+
+        <a
+
+        href="history.php"
+
+        class="
+        sidebar-link
+        <?php echo ($currentPage === "history.php") ? "active" : ""; ?>">
+
+            <i class="ri-history-line"></i>
+
+            <span>
+
+                History Log
+
+            </span>
+
+            <!-- SUPER ADMIN INDICATOR -->
+
+            <i
+            class="
+            ri-shield-star-fill
+
+            ml-auto
+
+            text-xs
+
+            text-purple-400">
+
+            </i>
+
+        </a>
+
+    </div>
+
+<?php endif; ?>
+
+
+<!-- ==========================================
+ABOUT
+========================================== -->
+
+<div
+class="
+pt-4
+mt-4
+
+border-t
+border-white/10">
+
+    <a
+
+    href="about.php"
+
+    class="
+    sidebar-link
+    <?php echo ($currentPage === "about.php") ? "active" : ""; ?>">
+
+        <i class="ri-information-line"></i>
+
+        <span>
+
+            About Us
+
+        </span>
+
+    </a>
+
+</div>
+
 
 </nav>
+
 
 <!-- ==========================================
 MOBILE LOGOUT
 ========================================== -->
 
 <div
-class="p-5 border-t border-white/10">
+class="
+p-5
+
+border-t
+border-white/10">
 
     <a
 
@@ -270,9 +408,7 @@ class="p-5 border-t border-white/10">
     flex
 
     items-center
-
     justify-center
-
     gap-3
 
     w-full
@@ -288,9 +424,7 @@ class="p-5 border-t border-white/10">
     bg-gradient-to-r
 
     from-red-500
-
     via-red-600
-
     to-pink-600
 
     hover:scale-105

@@ -14,13 +14,52 @@ header("Content-Type: application/json");
    SESSION PROTECTION
 ========================================================== */
 
-if (!isset($_SESSION["admin_id"])) {
+if (
+    !isset($_SESSION["admin_id"]) ||
+    !isset($_SESSION["admin_role"])
+) {
+
+    http_response_code(401);
 
     echo json_encode([
 
         "success" => false,
 
-        "message" => "Unauthorized"
+        "message" => "Unauthorized access."
+
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   SUPER ADMIN AUTHORIZATION
+========================================================== */
+
+/*
+ * Election status is a critical system-level operation.
+ *
+ * Only Super Admin is allowed to:
+ * - Start election
+ * - Stop election
+ * - Change election status
+ *
+ * This backend validation is important because hiding
+ * buttons in the frontend alone is not secure.
+ */
+
+if ($_SESSION["admin_role"] !== "Super Admin") {
+
+    http_response_code(403);
+
+    echo json_encode([
+
+        "success" => false,
+
+        "message" =>
+            "Access denied. Only the Super Admin can control the election."
 
     ]);
 
@@ -49,15 +88,15 @@ require_once "log_activity.php";
    REQUEST METHOD
 ========================================================== */
 
-if (
-    $_SERVER["REQUEST_METHOD"] !== "POST"
-) {
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+
+    http_response_code(405);
 
     echo json_encode([
 
         "success" => false,
 
-        "message" => "Invalid Request"
+        "message" => "Invalid request method."
 
     ]);
 
@@ -70,8 +109,7 @@ if (
    GET STATUS
 ========================================================== */
 
-$status =
-    $_POST["status"] ?? "";
+$status = trim($_POST["status"] ?? "");
 
 
 /* ==========================================================
@@ -87,19 +125,15 @@ $allowed = [
 ];
 
 
-if (
-    !in_array(
-        $status,
-        $allowed,
-        true
-    )
-) {
+if (!in_array($status, $allowed, true)) {
+
+    http_response_code(400);
 
     echo json_encode([
 
         "success" => false,
 
-        "message" => "Invalid Status"
+        "message" => "Invalid election status."
 
     ]);
 
@@ -124,6 +158,8 @@ $stmt = mysqli_prepare(
 
 
 if (!$stmt) {
+
+    http_response_code(500);
 
     echo json_encode([
 
@@ -150,8 +186,7 @@ mysqli_stmt_bind_param(
 );
 
 
-$updated =
-    mysqli_stmt_execute($stmt);
+$updated = mysqli_stmt_execute($stmt);
 
 
 mysqli_stmt_close($stmt);
@@ -159,12 +194,14 @@ mysqli_stmt_close($stmt);
 
 if (!$updated) {
 
+    http_response_code(500);
+
     echo json_encode([
 
         "success" => false,
 
         "message" =>
-            mysqli_error($conn)
+            "Unable to update election status."
 
     ]);
 
@@ -186,15 +223,12 @@ $logDescription = null;
    ELECTION STARTED
 ========================================================== */
 
-if (
-    $status === "Started"
-) {
+if ($status === "Started") {
 
-    $logAction =
-        "Election Started";
+    $logAction = "Election Started";
 
     $logDescription =
-        "Administrator started the election.";
+        "Super Administrator started the election.";
 
 }
 
@@ -203,15 +237,12 @@ if (
    ELECTION STOPPED
 ========================================================== */
 
-elseif (
-    $status === "Stopped"
-) {
+elseif ($status === "Stopped") {
 
-    $logAction =
-        "Election Stopped";
+    $logAction = "Election Stopped";
 
     $logDescription =
-        "Administrator stopped the election.";
+        "Super Administrator stopped the election.";
 
 }
 
@@ -220,15 +251,13 @@ elseif (
    WRITE ACTIVITY LOG
 ========================================================== */
 
-if (
-    $logAction !== null
-) {
+if ($logAction !== null) {
 
     logActivity(
 
-        $_SESSION["admin_id"],
+        (int) $_SESSION["admin_id"],
 
-        $_SESSION["admin_username"],
+        $_SESSION["admin_username"] ?? "Super Admin",
 
         $logAction,
 
@@ -247,16 +276,11 @@ $eventTimestamp = null;
 
 
 /*
- * We fetch the latest log for the exact action
- * created by the current administrator.
- *
- * This prevents an older election event from being
- * accidentally returned to the dashboard.
+ * Fetch the latest matching event created by the current
+ * Super Admin. This timestamp is returned to dashboard.js.
  */
 
-if (
-    $logAction !== null
-) {
+if ($logAction !== null) {
 
     $logStmt = mysqli_prepare(
 
@@ -275,27 +299,25 @@ if (
 
     if ($logStmt) {
 
+        $adminId = (int) $_SESSION["admin_id"];
+
         mysqli_stmt_bind_param(
 
             $logStmt,
 
             "is",
 
-            $_SESSION["admin_id"],
+            $adminId,
 
             $logAction
 
         );
 
 
-        if (
-            mysqli_stmt_execute($logStmt)
-        ) {
+        if (mysqli_stmt_execute($logStmt)) {
 
             $logResult =
-                mysqli_stmt_get_result(
-                    $logStmt
-                );
+                mysqli_stmt_get_result($logStmt);
 
 
             if (
@@ -304,18 +326,13 @@ if (
             ) {
 
                 $logRow =
-                    mysqli_fetch_assoc(
-                        $logResult
-                    );
+                    mysqli_fetch_assoc($logResult);
 
 
                 $eventTimestamp =
-                    isset(
-                        $logRow["event_timestamp"]
-                    )
-                        ? (int)
-                            $logRow["event_timestamp"]
-                        : null;
+                    isset($logRow["event_timestamp"])
+                    ? (int) $logRow["event_timestamp"]
+                    : null;
 
             }
 
@@ -333,21 +350,21 @@ if (
    FALLBACK SERVER TIMESTAMP
 ========================================================== */
 
-/*
- * Normally the timestamp comes from admin_logs.
- * If the log lookup unexpectedly fails, use the
- * current server timestamp as a safe fallback.
- */
-
 if (
     $eventTimestamp === null &&
     $logAction !== null
 ) {
 
-    $eventTimestamp =
-        time();
+    $eventTimestamp = time();
 
 }
+
+
+/* ==========================================================
+   CLOSE DATABASE
+========================================================== */
+
+$conn->close();
 
 
 /* ==========================================================
@@ -360,8 +377,7 @@ echo json_encode([
 
     "status" => $status,
 
-    "timestamp" =>
-        $eventTimestamp,
+    "timestamp" => $eventTimestamp,
 
     "serverTime" =>
         $eventTimestamp !== null

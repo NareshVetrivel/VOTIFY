@@ -76,130 +76,72 @@ $electionStopTimestamp = null;
 
 
 /* ==========================================================
-   LATEST ELECTION START
-========================================================== */
-
-$startQuery = mysqli_query(
-
-    $conn,
-
-    "SELECT
-        UNIX_TIMESTAMP(created_at) AS event_time
-     FROM admin_logs
-     WHERE action = 'Election Started'
-     ORDER BY id DESC
-     LIMIT 1"
-
-);
-
-if (
-
-    $startQuery &&
-    mysqli_num_rows($startQuery)
-
-) {
-
-    $startRow =
-        mysqli_fetch_assoc(
-            $startQuery
-        );
-
-    $electionStartTimestamp =
-        !empty($startRow["event_time"])
-            ? (int) $startRow["event_time"]
-            : null;
-
-}
-
-
-/* ==========================================================
-   LATEST ELECTION STOP
-========================================================== */
-
-$stopQuery = mysqli_query(
-
-    $conn,
-
-    "SELECT
-        UNIX_TIMESTAMP(created_at) AS event_time
-     FROM admin_logs
-     WHERE action = 'Election Stopped'
-     ORDER BY id DESC
-     LIMIT 1"
-
-);
-
-if (
-
-    $stopQuery &&
-    mysqli_num_rows($stopQuery)
-
-) {
-
-    $stopRow =
-        mysqli_fetch_assoc(
-            $stopQuery
-        );
-
-    $electionStopTimestamp =
-        !empty($stopRow["event_time"])
-            ? (int) $stopRow["event_time"]
-            : null;
-
-}
-
-
-/* ==========================================================
-   DETERMINE CURRENT ELECTION CYCLE
+   CURRENT ELECTION CYCLE STOP TIME
 ========================================================== */
 
 /*
- * A new Start belongs to the current election cycle
- * only when it happened after the latest Stop.
+ * Only fetch a stop event that belongs to the latest
+ * election cycle.
  *
- * This prevents an old Start timestamp from being
- * paired with a new Stop timestamp.
+ * This prevents an old "Election Stopped" event from
+ * being incorrectly paired with a newly started election.
  */
 
 if (
 
-    $electionStartTimestamp !== null &&
+    $electionStatus === "Stopped" &&
 
-    (
-
-        $electionStopTimestamp === null ||
-
-        $electionStartTimestamp >
-        $electionStopTimestamp
-
-    )
+    $electionStartTimestamp !== null
 
 ) {
 
-    $electionStatus =
-        "Started";
+    $stopQuery = mysqli_query(
+
+        $conn,
+
+        "SELECT
+            UNIX_TIMESTAMP(created_at) AS event_time
+         FROM admin_logs
+         WHERE action = 'Election Stopped'
+           AND created_at >= FROM_UNIXTIME(
+               " . (int) $electionStartTimestamp . "
+           )
+         ORDER BY id DESC
+         LIMIT 1"
+
+    );
+
+    if (
+
+        $stopQuery &&
+        mysqli_num_rows($stopQuery)
+
+    ) {
+
+        $stopRow =
+            mysqli_fetch_assoc(
+                $stopQuery
+            );
+
+        $electionStopTimestamp =
+            !empty($stopRow["event_time"])
+                ? (int) $stopRow["event_time"]
+                : null;
+
+    }
 
 }
 
 
-/*
- * If the latest Stop belongs to the latest Start,
- * the election is stopped.
- */
+/* ==========================================================
+   READY STATUS RESET
+========================================================== */
 
-elseif (
+if ($electionStatus === "Ready") {
 
-    $electionStartTimestamp !== null &&
+    $electionStartTimestamp = null;
 
-    $electionStopTimestamp !== null &&
-
-    $electionStopTimestamp >=
-    $electionStartTimestamp
-
-) {
-
-    $electionStatus =
-        "Stopped";
+    $electionStopTimestamp = null;
 
 }
 

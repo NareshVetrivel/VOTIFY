@@ -479,6 +479,122 @@ function initializePageEntrance() {
 
 
 /* ==========================================================
+   ADMIN MOBILE SIDEBAR
+========================================================== */
+
+function initializeAdminSidebar() {
+
+    const sidebar =
+        document.getElementById("adminSidebar");
+
+    const menuButton =
+        document.getElementById("menuButton");
+
+    const closeButton =
+        document.getElementById("closeSidebar");
+
+
+    /*
+    ----------------------------------------------------------
+    This script only runs when the Admin Sidebar exists.
+    ----------------------------------------------------------
+    */
+
+    if (!sidebar) return;
+
+
+    /* ==========================================================
+       OPEN SIDEBAR
+    ========================================================== */
+
+    if (menuButton) {
+
+        menuButton.addEventListener(
+            "click",
+            () => {
+
+                sidebar.classList.remove(
+                    "-translate-x-full"
+                );
+
+            }
+        );
+
+    }
+
+
+    /* ==========================================================
+       CLOSE SIDEBAR
+    ========================================================== */
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            () => {
+
+                sidebar.classList.add(
+                    "-translate-x-full"
+                );
+
+            }
+        );
+
+    }
+
+
+    /* ==========================================================
+       AUTO CLOSE WHEN CLICKING A SIDEBAR LINK
+       MOBILE ONLY
+    ========================================================== */
+
+    const sidebarLinks =
+        sidebar.querySelectorAll("a");
+
+
+    sidebarLinks.forEach(link => {
+
+        link.addEventListener(
+            "click",
+            () => {
+
+                if (window.innerWidth < 1024) {
+
+                    sidebar.classList.add(
+                        "-translate-x-full"
+                    );
+
+                }
+
+            }
+        );
+
+    });
+
+
+    /* ==========================================================
+       RESET SIDEBAR ON DESKTOP
+    ========================================================== */
+
+    window.addEventListener(
+        "resize",
+        () => {
+
+            if (window.innerWidth >= 1024) {
+
+                sidebar.classList.remove(
+                    "-translate-x-full"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
    INITIALIZE UI
 ========================================================== */
 
@@ -495,6 +611,8 @@ function initializeUI() {
     initializeActiveNavigation();
 
     initializePageEntrance();
+
+    initializeAdminSidebar();
 
 }
 

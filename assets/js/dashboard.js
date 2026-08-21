@@ -75,11 +75,7 @@ function initializeSidebar() {
         document.getElementById("sidebarOverlay");
 
 
-    if (
-        !menuButton ||
-        !sidebar ||
-        !overlay
-    ) {
+    if (!sidebar) {
 
         return;
 
@@ -90,24 +86,99 @@ function initializeSidebar() {
        OPEN SIDEBAR
     ========================================== */
 
-    menuButton.addEventListener(
-        "click",
-        () => {
+    function openSidebar() {
 
-            sidebar.classList.remove(
-                "-translate-x-full"
-            );
+        if (window.innerWidth >= 1024) {
 
-            sidebar.classList.add(
-                "translate-x-0"
-            );
+            return;
+
+        }
+
+        sidebar.classList.remove(
+            "-translate-x-full"
+        );
+
+        sidebar.classList.add(
+            "translate-x-0"
+        );
+
+        /*
+         * Force the correct transform.
+         * This avoids Tailwind class conflicts.
+         */
+
+        sidebar.style.transform =
+            "translateX(0)";
+
+
+        if (overlay) {
 
             overlay.classList.remove(
                 "hidden"
             );
 
         }
-    );
+
+    }
+
+
+    /* ==========================================
+       CLOSE SIDEBAR
+    ========================================== */
+
+    function closeSidebar() {
+
+        if (window.innerWidth >= 1024) {
+
+            return;
+
+        }
+
+        sidebar.classList.remove(
+            "translate-x-0"
+        );
+
+        sidebar.classList.add(
+            "-translate-x-full"
+        );
+
+        /*
+         * Force sidebar outside the screen.
+         */
+
+        sidebar.style.transform =
+            "translateX(-100%)";
+
+
+        if (overlay) {
+
+            overlay.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+
+
+    /* ==========================================
+       MENU BUTTON
+    ========================================== */
+
+    if (menuButton) {
+
+        menuButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+
+                openSidebar();
+
+            }
+        );
+
+    }
 
 
     /* ==========================================
@@ -118,7 +189,15 @@ function initializeSidebar() {
 
         closeButton.addEventListener(
             "click",
-            closeSidebar
+            function (event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+                closeSidebar();
+
+            }
         );
 
     }
@@ -128,23 +207,31 @@ function initializeSidebar() {
        OVERLAY CLOSE
     ========================================== */
 
-    overlay.addEventListener(
-        "click",
-        closeSidebar
-    );
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            function () {
+
+                closeSidebar();
+
+            }
+        );
+
+    }
 
 
     /* ==========================================
-       MENU LINK CLOSE
+       CLOSE WHEN MENU LINK IS CLICKED
     ========================================== */
 
     sidebar
         .querySelectorAll("a")
-        .forEach(link => {
+        .forEach(function (link) {
 
             link.addEventListener(
                 "click",
-                () => {
+                function () {
 
                     if (
                         window.innerWidth < 1024
@@ -161,20 +248,23 @@ function initializeSidebar() {
 
 
     /* ==========================================
-       DESKTOP / MOBILE RESET
+       RESPONSIVE RESET
     ========================================== */
 
     window.addEventListener(
         "resize",
-        () => {
+        function () {
 
             if (
                 window.innerWidth >= 1024
             ) {
 
-                overlay.classList.add(
-                    "hidden"
-                );
+                /*
+                 * Desktop Sidebar
+                 */
+
+                sidebar.style.transform =
+                    "translateX(0)";
 
                 sidebar.classList.remove(
                     "-translate-x-full"
@@ -183,14 +273,26 @@ function initializeSidebar() {
                 sidebar.classList.add(
                     "translate-x-0"
                 );
+
+
+                if (overlay) {
+
+                    overlay.classList.add(
+                        "hidden"
+                    );
+
+                }
 
             }
 
             else {
 
-                overlay.classList.add(
-                    "hidden"
-                );
+                /*
+                 * Mobile Sidebar
+                 */
+
+                sidebar.style.transform =
+                    "translateX(-100%)";
 
                 sidebar.classList.remove(
                     "translate-x-0"
@@ -200,31 +302,19 @@ function initializeSidebar() {
                     "-translate-x-full"
                 );
 
+
+                if (overlay) {
+
+                    overlay.classList.add(
+                        "hidden"
+                    );
+
+                }
+
             }
 
         }
     );
-
-
-    /* ==========================================
-       CLOSE SIDEBAR
-    ========================================== */
-
-    function closeSidebar() {
-
-        sidebar.classList.remove(
-            "translate-x-0"
-        );
-
-        sidebar.classList.add(
-            "-translate-x-full"
-        );
-
-        overlay.classList.add(
-            "hidden"
-        );
-
-    }
 
 }
 
@@ -235,16 +325,6 @@ function initializeSidebar() {
 
 function initializeHoverEffects() {
 
-    /*
-     * Current dashboard cards use the "glass" class.
-     *
-     * We support both:
-     * .dashboard-card
-     * .glass
-     *
-     * This keeps the existing HTML untouched.
-     */
-
     const cards =
         document.querySelectorAll(
             ".dashboard-card, .glass"
@@ -252,14 +332,6 @@ function initializeHoverEffects() {
 
 
     cards.forEach(card => {
-
-        /*
-         * Do not apply this effect to:
-         * sidebar / modal / toast elements.
-         *
-         * Only cards that are inside the
-         * main dashboard area are targeted.
-         */
 
         if (
             !card.closest("main")
@@ -522,23 +594,127 @@ function initializeElectionControls() {
 
 
             /* ==================================
-               HTTP ERROR
+               READ BACKEND RESPONSE FIRST
+            ================================== */
+
+            let result = null;
+
+
+            try {
+
+                result =
+                    await response.json();
+
+            }
+
+            catch (jsonError) {
+
+                console.error(
+                    "Invalid server response:",
+                    jsonError
+                );
+
+
+                throw new Error(
+                    "Invalid server response."
+                );
+
+            }
+
+
+            /* ==================================
+               ACCESS DENIED
+            ================================== */
+
+            /*
+             * IMPORTANT:
+             *
+             * Normal Admin users are allowed
+             * to click the buttons.
+             *
+             * Backend returns HTTP 403 because
+             * only Super Admin can change the
+             * election status.
+             *
+             * Instead of showing "Connection Error",
+             * show the actual authorization message.
+             */
+
+            if (
+                response.status === 403
+            ) {
+
+                showToast(
+
+                    "error",
+
+                    "Access Denied",
+
+                    result.message ||
+                    "Only the Super Admin can control the election."
+
+                );
+
+
+                restoreElectionButtons();
+
+                return;
+
+            }
+
+
+            /* ==================================
+               UNAUTHORIZED
+            ================================== */
+
+            if (
+                response.status === 401
+            ) {
+
+                showToast(
+
+                    "error",
+
+                    "Unauthorized",
+
+                    result.message ||
+                    "Your session is not authorized."
+
+                );
+
+
+                restoreElectionButtons();
+
+                return;
+
+            }
+
+
+            /* ==================================
+               OTHER HTTP ERRORS
             ================================== */
 
             if (
                 !response.ok
             ) {
 
-                throw new Error(
-                    "HTTP Error " +
-                    response.status
+                showToast(
+
+                    "error",
+
+                    "Operation Failed",
+
+                    result.message ||
+                    "Unable to update election status."
+
                 );
 
+
+                restoreElectionButtons();
+
+                return;
+
             }
-
-
-            const result =
-                await response.json();
 
 
             /* ==================================
@@ -588,14 +764,6 @@ function initializeElectionControls() {
             if (
                 status === "Started"
             ) {
-
-                /*
-                 * Use backend timestamp.
-                 *
-                 * Do NOT use the old
-                 * window.VOTIFY_ELECTION_DATA
-                 * timestamp here.
-                 */
 
                 currentElectionStartTimestamp =
                     serverTimestamp ||
@@ -659,11 +827,6 @@ function initializeElectionControls() {
                 status === "Stopped"
             ) {
 
-                /*
-                 * Use backend timestamp for
-                 * the exact stop event.
-                 */
-
                 currentElectionStopTimestamp =
                     serverTimestamp ||
                     Math.floor(
@@ -671,27 +834,9 @@ function initializeElectionControls() {
                     );
 
 
-                /*
-                 * CRITICAL FIX:
-                 *
-                 * Use the current election's
-                 * start timestamp stored in
-                 * memory.
-                 *
-                 * Never use the old PHP
-                 * timestamp here.
-                 */
-
                 if (
                     !currentElectionStartTimestamp
                 ) {
-
-                    /*
-                     * If the page was refreshed
-                     * during an active election,
-                     * retrieve the current state
-                     * from backend before calculating.
-                     */
 
                     await refreshElectionState();
 
@@ -790,9 +935,6 @@ function initializeElectionControls() {
             /*
              * Refresh server state after
              * successful operation.
-             *
-             * This keeps the dashboard in
-             * sync with the database.
              */
 
             setTimeout(
@@ -802,6 +944,10 @@ function initializeElectionControls() {
 
         }
 
+
+        /* ======================================
+           REAL CONNECTION / NETWORK ERROR
+        ====================================== */
 
         catch (error) {
 
@@ -817,7 +963,7 @@ function initializeElectionControls() {
 
                 "Connection Error",
 
-                "Unable to update election status."
+                "Unable to connect to the server. Please try again."
 
             );
 
@@ -933,11 +1079,6 @@ function initializeElectionControls() {
 
     }
 
-
-    /*
-     * Make button-state helper globally
-     * available to refreshElectionState().
-     */
 
     window.applyElectionButtonState =
         applyElectionButtonState;
@@ -1066,10 +1207,6 @@ function initializeElectionTimer() {
             initialDuration;
 
 
-        /* ======================================
-           RUNNING
-        ====================================== */
-
         if (
 
             currentElectionStatus ===
@@ -1104,10 +1241,6 @@ function initializeElectionTimer() {
         }
 
 
-        /* ======================================
-           STOPPED
-        ====================================== */
-
         else if (
 
             currentElectionStatus ===
@@ -1135,10 +1268,6 @@ function initializeElectionTimer() {
 
         }
 
-
-        /* ======================================
-           READY
-        ====================================== */
 
         else {
 
@@ -1442,10 +1571,6 @@ function updateTimingDisplay(
         );
 
 
-    /* ==========================================
-       START TIME
-    ========================================== */
-
     if (
         startElement
     ) {
@@ -1470,10 +1595,6 @@ function updateTimingDisplay(
 
     }
 
-
-    /* ==========================================
-       STOP TIME
-    ========================================== */
 
     if (
         stopElement
@@ -1659,10 +1780,6 @@ function updateElectionStatusCard(
     }
 
 
-    /* ==========================================
-       COMPATIBILITY STATUS
-    ========================================== */
-
     const hiddenStatus =
         document.getElementById(
             "electionStatus"
@@ -1727,18 +1844,10 @@ async function refreshElectionState() {
         }
 
 
-        /* ==========================================
-           CURRENT STATUS
-        ========================================== */
-
         currentElectionStatus =
             data.status ||
             "Ready";
 
-
-        /* ==========================================
-           CURRENT START TIMESTAMP
-        ========================================== */
 
         if (
             data.startTimestamp !==
@@ -1753,10 +1862,6 @@ async function refreshElectionState() {
         }
 
 
-        /* ==========================================
-           CURRENT STOP TIMESTAMP
-        ========================================== */
-
         if (
             data.stopTimestamp !==
             undefined
@@ -1770,20 +1875,12 @@ async function refreshElectionState() {
         }
 
 
-        /* ==========================================
-           UPDATE STATUS CARD
-        ========================================== */
-
         updateElectionStatusCard(
 
             currentElectionStatus
 
         );
 
-
-        /* ==========================================
-           UPDATE TIMING
-        ========================================== */
 
         updateTimingDisplay(
 
@@ -1796,64 +1893,24 @@ async function refreshElectionState() {
         );
 
 
-        /* ==========================================
-           UPDATE TIMER
-        ========================================== */
-
         if (
-            currentElectionStatus ===
-            "Started"
+            typeof
+            window.updateElectionTimerState ===
+            "function"
         ) {
 
-            currentElectionStopTimestamp =
-                null;
+            window.updateElectionTimerState(
+
+                currentElectionStatus,
+
+                currentElectionStartTimestamp,
+
+                currentElectionStopTimestamp
+
+            );
 
         }
 
-
-        if (
-            currentElectionStatus ===
-            "Stopped"
-            &&
-            currentElectionStartTimestamp
-            &&
-            currentElectionStopTimestamp
-        ) {
-
-            const duration =
-                Math.max(
-
-                    0,
-
-                    currentElectionStopTimestamp -
-                    currentElectionStartTimestamp
-
-                );
-
-
-            const durationElement =
-                document.getElementById(
-                    "electionRunningDuration"
-                );
-
-
-            if (
-                durationElement
-            ) {
-
-                durationElement.textContent =
-                    formatDurationValue(
-                        duration
-                    );
-
-            }
-
-        }
-
-
-        /* ==========================================
-           UPDATE BUTTONS
-        ========================================== */
 
         const startButton =
             document.getElementById(
@@ -2030,15 +2087,6 @@ function getElectionStatus() {
 
 function getCurrentStartTimestamp() {
 
-    /*
-     * IMPORTANT:
-     *
-     * Return the current election's timestamp.
-     *
-     * Never read the old page-load timestamp
-     * from window.VOTIFY_ELECTION_DATA here.
-     */
-
     return normalizeTimestamp(
 
         currentElectionStartTimestamp
@@ -2082,10 +2130,6 @@ function normalizeTimestamp(
 
     }
 
-
-    /*
-     * Support both seconds and milliseconds.
-     */
 
     if (
         value > 100000000000
