@@ -414,7 +414,8 @@ class="hidden mt-2 text-sm text-red-400 font-medium"></p>
             type="radio"
             name="gender"
             value="Male"
-            class="hidden peer"
+            class="sr-only peer"
+            checked
             required>
 
             <div
@@ -441,7 +442,7 @@ class="hidden mt-2 text-sm text-red-400 font-medium"></p>
             type="radio"
             name="gender"
             value="Female"
-            class="hidden peer">
+            class="sr-only peer">
 
             <div
             class="flex items-center justify-center gap-3 h-14 rounded-2xl peer-checked:border peer-checked:border-pink-500 peer-checked:bg-pink-500/20">
@@ -467,7 +468,7 @@ class="hidden mt-2 text-sm text-red-400 font-medium"></p>
             type="radio"
             name="gender"
             value="Other"
-            class="hidden peer">
+            class="sr-only peer">
 
             <div
             class="flex items-center justify-center gap-3 h-14 rounded-2xl peer-checked:border peer-checked:border-purple-500 peer-checked:bg-purple-500/20">

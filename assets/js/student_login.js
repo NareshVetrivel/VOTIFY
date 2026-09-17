@@ -2,181 +2,97 @@
    VOTIFY
    Student Login JavaScript
    File : assets/js/student_login.js
+
+   FLOW:
+   1. Student enters login details
+   2. Backend validates details
+   3. Backend sends OTP to college email
+   4. OTP popup opens
+   5. Student enters 6-digit OTP
+   6. OTP is verified by backend
+   7. Student is redirected to dashboard
 ========================================================== */
 
 "use strict";
-
 
 /* ==========================================================
    DOM ELEMENTS
 ========================================================== */
 
-const loginForm = document.getElementById(
-    "studentLoginForm"
-);
+const loginForm = document.getElementById("studentLoginForm");
 
-const admissionInput = document.getElementById(
-    "admissionNo"
-);
+const admissionInput = document.getElementById("admissionNo");
+const dobInput = document.getElementById("dob");
+const emailInput = document.getElementById("collegeEmail");
+const passwordInput = document.getElementById("password");
 
-const dobInput = document.getElementById(
-    "dob"
-);
+const togglePassword = document.getElementById("togglePassword");
+const togglePasswordIcon = document.getElementById("togglePasswordIcon");
 
-const emailInput = document.getElementById(
-    "collegeEmail"
-);
-
-const passwordInput = document.getElementById(
-    "password"
-);
-
-const togglePassword = document.getElementById(
-    "togglePassword"
-);
-
-const togglePasswordIcon = document.getElementById(
-    "togglePasswordIcon"
-);
-
-const loginButton = document.getElementById(
-    "loginButton"
-);
-
+const loginButton = document.getElementById("loginButton");
 
 /* ==========================================================
    ERROR ELEMENTS
 ========================================================== */
 
-const admissionError = document.getElementById(
-    "admissionError"
-);
-
-const dobError = document.getElementById(
-    "dobError"
-);
-
-const emailError = document.getElementById(
-    "emailError"
-);
-
-const passwordError = document.getElementById(
-    "passwordError"
-);
-
+const admissionError = document.getElementById("admissionError");
+const dobError = document.getElementById("dobError");
+const emailError = document.getElementById("emailError");
+const passwordError = document.getElementById("passwordError");
 
 /* ==========================================================
    TOAST ELEMENTS
 ========================================================== */
 
-const successToast = document.getElementById(
-    "successToast"
-);
+const successToast = document.getElementById("successToast");
+const errorToast = document.getElementById("errorToast");
 
-const errorToast = document.getElementById(
-    "errorToast"
-);
+const errorToastTitle =
+    document.getElementById("errorToastTitle");
 
-const errorToastTitle = document.getElementById(
-    "errorToastTitle"
-);
-
-const errorToastMessage = document.getElementById(
-    "errorToastMessage"
-);
-
+const errorToastMessage =
+    document.getElementById("errorToastMessage");
 
 /* ==========================================================
-   BACKEND URL
+   BACKEND
 ========================================================== */
 
 const LOGIN_API =
     "../../backend/student/login.php";
 
-
 /* ==========================================================
-   REDIRECT PAGE
+   DASHBOARD
 ========================================================== */
 
 const DASHBOARD_URL =
     "security_check.php";
 
-
 /* ==========================================================
-   ALREADY VOTED PAGE
+   ALREADY VOTED
 ========================================================== */
 
 const ALREADY_VOTED_URL =
     "already_voted.php";
 
-
 /* ==========================================================
-   SHOW ERROR
+   GLOBAL OTP STATE
 ========================================================== */
 
-function showError(
-    element,
-    message
-){
+let otpModal = null;
+let otpInput = null;
+let otpMessage = null;
+let otpTimerElement = null;
+let verifyOtpButton = null;
 
-    if(!element){
-
-        return;
-
-    }
-
-    element.textContent = message;
-
-    element.classList.remove("hidden");
-
-}
+let otpTimer = null;
+let otpSeconds = 300;
 
 
 /* ==========================================================
-   HIDE ERROR
+   CLEAN INPUT
 ========================================================== */
 
-function hideError(
-    element
-){
-
-    if(!element){
-
-        return;
-
-    }
-
-    element.textContent = "";
-
-    element.classList.add("hidden");
-
-}
-
-
-/* ==========================================================
-   CLEAR ALL ERRORS
-========================================================== */
-
-function clearErrors(){
-
-    hideError(admissionError);
-
-    hideError(dobError);
-
-    hideError(emailError);
-
-    hideError(passwordError);
-
-}
-
-
-/* ==========================================================
-   TRIM INPUT
-========================================================== */
-
-function clean(
-    value
-){
+function clean(value) {
 
     return String(value || "").trim();
 
@@ -184,22 +100,62 @@ function clean(
 
 
 /* ==========================================================
-   PASSWORD VISIBILITY TOGGLE
+   SHOW FIELD ERROR
 ========================================================== */
 
-function togglePasswordVisibility(){
+function showError(element, message) {
 
-    if(
-        !passwordInput ||
-        !togglePasswordIcon
-    ){
-
+    if (!element) {
         return;
-
     }
 
+    element.textContent = message;
+    element.classList.remove("hidden");
 
-    if(passwordInput.type === "password"){
+}
+
+
+/* ==========================================================
+   HIDE FIELD ERROR
+========================================================== */
+
+function hideError(element) {
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent = "";
+    element.classList.add("hidden");
+
+}
+
+
+/* ==========================================================
+   CLEAR ERRORS
+========================================================== */
+
+function clearErrors() {
+
+    hideError(admissionError);
+    hideError(dobError);
+    hideError(emailError);
+    hideError(passwordError);
+
+}
+
+
+/* ==========================================================
+   PASSWORD TOGGLE
+========================================================== */
+
+function togglePasswordVisibility() {
+
+    if (!passwordInput || !togglePasswordIcon) {
+        return;
+    }
+
+    if (passwordInput.type === "password") {
 
         passwordInput.type = "text";
 
@@ -211,9 +167,7 @@ function togglePasswordVisibility(){
             "ri-eye-off-line"
         );
 
-    }
-
-    else{
+    } else {
 
         passwordInput.type = "password";
 
@@ -234,116 +188,11 @@ function togglePasswordVisibility(){
    PASSWORD TOGGLE EVENT
 ========================================================== */
 
-if(togglePassword){
+if (togglePassword) {
 
     togglePassword.addEventListener(
-
         "click",
-
         togglePasswordVisibility
-
-    );
-
-}
-
-
-/* ==========================================================
-   ENTER KEY SUPPORT
-========================================================== */
-
-if(
-    passwordInput &&
-    loginForm
-){
-
-    passwordInput.addEventListener(
-
-        "keydown",
-
-        function(event){
-
-            if(event.key === "Enter"){
-
-                event.preventDefault();
-
-                loginForm.requestSubmit();
-
-            }
-
-        }
-
-    );
-
-}
-
-
-/* ==========================================================
-   AUTO HIDE ERROR ON INPUT
-========================================================== */
-
-if(admissionInput){
-
-    admissionInput.addEventListener(
-
-        "input",
-
-        function(){
-
-            hideError(admissionError);
-
-        }
-
-    );
-
-}
-
-
-if(dobInput){
-
-    dobInput.addEventListener(
-
-        "input",
-
-        function(){
-
-            hideError(dobError);
-
-        }
-
-    );
-
-}
-
-
-if(emailInput){
-
-    emailInput.addEventListener(
-
-        "input",
-
-        function(){
-
-            hideError(emailError);
-
-        }
-
-    );
-
-}
-
-
-if(passwordInput){
-
-    passwordInput.addEventListener(
-
-        "input",
-
-        function(){
-
-            hideError(passwordError);
-
-        }
-
     );
 
 }
@@ -353,106 +202,99 @@ if(passwordInput){
    VALIDATE LOGIN FORM
 ========================================================== */
 
-function validateForm(){
+function validateForm() {
 
     clearErrors();
 
-    let isValid = true;
+    let valid = true;
 
+    const admissionNo =
+        clean(admissionInput?.value).toUpperCase();
 
-    /* ======================================================
-       GET VALUES
-    ====================================================== */
+    const dob =
+        clean(dobInput?.value);
 
-    const admissionNo = clean(
-        admissionInput?.value
-    );
+    const email =
+        clean(emailInput?.value).toLowerCase();
 
-    const dob = clean(
-        dobInput?.value
-    );
-
-    const email = clean(
-        emailInput?.value
-    ).toLowerCase();
-
-    const password = clean(
-        passwordInput?.value
-    );
+    const password =
+        passwordInput?.value || "";
 
 
     /* ======================================================
        ADMISSION NUMBER
+
+       Example:
+       25CAPMCA092
+
+       Allowed:
+       A-Z
+       0-9
+       Length: 10 to 15
     ====================================================== */
 
-    if(admissionNo === ""){
+    if (admissionNo === "") {
 
         showError(
             admissionError,
             "Admission Number is required."
         );
 
-        isValid = false;
+        valid = false;
 
-    }
-
-    else if(admissionNo.length < 3){
+    } else if (
+        !/^[A-Z0-9]{10,15}$/.test(admissionNo)
+    ) {
 
         showError(
             admissionError,
-            "Enter a valid Admission Number."
+            "Admission Number must contain only letters and numbers (10-15 characters)."
         );
 
-        isValid = false;
+        valid = false;
 
     }
 
 
     /* ======================================================
-       DATE OF BIRTH
+       DOB
     ====================================================== */
 
-    if(dob === ""){
+    if (dob === "") {
 
         showError(
             dobError,
             "Date of Birth is required."
         );
 
-        isValid = false;
+        valid = false;
 
     }
 
 
     /* ======================================================
-       COLLEGE EMAIL
+       EMAIL
     ====================================================== */
 
-    const emailPattern =
-        /^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/;
-
-
-    if(email === ""){
+    if (email === "") {
 
         showError(
             emailError,
             "College Email is required."
         );
 
-        isValid = false;
+        valid = false;
 
-    }
-
-    else if(
-        !emailPattern.test(email)
-    ){
+    } else if (
+        !/^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/i.test(email)
+    ) {
 
         showError(
             emailError,
-            "Enter a valid College Email."
+            "Enter a valid @sonatech.ac.in email."
         );
 
-        isValid = false;
+        valid = false;
 
     }
 
@@ -461,65 +303,42 @@ function validateForm(){
        PASSWORD
     ====================================================== */
 
-    if(password === ""){
+    if (password === "") {
 
         showError(
             passwordError,
             "Password is required."
         );
 
-        isValid = false;
+        valid = false;
 
     }
 
-    else if(password.length < 8){
-
-        showError(
-            passwordError,
-            "Password must contain at least 8 characters."
-        );
-
-        isValid = false;
-
-    }
-
-
-    /* ======================================================
-       RESULT
-    ====================================================== */
-
-    return isValid;
+    return valid;
 
 }
 
+
 /* ==========================================================
-   SHOW SUCCESS TOAST
+   SUCCESS TOAST
 ========================================================== */
 
 function showSuccessToast(
-    message = "Login Successful"
-){
+    message = "Success"
+) {
 
-    if(!successToast){
-
+    if (!successToast) {
         return;
-
     }
-
 
     const messageElement =
         successToast.querySelector(
             "p.font-semibold"
         );
 
-
-    if(messageElement){
-
-        messageElement.textContent =
-            message;
-
+    if (messageElement) {
+        messageElement.textContent = message;
     }
-
 
     successToast.classList.remove(
         "translate-x-[120%]"
@@ -536,14 +355,11 @@ function showSuccessToast(
    HIDE SUCCESS TOAST
 ========================================================== */
 
-function hideSuccessToast(){
+function hideSuccessToast() {
 
-    if(!successToast){
-
+    if (!successToast) {
         return;
-
     }
-
 
     successToast.classList.remove(
         "translate-x-0"
@@ -557,31 +373,25 @@ function hideSuccessToast(){
 
 
 /* ==========================================================
-   SHOW ERROR TOAST
+   ERROR TOAST
 ========================================================== */
 
 function showErrorToast(
     title,
     message
-){
+) {
 
-    if(
+    if (
         !errorToast ||
         !errorToastTitle ||
         !errorToastMessage
-    ){
-
+    ) {
+        alert(message);
         return;
-
     }
 
-
-    errorToastTitle.textContent =
-        title;
-
-    errorToastMessage.textContent =
-        message;
-
+    errorToastTitle.textContent = title;
+    errorToastMessage.textContent = message;
 
     errorToast.classList.remove(
         "translate-x-[120%]"
@@ -591,13 +401,9 @@ function showErrorToast(
         "translate-x-0"
     );
 
-
     setTimeout(
-
         hideErrorToast,
-
         4000
-
     );
 
 }
@@ -607,14 +413,11 @@ function showErrorToast(
    HIDE ERROR TOAST
 ========================================================== */
 
-function hideErrorToast(){
+function hideErrorToast() {
 
-    if(!errorToast){
-
+    if (!errorToast) {
         return;
-
     }
-
 
     errorToast.classList.remove(
         "translate-x-0"
@@ -628,27 +431,20 @@ function hideErrorToast(){
 
 
 /* ==========================================================
-   DISABLE LOGIN BUTTON
+   LOGIN BUTTON
 ========================================================== */
 
-function disableLoginButton(){
+function disableLoginButton() {
 
-    if(!loginButton){
-
+    if (!loginButton) {
         return;
-
     }
-
 
     loginButton.disabled = true;
 
-
     loginButton.innerHTML = `
-
         <i class="ri-loader-4-line animate-spin text-xl"></i>
-
-        Logging in...
-
+        Sending OTP...
     `;
 
 }
@@ -658,69 +454,38 @@ function disableLoginButton(){
    ENABLE LOGIN BUTTON
 ========================================================== */
 
-function enableLoginButton(){
+function enableLoginButton() {
 
-    if(!loginButton){
-
+    if (!loginButton) {
         return;
-
     }
-
 
     loginButton.disabled = false;
 
-
     loginButton.innerHTML = `
-
         <i class="ri-login-circle-line text-xl"></i>
-
         Login Securely
-
     `;
 
 }
 
 
 /* ==========================================================
-   CHECK ALREADY VOTED RESPONSE
+   ALREADY VOTED
 ========================================================== */
 
-function isAlreadyVotedResponse(
-    result
-){
+function isAlreadyVotedResponse(result) {
 
-    if(!result){
-
+    if (!result) {
         return false;
-
     }
 
-
-    /* ======================================================
-       DIRECT BACKEND FLAG
-       ------------------------------------------------------
-       Supported if backend returns:
-       already_voted: true
-    ====================================================== */
-
-    if(
+    if (
         result.already_voted === true ||
         result.already_voted === "true"
-    ){
-
+    ) {
         return true;
-
     }
-
-
-    /* ======================================================
-       MESSAGE CHECK
-       ------------------------------------------------------
-       Handles minor differences in:
-       - Capitalization
-       - Full stop
-       - Extra spaces
-    ====================================================== */
 
     const message =
         String(
@@ -729,59 +494,706 @@ function isAlreadyVotedResponse(
         .trim()
         .toLowerCase();
 
-
-    if(
-
-        message.includes(
-            "already cast your vote"
-        )
-
-        ||
-
-        message.includes(
-            "already voted"
-        )
-
-        ||
-
-        message.includes(
-            "vote already cast"
-        )
-
-    ){
-
-        return true;
-
-    }
-
-
-    return false;
+    return (
+        message.includes("already cast your vote") ||
+        message.includes("already voted") ||
+        message.includes("vote already cast")
+    );
 
 }
 
 
 /* ==========================================================
-   LOGIN REQUEST
+   CREATE OTP MODAL
 ========================================================== */
 
-if(loginForm){
+function createOtpModal() {
+
+    if (document.getElementById("votifyOtpModal")) {
+
+        otpModal =
+            document.getElementById("votifyOtpModal");
+
+        otpInput =
+            document.getElementById("votifyOtpInput");
+
+        otpMessage =
+            document.getElementById("votifyOtpMessage");
+
+        otpTimerElement =
+            document.getElementById("votifyOtpTimer");
+
+        verifyOtpButton =
+            document.getElementById("votifyVerifyOtp");
+
+        return;
+
+    }
+
+
+    const modal =
+        document.createElement("div");
+
+    modal.id =
+        "votifyOtpModal";
+
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0,0,0,0.78);
+        backdrop-filter: blur(8px);
+    `;
+
+
+    modal.innerHTML = `
+
+        <div style="
+            width:100%;
+            max-width:470px;
+            background:#111827;
+            border:1px solid rgba(99,102,241,0.45);
+            border-radius:24px;
+            padding:32px;
+            box-shadow:0 25px 80px rgba(0,0,0,0.55);
+            color:white;
+            text-align:center;
+        ">
+
+            <div style="
+                width:64px;
+                height:64px;
+                margin:0 auto 18px;
+                border-radius:50%;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background:rgba(59,130,246,0.16);
+                border:1px solid rgba(59,130,246,0.35);
+                font-size:30px;
+            ">
+                ✉️
+            </div>
+
+
+            <h2 style="
+                font-size:26px;
+                font-weight:700;
+                margin-bottom:8px;
+            ">
+                Verify College Email
+            </h2>
+
+
+            <p id="votifyOtpEmail" style="
+                color:#93c5fd;
+                font-size:15px;
+                margin-bottom:8px;
+            ">
+                OTP sent to your college email
+            </p>
+
+
+            <p style="
+                color:#9ca3af;
+                font-size:14px;
+                margin-bottom:22px;
+            ">
+                Enter the 6-digit OTP sent to your email.
+            </p>
+
+
+            <input
+                id="votifyOtpInput"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="Enter 6-digit OTP"
+                style="
+                    width:100%;
+                    height:58px;
+                    border-radius:14px;
+                    border:1px solid #374151;
+                    background:#1f2937;
+                    color:white;
+                    font-size:22px;
+                    letter-spacing:8px;
+                    text-align:center;
+                    outline:none;
+                    margin-bottom:12px;
+                "
+            >
+
+
+            <div
+                id="votifyOtpMessage"
+                style="
+                    min-height:22px;
+                    color:#f87171;
+                    font-size:14px;
+                    margin-bottom:10px;
+                "
+            ></div>
+
+
+            <div style="
+                color:#9ca3af;
+                font-size:14px;
+                margin-bottom:20px;
+            ">
+                OTP expires in
+                <strong
+                    id="votifyOtpTimer"
+                    style="color:#60a5fa;"
+                >
+                    05:00
+                </strong>
+            </div>
+
+
+            <button
+                id="votifyVerifyOtp"
+                type="button"
+                style="
+                    width:100%;
+                    height:55px;
+                    border:none;
+                    border-radius:14px;
+                    color:white;
+                    font-size:17px;
+                    font-weight:700;
+                    cursor:pointer;
+                    background:linear-gradient(
+                        90deg,
+                        #2563eb,
+                        #9333ea,
+                        #ec4899
+                    );
+                "
+            >
+                Verify OTP
+            </button>
+
+
+            <button
+                id="votifyCloseOtp"
+                type="button"
+                style="
+                    width:100%;
+                    margin-top:12px;
+                    height:45px;
+                    border:none;
+                    background:transparent;
+                    color:#9ca3af;
+                    cursor:pointer;
+                    font-size:14px;
+                "
+            >
+                Cancel
+            </button>
+
+        </div>
+    `;
+
+
+    document.body.appendChild(modal);
+
+
+    otpModal = modal;
+
+    otpInput =
+        document.getElementById("votifyOtpInput");
+
+    otpMessage =
+        document.getElementById("votifyOtpMessage");
+
+    otpTimerElement =
+        document.getElementById("votifyOtpTimer");
+
+    verifyOtpButton =
+        document.getElementById("votifyVerifyOtp");
+
+
+    const closeButton =
+        document.getElementById("votifyCloseOtp");
+
+
+    verifyOtpButton.addEventListener(
+        "click",
+        verifyLoginOtp
+    );
+
+
+    closeButton.addEventListener(
+        "click",
+        function () {
+
+            closeOtpModal();
+
+        }
+    );
+
+
+    otpInput.addEventListener(
+        "input",
+        function () {
+
+            this.value =
+                this.value
+                    .replace(/\D/g, "")
+                    .slice(0, 6);
+
+            if (otpMessage) {
+                otpMessage.textContent = "";
+            }
+
+        }
+    );
+
+
+    otpInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                verifyLoginOtp();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   SHOW OTP MODAL
+========================================================== */
+
+function showOtpModal(email) {
+
+    createOtpModal();
+
+
+    const emailElement =
+        document.getElementById(
+            "votifyOtpEmail"
+        );
+
+
+    if (emailElement) {
+
+        emailElement.textContent =
+            email
+                ? `OTP sent to ${email}`
+                : "OTP sent to your college email";
+
+    }
+
+
+    if (otpInput) {
+
+        otpInput.value = "";
+
+    }
+
+
+    if (otpMessage) {
+
+        otpMessage.textContent = "";
+
+    }
+
+
+    otpModal.style.display =
+        "flex";
+
+
+    startOtpTimer();
+
+
+    setTimeout(
+        function () {
+
+            if (otpInput) {
+                otpInput.focus();
+            }
+
+        },
+        200
+    );
+
+}
+
+
+/* ==========================================================
+   CLOSE OTP MODAL
+========================================================== */
+
+function closeOtpModal() {
+
+    if (!otpModal) {
+        return;
+    }
+
+    otpModal.style.display =
+        "none";
+
+
+    stopOtpTimer();
+
+}
+
+
+/* ==========================================================
+   OTP TIMER
+========================================================== */
+
+function startOtpTimer() {
+
+    stopOtpTimer();
+
+    otpSeconds = 300;
+
+    updateOtpTimer();
+
+
+    otpTimer =
+        setInterval(
+            function () {
+
+                otpSeconds--;
+
+                updateOtpTimer();
+
+
+                if (otpSeconds <= 0) {
+
+                    stopOtpTimer();
+
+                    if (otpMessage) {
+
+                        otpMessage.textContent =
+                            "OTP expired. Please login again to receive a new OTP.";
+
+                    }
+
+                    if (verifyOtpButton) {
+
+                        verifyOtpButton.disabled =
+                            true;
+
+                        verifyOtpButton.textContent =
+                            "OTP Expired";
+
+                    }
+
+                }
+
+            },
+            1000
+        );
+
+}
+
+
+/* ==========================================================
+   STOP TIMER
+========================================================== */
+
+function stopOtpTimer() {
+
+    if (otpTimer) {
+
+        clearInterval(
+            otpTimer
+        );
+
+        otpTimer = null;
+
+    }
+
+}
+
+
+/* ==========================================================
+   UPDATE TIMER
+========================================================== */
+
+function updateOtpTimer() {
+
+    if (!otpTimerElement) {
+        return;
+    }
+
+    const minutes =
+        Math.floor(
+            otpSeconds / 60
+        )
+        .toString()
+        .padStart(2, "0");
+
+
+    const seconds =
+        (
+            otpSeconds % 60
+        )
+        .toString()
+        .padStart(2, "0");
+
+
+    otpTimerElement.textContent =
+        `${minutes}:${seconds}`;
+
+}
+
+
+/* ==========================================================
+   VERIFY LOGIN OTP
+========================================================== */
+
+async function verifyLoginOtp() {
+
+    if (!otpInput) {
+        return;
+    }
+
+
+    const otp =
+        clean(
+            otpInput.value
+        );
+
+
+    if (!/^\d{6}$/.test(otp)) {
+
+        if (otpMessage) {
+
+            otpMessage.textContent =
+                "Please enter a valid 6-digit OTP.";
+
+        }
+
+        otpInput.focus();
+
+        return;
+
+    }
+
+
+    if (otpSeconds <= 0) {
+
+        if (otpMessage) {
+
+            otpMessage.textContent =
+                "OTP expired. Please login again.";
+
+        }
+
+        return;
+
+    }
+
+
+    if (verifyOtpButton) {
+
+        verifyOtpButton.disabled =
+            true;
+
+        verifyOtpButton.textContent =
+            "Verifying OTP...";
+
+    }
+
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "action",
+        "verify_otp"
+    );
+
+    formData.append(
+        "otp",
+        otp
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                LOGIN_API,
+                {
+                    method: "POST",
+                    body: formData,
+                    cache: "no-store",
+                    credentials: "same-origin"
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "OTP Verification Response:",
+            result
+        );
+
+
+        if (result.success) {
+
+            stopOtpTimer();
+
+            if (otpMessage) {
+
+                otpMessage.style.color =
+                    "#4ade80";
+
+                otpMessage.textContent =
+                    "OTP verified successfully.";
+
+            }
+
+
+            if (verifyOtpButton) {
+
+                verifyOtpButton.disabled =
+                    true;
+
+                verifyOtpButton.textContent =
+                    "Verified ✓";
+
+            }
+
+
+            showSuccessToast(
+                result.message ||
+                "Login successful."
+            );
+
+
+            setTimeout(
+                function () {
+
+                    window.location.replace(
+                        result.redirect ||
+                        DASHBOARD_URL
+                    );
+
+                },
+                800
+            );
+
+
+            return;
+
+        }
+
+
+        if (otpMessage) {
+
+            otpMessage.style.color =
+                "#f87171";
+
+            otpMessage.textContent =
+                result.message ||
+                "Incorrect OTP.";
+
+        }
+
+
+        if (verifyOtpButton) {
+
+            verifyOtpButton.disabled =
+                false;
+
+            verifyOtpButton.textContent =
+                "Verify OTP";
+
+        }
+
+
+        if (result.otp_expired) {
+
+            stopOtpTimer();
+
+            if (otpTimerElement) {
+
+                otpTimerElement.textContent =
+                    "Expired";
+
+            }
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "VOTIFY OTP Verification Error:",
+            error
+        );
+
+
+        if (otpMessage) {
+
+            otpMessage.style.color =
+                "#f87171";
+
+            otpMessage.textContent =
+                "Unable to verify OTP. Please try again.";
+
+        }
+
+
+        if (verifyOtpButton) {
+
+            verifyOtpButton.disabled =
+                false;
+
+            verifyOtpButton.textContent =
+                "Verify OTP";
+
+        }
+
+    }
+
+}
+
+
+/* ==========================================================
+   LOGIN FORM SUBMIT
+========================================================== */
+
+if (loginForm) {
 
     loginForm.addEventListener(
-
         "submit",
-
-        async function(event){
+        async function (event) {
 
             event.preventDefault();
+
 
             clearErrors();
 
 
             /* ==============================================
-               FRONTEND VALIDATION
+               VALIDATION
             ============================================== */
 
-            if(!validateForm()){
+            if (!validateForm()) {
 
                 return;
 
@@ -789,7 +1201,7 @@ if(loginForm){
 
 
             /* ==============================================
-               DISABLE LOGIN BUTTON
+               DISABLE BUTTON
             ============================================== */
 
             disableLoginButton();
@@ -804,89 +1216,74 @@ if(loginForm){
 
 
             formData.append(
-
-                "admissionNo",
-
-                clean(
-                    admissionInput?.value
-                )
-
+                "action",
+                "login"
             );
 
 
             formData.append(
+                "admissionNo",
+                clean(
+                    admissionInput?.value
+                ).toUpperCase()
+            );
 
+
+            formData.append(
                 "dob",
-
                 clean(
                     dobInput?.value
                 )
-
             );
 
 
             formData.append(
-
                 "collegeEmail",
-
                 clean(
                     emailInput?.value
                 ).toLowerCase()
-
             );
 
 
             formData.append(
-
                 "password",
-
                 passwordInput?.value || ""
-
             );
 
 
-            try{
-
-
-                /* ==========================================
-                   FETCH LOGIN REQUEST
-                ========================================== */
+            try {
 
                 const response =
                     await fetch(
-
                         LOGIN_API,
-
                         {
-                            method : "POST",
-                            body : formData,
-                            cache : "no-store"
+                            method: "POST",
+                            body: formData,
+                            cache: "no-store",
+                            credentials: "same-origin"
                         }
-
                     );
 
-
-                /* ==========================================
-                   RESPONSE JSON
-                ========================================== */
 
                 const result =
                     await response.json();
 
 
+                console.log(
+                    "Login Response:",
+                    result
+                );
+
+
                 /* ==========================================
-                   ALREADY VOTED CHECK
-                   ------------------------------------------------
-                   IMPORTANT:
-                   This check happens BEFORE showing
-                   any error toast.
+                   ALREADY VOTED
                 ========================================== */
 
-                if(
+                if (
                     isAlreadyVotedResponse(
                         result
                     )
-                ){
+                ) {
 
                     window.location.replace(
                         ALREADY_VOTED_URL
@@ -898,37 +1295,51 @@ if(loginForm){
 
 
                 /* ==========================================
-                   LOGIN SUCCESS
+                   OTP REQUIRED
                 ========================================== */
 
-                if(result.success){
+                if (
+                    result.success &&
+                    (
+                        result.otp_required === true ||
+                        result.requires_otp === true
+                    )
+                ) {
 
-                    if(loginButton){
+                    enableLoginButton();
 
-                        loginButton.disabled =
-                            true;
+                    showOtpModal(
+                        result.email ||
+                        "your college email"
+                    );
 
-                    }
+                    return;
 
+                }
+
+
+                /* ==========================================
+                   DIRECT SUCCESS
+                ========================================== */
+
+                if (result.success) {
 
                     showSuccessToast(
                         result.message ||
-                        "Login Successful"
+                        "Login successful."
                     );
 
 
                     setTimeout(
-
-                        function(){
+                        function () {
 
                             window.location.replace(
+                                result.redirect ||
                                 DASHBOARD_URL
                             );
 
                         },
-
-                        1500
-
+                        800
                     );
 
 
@@ -942,25 +1353,16 @@ if(loginForm){
                 ========================================== */
 
                 showErrorToast(
-
                     "Login Failed",
-
                     result.message ||
                     "Invalid login credentials."
-
                 );
 
 
                 enableLoginButton();
 
-            }
 
-
-            /* ==============================================
-               SERVER / NETWORK ERROR
-            ============================================== */
-
-            catch(error){
+            } catch (error) {
 
                 console.error(
                     "VOTIFY Login Error:",
@@ -969,11 +1371,8 @@ if(loginForm){
 
 
                 showErrorToast(
-
                     "Server Error",
-
                     "Unable to connect to the server. Please try again."
-
                 );
 
 
@@ -982,65 +1381,127 @@ if(loginForm){
             }
 
         }
-
     );
 
 }
 
 
 /* ==========================================================
-   INITIALIZE STUDENT LOGIN
+   AUTO HIDE FIELD ERRORS
+========================================================== */
+
+if (admissionInput) {
+
+    admissionInput.addEventListener(
+        "input",
+        function () {
+
+            hideError(
+                admissionError
+            );
+
+        }
+    );
+
+}
+
+
+if (dobInput) {
+
+    dobInput.addEventListener(
+        "input",
+        function () {
+
+            hideError(
+                dobError
+            );
+
+        }
+    );
+
+}
+
+
+if (emailInput) {
+
+    emailInput.addEventListener(
+        "input",
+        function () {
+
+            hideError(
+                emailError
+            );
+
+        }
+    );
+
+}
+
+
+if (passwordInput) {
+
+    passwordInput.addEventListener(
+        "input",
+        function () {
+
+            hideError(
+                passwordError
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   ENTER KEY
+========================================================== */
+
+if (passwordInput) {
+
+    passwordInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                if (loginForm) {
+                    loginForm.requestSubmit();
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   INITIALIZE
 ========================================================== */
 
 document.addEventListener(
-
     "DOMContentLoaded",
-
-    function(){
-
-
-        /* ==============================================
-           HIDE TOASTS
-        ============================================== */
+    function () {
 
         hideSuccessToast();
-
         hideErrorToast();
-
-
-        /* ==============================================
-           CLEAR FORM ERRORS
-        ============================================== */
 
         clearErrors();
 
-
-        /* ==============================================
-           ENABLE LOGIN BUTTON
-        ============================================== */
-
         enableLoginButton();
 
-
-        /* ==============================================
-           AUTO FOCUS
-        ============================================== */
-
-        if(admissionInput){
-
+        if (admissionInput) {
             admissionInput.focus();
-
         }
-
-
-        /* ==============================================
-           CONSOLE LOG
-        ============================================== */
 
         console.log(
             "VOTIFY Student Login Initialized"
         );
 
     }
-
 );

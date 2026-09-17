@@ -653,11 +653,11 @@ Four-Step Identity Verification
 
 <div class="flex items-center gap-3">
 
-<i class="ri-time-line text-yellow-400 text-lg"></i>
+<i class="ri-mail-check-line text-green-400 text-lg"></i>
 
 <span class="text-slate-300">
 
-Email OTP Verification (Coming Soon)
+Email OTP Verification
 
 </span>
 
@@ -835,7 +835,7 @@ APP JS
 STUDENT LOGIN JS
 ========================================================== -->
 
-<script src="../../assets/js/student_login.js"></script>
+<script src="../../assets/js/login.js"></script>
 
 </body>
 

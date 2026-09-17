@@ -1,106 +1,99 @@
 <?php
 /* ==========================================================
    VOTIFY
-   Student Registration
+   Student Registration + Registration OTP
    File : backend/student/register.php
 ========================================================== */
 
-header("Content-Type: application/json");
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-/* ==========================================
-   DATABASE
-========================================== */
+header("Content-Type: application/json; charset=UTF-8");
+
+
+/* ==========================================================
+   REQUIRED FILES
+========================================================== */
 
 require_once("../../config/database.php");
+require_once("../../lib/otp.php");
+require_once("../../lib/mailer.php");
 
-/** @var mysqli $conn */
+$emailConfig = require("../../config/email.php");
 
-/* ==========================================
-   ELECTION STATUS CHECK
-========================================== */
 
-$result = mysqli_query(
-
-    $conn,
-
-    "
-
-    SELECT election_status
-
-    FROM election_settings
-
-    LIMIT 1
-
-    "
-
-);
-
-if(!$result || mysqli_num_rows($result)==0){
-
-    echo json_encode([
-
-        "status" => "error",
-
-        "message" => "Unable to verify election status."
-
-    ]);
-
-    exit;
-
-}
-
-$election = mysqli_fetch_assoc($result);
-
-if(strtolower($election["election_status"]) === "started"){
-
-    echo json_encode([
-
-        "status" => "error",
-
-        "message" => "Registration is unavailable while the election is running."
-
-    ]);
-
-    exit;
-
-}
-
-/* ==========================================
+/* ==========================================================
    ALLOW POST ONLY
-========================================== */
+========================================================== */
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
+    http_response_code(405);
+
     echo json_encode([
-        "status" => "error",
+        "status"  => "error",
         "message" => "Invalid Request."
     ]);
 
     exit;
-
 }
 
 
-/* ==========================================
+/* ==========================================================
+   ELECTION STATUS CHECK
+========================================================== */
+
+$result = mysqli_query(
+    $conn,
+    "SELECT election_status
+     FROM election_settings
+     LIMIT 1"
+);
+
+if (!$result || mysqli_num_rows($result) === 0) {
+
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Unable to verify election status."
+    ]);
+
+    exit;
+}
+
+$election = mysqli_fetch_assoc($result);
+
+if (
+    isset($election["election_status"]) &&
+    strtolower(trim($election["election_status"])) === "started"
+) {
+
+    echo json_encode([
+        "status"  => "error",
+        "message" =>
+            "Registration is unavailable while the election is running."
+    ]);
+
+    exit;
+}
+
+
+/* ==========================================================
    GET FORM DATA
-========================================== */
+========================================================== */
 
 $full_name = trim($_POST["fullName"] ?? "");
 
 $dob = trim($_POST["dob"] ?? "");
 
 $admission_no = strtoupper(
-
     trim($_POST["admissionNo"] ?? "")
-
 );
 
 $phone = trim($_POST["phone"] ?? "");
 
 $college_email = strtolower(
-
     trim($_POST["email"] ?? "")
-
 );
 
 $department = trim($_POST["department"] ?? "");
@@ -113,186 +106,273 @@ $password = $_POST["password"] ?? "";
 
 $confirm_password = $_POST["confirmPassword"] ?? "";
 
-/* ==========================================
-   SERVER SIDE VALIDATION
-========================================== */
 
-/* Full Name */
+/* ==========================================================
+   FULL NAME VALIDATION
+========================================================== */
 
-if (empty($full_name)) {
+if ($full_name === "") {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "fullName",
+        "status"  => "error",
+        "field"   => "fullName",
         "message" => "Full Name is required."
     ]);
 
     exit;
+}
 
+if (!preg_match('/^[A-Za-z ]+$/', $full_name)) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "fullName",
+        "message" =>
+            "Full Name can contain only letters and spaces."
+    ]);
+
+    exit;
 }
 
 
-/* Date of Birth */
+/* ==========================================================
+   DOB VALIDATION
+========================================================== */
 
-if (empty($dob)) {
+if ($dob === "") {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "dob",
+        "status"  => "error",
+        "field"   => "dob",
         "message" => "Date of Birth is required."
     ]);
 
     exit;
-
 }
 
 
-/* Admission Number */
+/* ==========================================================
+   ADMISSION NUMBER VALIDATION
+========================================================== */
 
-if (empty($admission_no)) {
+/*
+ * Requirement:
+ *
+ * Example:
+ * 25CAPMCA092
+ *
+ * Allowed:
+ * - A-Z
+ * - a-z
+ * - 0-9
+ *
+ * Length:
+ * - Minimum 10
+ * - Maximum 15
+ */
+
+if ($admission_no === "") {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "admissionNo",
+        "status"  => "error",
+        "field"   => "admissionNo",
         "message" => "Admission Number is required."
     ]);
 
     exit;
+}
 
+if (!preg_match('/^[A-Z0-9]{10,15}$/', $admission_no)) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "admissionNo",
+        "message" =>
+            "Admission Number must contain only letters and numbers and must be 10 to 15 characters."
+    ]);
+
+    exit;
 }
 
 
-/* Phone Number */
+/* ==========================================================
+   PHONE VALIDATION
+========================================================== */
 
 if (!preg_match('/^[6-9][0-9]{9}$/', $phone)) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "phone",
-        "message" => "Enter a valid 10-digit phone number."
+        "status"  => "error",
+        "field"   => "phone",
+        "message" =>
+            "Enter a valid 10-digit phone number."
     ]);
 
     exit;
-
 }
 
 
-/* College Email */
+/* ==========================================================
+   COLLEGE EMAIL VALIDATION
+========================================================== */
 
 if (!filter_var($college_email, FILTER_VALIDATE_EMAIL)) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "email",
+        "status"  => "error",
+        "field"   => "email",
         "message" => "Invalid Email Address."
     ]);
 
     exit;
-
 }
 
-if (!preg_match('/^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/', $college_email)) {
+
+/* ==========================================================
+   ONLY SONATECH EMAIL
+========================================================== */
+
+if (
+    !preg_match(
+        '/^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/i',
+        $college_email
+    )
+) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "email",
-        "message" => "Use only College Email (@sonatech.ac.in)."
+        "status"  => "error",
+        "field"   => "email",
+        "message" =>
+            "Use only College Email (@sonatech.ac.in)."
     ]);
 
     exit;
-
 }
 
 
-/* Department */
+/* ==========================================================
+   DEPARTMENT
+========================================================== */
 
 if ($department !== "MCA") {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "department",
-        "message" => "Only MCA students can register."
+        "status"  => "error",
+        "field"   => "department",
+        "message" =>
+            "Only MCA students can register."
     ]);
 
     exit;
-
 }
 
 
-/* Year */
+/* ==========================================================
+   YEAR
+========================================================== */
 
-if (!in_array($year, ["I Year", "II Year"])) {
+if (
+    !in_array(
+        $year,
+        ["I Year", "II Year"],
+        true
+    )
+) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "year",
+        "status"  => "error",
+        "field"   => "year",
         "message" => "Select a valid Year."
     ]);
 
     exit;
-
 }
 
 
-/* Gender */
+/* ==========================================================
+   GENDER
+========================================================== */
 
-if (!in_array($gender, ["Male", "Female", "Other"])) {
+if (
+    !in_array(
+        $gender,
+        ["Male", "Female", "Other"],
+        true
+    )
+) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "gender",
+        "status"  => "error",
+        "field"   => "gender",
         "message" => "Select your Gender."
     ]);
 
     exit;
-
 }
 
 
-/* Password */
+/* ==========================================================
+   PASSWORD
+========================================================== */
 
 if (strlen($password) < 8) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "password",
-        "message" => "Password must contain at least 8 characters."
+        "status"  => "error",
+        "field"   => "password",
+        "message" =>
+            "Password must contain at least 8 characters."
     ]);
 
     exit;
-
 }
 
 
-/* Confirm Password */
+/* ==========================================================
+   CONFIRM PASSWORD
+========================================================== */
 
 if ($password !== $confirm_password) {
 
     echo json_encode([
-        "status" => "error",
-        "field"  => "confirmPassword",
-        "message" => "Passwords do not match."
+        "status"  => "error",
+        "field"   => "confirmPassword",
+        "message" =>
+            "Passwords do not match."
     ]);
 
     exit;
-
 }
 
-/* ==========================================
-   DUPLICATE CHECK
-========================================== */
 
-/* Admission Number */
+/* ==========================================================
+   DUPLICATE ADMISSION NUMBER
+========================================================== */
 
 $stmt = $conn->prepare(
-    "SELECT id FROM students
-     WHERE admission_no = ?"
+    "SELECT id
+     FROM students
+     WHERE admission_no = ?
+     LIMIT 1"
 );
 
-$stmt->bind_param(
-    "s",
-    $admission_no
-);
+if (!$stmt) {
+
+    error_log(
+        "VOTIFY Registration Prepare Error: " .
+        $conn->error
+    );
+
+    echo json_encode([
+        "status"  => "error",
+        "message" =>
+            "Unable to process registration."
+    ]);
+
+    exit;
+}
+
+$stmt->bind_param("s", $admission_no);
 
 $stmt->execute();
 
@@ -300,38 +380,49 @@ $stmt->store_result();
 
 if ($stmt->num_rows > 0) {
 
-    echo json_encode([
-
-        "status" => "error",
-
-        "field" => "admissionNo",
-
-        "message" => "Admission Number already registered."
-
-    ]);
-
     $stmt->close();
 
-    exit;
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "admissionNo",
+        "message" =>
+            "Admission Number already registered."
+    ]);
 
+    exit;
 }
 
 $stmt->close();
 
 
-/* ==========================================
-   Phone Number
-========================================== */
+/* ==========================================================
+   DUPLICATE PHONE NUMBER
+========================================================== */
 
 $stmt = $conn->prepare(
-    "SELECT id FROM students
-     WHERE phone = ?"
+    "SELECT id
+     FROM students
+     WHERE phone = ?
+     LIMIT 1"
 );
 
-$stmt->bind_param(
-    "s",
-    $phone
-);
+if (!$stmt) {
+
+    error_log(
+        "VOTIFY Registration Prepare Error: " .
+        $conn->error
+    );
+
+    echo json_encode([
+        "status"  => "error",
+        "message" =>
+            "Unable to process registration."
+    ]);
+
+    exit;
+}
+
+$stmt->bind_param("s", $phone);
 
 $stmt->execute();
 
@@ -339,38 +430,49 @@ $stmt->store_result();
 
 if ($stmt->num_rows > 0) {
 
-    echo json_encode([
-
-        "status" => "error",
-
-        "field" => "phone",
-
-        "message" => "Phone Number already registered."
-
-    ]);
-
     $stmt->close();
 
-    exit;
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "phone",
+        "message" =>
+            "Phone Number already registered."
+    ]);
 
+    exit;
 }
 
 $stmt->close();
 
 
-/* ==========================================
-   College Email
-========================================== */
+/* ==========================================================
+   DUPLICATE COLLEGE EMAIL
+========================================================== */
 
 $stmt = $conn->prepare(
-    "SELECT id FROM students
-     WHERE college_email = ?"
+    "SELECT id
+     FROM students
+     WHERE college_email = ?
+     LIMIT 1"
 );
 
-$stmt->bind_param(
-    "s",
-    $college_email
-);
+if (!$stmt) {
+
+    error_log(
+        "VOTIFY Registration Prepare Error: " .
+        $conn->error
+    );
+
+    echo json_encode([
+        "status"  => "error",
+        "message" =>
+            "Unable to process registration."
+    ]);
+
+    exit;
+}
+
+$stmt->bind_param("s", $college_email);
 
 $stmt->execute();
 
@@ -378,133 +480,226 @@ $stmt->store_result();
 
 if ($stmt->num_rows > 0) {
 
-    echo json_encode([
-
-        "status" => "error",
-
-        "field" => "email",
-
-        "message" => "College Email already registered."
-
-    ]);
-
     $stmt->close();
 
-    exit;
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "email",
+        "message" =>
+            "College Email already registered."
+    ]);
 
+    exit;
 }
 
 $stmt->close();
 
-/* ==========================================
+
+/* ==========================================================
    HASH PASSWORD
-========================================== */
+========================================================== */
 
 $hashed_password = password_hash(
     $password,
     PASSWORD_DEFAULT
 );
 
-
-/* ==========================================
-   INSERT STUDENT
-========================================== */
-
-$stmt = $conn->prepare(
-
-    "INSERT INTO students (
-
-        full_name,
-
-        dob,
-
-        admission_no,
-
-        phone,
-
-        college_email,
-
-        department,
-
-        year,
-
-        gender,
-
-        password,
-
-        status
-
-    )
-
-    VALUES (
-
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending'
-
-    )"
-
-);
-
-$stmt->bind_param(
-
-    "sssssssss",
-
-    $full_name,
-
-    $dob,
-
-    $admission_no,
-
-    $phone,
-
-    $college_email,
-
-    $department,
-
-    $year,
-
-    $gender,
-
-    $hashed_password
-
-);
-
-
-/* ==========================================
-   EXECUTE QUERY
-========================================== */
-
-if ($stmt->execute()) {
+if ($hashed_password === false) {
 
     echo json_encode([
-
-        "status"  => "success",
-
-        "message" => "Registration Successful."
-
-    ]);
-
-}
-
-else {
-
-    echo json_encode([
-
         "status"  => "error",
-
-        "message" => "Unable to complete registration."
-
+        "message" =>
+            "Unable to secure password."
     ]);
 
+    exit;
 }
 
-/* ==========================================
-   CLOSE CONNECTION
-========================================== */
 
-$stmt->close();
+/* ==========================================================
+   STORE TEMP REGISTRATION DATA
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Student record is NOT inserted yet.
+ *
+ * Data is temporarily stored in session.
+ *
+ * Actual INSERT happens only after
+ * successful OTP verification.
+ */
+
+$_SESSION["pending_registration"] = [
+
+    "full_name" =>
+        $full_name,
+
+    "dob" =>
+        $dob,
+
+    "admission_no" =>
+        $admission_no,
+
+    "phone" =>
+        $phone,
+
+    "college_email" =>
+        $college_email,
+
+    "department" =>
+        $department,
+
+    "year" =>
+        $year,
+
+    "gender" =>
+        $gender,
+
+    "password" =>
+        $hashed_password
+];
+
+
+/* ==========================================================
+   GENERATE 6 DIGIT OTP
+========================================================== */
+
+$otp = generateOtp();
+
+
+if (
+    !is_string($otp) &&
+    !is_int($otp)
+) {
+
+    unset($_SESSION["pending_registration"]);
+
+    echo json_encode([
+        "status"  => "error",
+        "message" =>
+            "Unable to generate OTP."
+    ]);
+
+    exit;
+}
+
+
+/* ==========================================================
+   OTP EXPIRY
+========================================================== */
+
+$otpExpiry = 300;
+
+if (
+    isset($emailConfig["otp_expiry"]) &&
+    is_numeric($emailConfig["otp_expiry"])
+) {
+    $otpExpiry =
+        (int)$emailConfig["otp_expiry"];
+}
+
+if ($otpExpiry <= 0) {
+    $otpExpiry = 300;
+}
+
+
+/* ==========================================================
+   CREATE OTP SESSION
+========================================================== */
+
+createOtpSession(
+    "register",
+    $otp,
+    $otpExpiry
+);
+
+
+/* ==========================================================
+   SEND OTP EMAIL
+========================================================== */
+
+$mailResult = sendOtpMail(
+    $college_email,
+    $full_name,
+    $otp,
+    "registration"
+);
+
+
+/* ==========================================================
+   CHECK MAIL RESULT
+========================================================== */
+
+if (
+    !is_array($mailResult) ||
+    !isset($mailResult["success"]) ||
+    !$mailResult["success"]
+) {
+
+    /*
+     * Remove temporary registration
+     * if email could not be sent.
+     */
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    $mailMessage =
+        "Unable to send OTP email. Please try again.";
+
+    if (
+        is_array($mailResult) &&
+        !empty($mailResult["message"])
+    ) {
+        $mailMessage =
+            $mailResult["message"];
+    }
+
+    error_log(
+        "VOTIFY Registration OTP Mail Failed: " .
+        $mailMessage
+    );
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "email",
+        "message" => $mailMessage
+    ]);
+
+    exit;
+}
+
+
+/* ==========================================================
+   OTP SENT SUCCESSFULLY
+========================================================== */
+
+echo json_encode([
+
+    "status" =>
+        "otp_required",
+
+    "message" =>
+        "OTP sent successfully to your college email.",
+
+    "email" =>
+        maskEmail($college_email),
+
+    "expires_in" =>
+        $otpExpiry
+]);
+
+
+/* ==========================================================
+   CLOSE DATABASE
+========================================================== */
 
 $conn->close();
 
 exit;
-
 ?>
