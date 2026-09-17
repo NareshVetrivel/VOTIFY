@@ -7,9 +7,19 @@
 
 declare(strict_types=1);
 
+
+/* ==========================================================
+   SESSION
+========================================================== */
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+
+/* ==========================================================
+   RESPONSE HEADER
+========================================================== */
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -23,7 +33,7 @@ require_once __DIR__ . "/../../lib/otp.php";
 
 
 /* ==========================================================
-   HELPER - JSON RESPONSE
+   JSON RESPONSE HELPER
 ========================================================== */
 
 function jsonResponse(
@@ -35,7 +45,7 @@ function jsonResponse(
     echo json_encode(
         array_merge(
             [
-                "status" => $status,
+                "status"  => $status,
                 "message" => $message
             ],
             $extra
@@ -48,7 +58,7 @@ function jsonResponse(
 
 
 /* ==========================================================
-   POST ONLY
+   POST REQUEST ONLY
 ========================================================== */
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -82,31 +92,17 @@ if (
 }
 
 
-if ($conn->connect_errno) {
-
-    error_log(
-        "VOTIFY Database Connection Error: " .
-        $conn->connect_error
-    );
-
-    jsonResponse(
-        "error",
-        "Database service is currently unavailable. Please try again later."
-    );
-}
-
-
 /* ==========================================================
    GET OTP
 ========================================================== */
 
 $otp = trim(
-    $_POST["otp"] ?? ""
+    (string)($_POST["otp"] ?? "")
 );
 
 
 /* ==========================================================
-   OTP EMPTY
+   OTP REQUIRED
 ========================================================== */
 
 if ($otp === "") {
@@ -200,14 +196,14 @@ if (
 
 
 /* ==========================================================
-   GET PENDING REGISTRATION DATA
+   GET PENDING REGISTRATION
 ========================================================== */
 
 $data = $_SESSION["pending_registration"];
 
 
 /* ==========================================================
-   GET REGISTRATION VALUES
+   READ REGISTRATION DATA
 ========================================================== */
 
 $full_name = trim(
@@ -252,7 +248,7 @@ $hashed_password = (string)(
 
 
 /* ==========================================================
-   VALIDATE PENDING DATA
+   FINAL PENDING DATA VALIDATION
 ========================================================== */
 
 if (
@@ -281,7 +277,55 @@ if (
 
 
 /* ==========================================================
-   EMAIL VALIDATION
+   FINAL ADMISSION NUMBER VALIDATION
+========================================================== */
+
+if (
+    !preg_match(
+        '/^[0-9]{2}CAPMCA[0-9]{3}$/',
+        $admission_no
+    )
+) {
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    jsonResponse(
+        "error",
+        "Invalid Admission Number. Please register again."
+    );
+}
+
+
+/* ==========================================================
+   FINAL PHONE VALIDATION
+========================================================== */
+
+if (
+    !preg_match(
+        '/^[6-9][0-9]{9}$/',
+        $phone
+    )
+) {
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    jsonResponse(
+        "error",
+        "Invalid phone number. Please register again."
+    );
+}
+
+
+/* ==========================================================
+   FINAL EMAIL VALIDATION
 ========================================================== */
 
 if (
@@ -300,6 +344,106 @@ if (
     jsonResponse(
         "error",
         "Invalid college email address."
+    );
+}
+
+
+/* ==========================================================
+   COLLEGE EMAIL DOMAIN
+========================================================== */
+
+if (
+    !preg_match(
+        '/^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/i',
+        $college_email
+    )
+) {
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    jsonResponse(
+        "error",
+        "Invalid college email address."
+    );
+}
+
+
+/* ==========================================================
+   DEPARTMENT VALIDATION
+========================================================== */
+
+if ($department !== "MCA") {
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    jsonResponse(
+        "error",
+        "Invalid department. Please register again."
+    );
+}
+
+
+/* ==========================================================
+   YEAR VALIDATION
+========================================================== */
+
+if (
+    !in_array(
+        $year,
+        [
+            "I Year",
+            "II Year"
+        ],
+        true
+    )
+) {
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    jsonResponse(
+        "error",
+        "Invalid year. Please register again."
+    );
+}
+
+
+/* ==========================================================
+   GENDER VALIDATION
+========================================================== */
+
+if (
+    !in_array(
+        $gender,
+        [
+            "Male",
+            "Female",
+            "Other"
+        ],
+        true
+    )
+) {
+
+    clearOtpSession("register");
+
+    unset(
+        $_SESSION["pending_registration"]
+    );
+
+    jsonResponse(
+        "error",
+        "Invalid gender. Please register again."
     );
 }
 
@@ -330,10 +474,16 @@ if (
 
 
 /* ==========================================================
-   START TRANSACTION
+   DATABASE TRANSACTION
 ========================================================== */
 
+$stmt = null;
+
 try {
+
+    /* ======================================================
+       START TRANSACTION
+    ====================================================== */
 
     if (!$conn->begin_transaction()) {
 
@@ -345,16 +495,77 @@ try {
 
 
     /* ======================================================
+       REMOVE OLD REJECTED RECORD
+    ====================================================== */
+
+    /*
+     * IMPORTANT:
+     *
+     * Rejected student records should not remain
+     * inside the students table.
+     *
+     * This cleanup protects the registration flow
+     * against old rejected records created by the
+     * previous system behavior.
+     *
+     * If the same Admission Number / Phone / Email
+     * belongs to a Rejected record, that record is
+     * removed before the final duplicate check.
+     *
+     * This allows the UNIQUE constraints to remain
+     * active for valid student records.
+     */
+
+    $deleteRejectedStmt = $conn->prepare(
+        "
+        DELETE FROM students
+        WHERE
+            LOWER(TRIM(status)) = 'rejected'
+            AND (
+                admission_no = ?
+                OR phone = ?
+                OR college_email = ?
+            )
+        "
+    );
+
+
+    if (!$deleteRejectedStmt) {
+
+        throw new Exception(
+            "Rejected record cleanup prepare failed: " .
+            $conn->error
+        );
+    }
+
+
+    $deleteRejectedStmt->bind_param(
+        "sss",
+        $admission_no,
+        $phone,
+        $college_email
+    );
+
+
+    if (!$deleteRejectedStmt->execute()) {
+
+        throw new Exception(
+            "Rejected record cleanup execute failed: " .
+            $deleteRejectedStmt->error
+        );
+    }
+
+
+    $deleteRejectedStmt->close();
+
+
+    /* ======================================================
        FINAL DUPLICATE CHECK
     ====================================================== */
 
     $stmt = $conn->prepare(
         "
-        SELECT
-            id,
-            admission_no,
-            phone,
-            college_email
+        SELECT id
         FROM students
         WHERE
             admission_no = ?
@@ -398,15 +609,15 @@ try {
 
         $stmt->close();
 
-        $conn->rollback();
+        $stmt = null;
 
+        $conn->rollback();
 
         clearOtpSession("register");
 
         unset(
             $_SESSION["pending_registration"]
         );
-
 
         jsonResponse(
             "error",
@@ -416,6 +627,8 @@ try {
 
 
     $stmt->close();
+
+    $stmt = null;
 
 
     /* ======================================================
@@ -468,7 +681,7 @@ try {
 
 
     /* ======================================================
-       BIND INSERT VALUES
+       BIND INSERT DATA
     ====================================================== */
 
     $stmt->bind_param(
@@ -499,24 +712,27 @@ try {
 
 
     /* ======================================================
-       GET STUDENT ID
+       GET GENERATED STUDENT ID
     ====================================================== */
 
     $studentId = (int)$stmt->insert_id;
 
+
     $stmt->close();
+
+    $stmt = null;
 
 
     if ($studentId <= 0) {
 
         throw new Exception(
-            "Student registration failed. Student ID was not generated."
+            "Student ID was not generated."
         );
     }
 
 
     /* ======================================================
-       COMMIT
+       COMMIT TRANSACTION
     ====================================================== */
 
     if (!$conn->commit()) {
@@ -529,11 +745,12 @@ try {
 
 
     /* ======================================================
-       CLEAR OTP + PENDING SESSION
+       CLEAR OTP SESSION
        ONLY AFTER SUCCESSFUL COMMIT
     ====================================================== */
 
     clearOtpSession("register");
+
 
     unset(
         $_SESSION["pending_registration"]
@@ -541,14 +758,15 @@ try {
 
 
     /* ======================================================
-       SUCCESS
+       SUCCESS RESPONSE
     ====================================================== */
 
     jsonResponse(
         "success",
         "Email verified. Registration submitted for admin approval.",
         [
-            "student_id" => $studentId
+            "student_id" => $studentId,
+            "redirect"   => "../../index.html"
         ]
     );
 
@@ -577,7 +795,6 @@ try {
     ====================================================== */
 
     if (
-        isset($stmt) &&
         $stmt instanceof mysqli_stmt
     ) {
 
@@ -596,30 +813,7 @@ try {
 
 
     /* ======================================================
-       DEVELOPMENT MODE
-       
-       IMPORTANT:
-       Keep TRUE while debugging.
-       Change to FALSE in production.
-    ====================================================== */
-
-    $showDevelopmentError = true;
-
-
-    if ($showDevelopmentError) {
-
-        jsonResponse(
-            "error",
-            "Unable to complete registration.",
-            [
-                "debug" => $e->getMessage()
-            ]
-        );
-    }
-
-
-    /* ======================================================
-       PRODUCTION ERROR
+       USER js
     ====================================================== */
 
     jsonResponse(
@@ -627,5 +821,12 @@ try {
         "Unable to complete registration. Please try again."
     );
 }
+
+
+/* ==========================================================
+   CLOSE DATABASE
+========================================================== */
+
+$conn->close();
 
 ?>

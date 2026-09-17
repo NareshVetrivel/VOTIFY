@@ -2079,3 +2079,55 @@ color:#fff;
 /* ==========================================================
    END - Candidate Selection V3
 ========================================================== */
+
+/* ==========================================================
+   PASSWORD STRENGTH METER
+========================================================== */
+
+#passwordStrength {
+    width: 100%;
+}
+
+#passwordStrength > div:first-child {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+#strengthBar {
+    display: block;
+    height: 100%;
+    width: 0%;
+    min-width: 0;
+    max-width: 100%;
+
+    border-radius: 999px;
+
+    background: linear-gradient(
+        90deg,
+        #EF4444,
+        #F59E0B,
+        #3B82F6,
+        #22C55E
+    );
+
+    transition:
+        width 0.35s ease,
+        background 0.35s ease;
+
+    box-shadow:
+        0 0 12px rgba(59, 130, 246, 0.35);
+}
+
+#strengthText {
+    font-weight: 600;
+    transition:
+        color 0.3s ease;
+}
+
+#strengthRequirements {
+    transition:
+        color 0.3s ease;
+}

@@ -16,11 +16,11 @@ header("Content-Type: application/json; charset=UTF-8");
    REQUIRED FILES
 ========================================================== */
 
-require_once("../../config/database.php");
-require_once("../../lib/otp.php");
-require_once("../../lib/mailer.php");
+require_once __DIR__ . "/../../config/database.php";
+require_once __DIR__ . "/../../lib/otp.php";
+require_once __DIR__ . "/../../lib/mailer.php";
 
-$emailConfig = require("../../config/email.php");
+$emailConfig = require __DIR__ . "/../../config/email.php";
 
 
 /* ==========================================================
@@ -82,25 +82,37 @@ if (
    GET FORM DATA
 ========================================================== */
 
-$full_name = trim($_POST["fullName"] ?? "");
+$full_name = trim(
+    $_POST["fullName"] ?? ""
+);
 
-$dob = trim($_POST["dob"] ?? "");
+$dob = trim(
+    $_POST["dob"] ?? ""
+);
 
 $admission_no = strtoupper(
     trim($_POST["admissionNo"] ?? "")
 );
 
-$phone = trim($_POST["phone"] ?? "");
+$phone = trim(
+    $_POST["phone"] ?? ""
+);
 
 $college_email = strtolower(
     trim($_POST["email"] ?? "")
 );
 
-$department = trim($_POST["department"] ?? "");
+$department = trim(
+    $_POST["department"] ?? ""
+);
 
-$year = trim($_POST["year"] ?? "");
+$year = trim(
+    $_POST["year"] ?? ""
+);
 
-$gender = trim($_POST["gender"] ?? "");
+$gender = trim(
+    $_POST["gender"] ?? ""
+);
 
 $password = $_POST["password"] ?? "";
 
@@ -122,6 +134,11 @@ if ($full_name === "") {
     exit;
 }
 
+
+/*
+ * Only English letters and spaces are allowed.
+ */
+
 if (!preg_match('/^[A-Za-z ]+$/', $full_name)) {
 
     echo json_encode([
@@ -129,6 +146,23 @@ if (!preg_match('/^[A-Za-z ]+$/', $full_name)) {
         "field"   => "fullName",
         "message" =>
             "Full Name can contain only letters and spaces."
+    ]);
+
+    exit;
+}
+
+
+/*
+ * Prevent a name containing only spaces.
+ */
+
+if (!preg_match('/[A-Za-z]/', $full_name)) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "fullName",
+        "message" =>
+            "Please enter a valid Full Name."
     ]);
 
     exit;
@@ -151,24 +185,48 @@ if ($dob === "") {
 }
 
 
+/*
+ * Validate actual date format.
+ */
+
+$dobDate = DateTime::createFromFormat(
+    "Y-m-d",
+    $dob
+);
+
+if (
+    !$dobDate ||
+    $dobDate->format("Y-m-d") !== $dob
+) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "dob",
+        "message" => "Enter a valid Date of Birth."
+    ]);
+
+    exit;
+}
+
+
 /* ==========================================================
    ADMISSION NUMBER VALIDATION
 ========================================================== */
 
 /*
- * Requirement:
+ * Required format:
  *
- * Example:
- * 25CAPMCA092
+ * 25CAPMCA080
  *
- * Allowed:
- * - A-Z
- * - a-z
- * - 0-9
+ * Structure:
  *
- * Length:
- * - Minimum 10
- * - Maximum 15
+ * 2 digits
+ * +
+ * CAPMCA
+ * +
+ * 3 digits
+ *
+ * Total = 11 characters
  */
 
 if ($admission_no === "") {
@@ -182,13 +240,26 @@ if ($admission_no === "") {
     exit;
 }
 
-if (!preg_match('/^[A-Z0-9]{10,15}$/', $admission_no)) {
+
+/*
+ * Exact Admission Number pattern.
+ *
+ * Example:
+ *
+ * 25CAPMCA080
+ * 26CAPMCA123
+ */
+
+if (!preg_match(
+    '/^[0-9]{2}CAPMCA[0-9]{3}$/',
+    $admission_no
+)) {
 
     echo json_encode([
         "status"  => "error",
         "field"   => "admissionNo",
         "message" =>
-            "Admission Number must contain only letters and numbers and must be 10 to 15 characters."
+            "Admission Number must follow the format 25CAPMCA080."
     ]);
 
     exit;
@@ -199,13 +270,35 @@ if (!preg_match('/^[A-Z0-9]{10,15}$/', $admission_no)) {
    PHONE VALIDATION
 ========================================================== */
 
-if (!preg_match('/^[6-9][0-9]{9}$/', $phone)) {
+if ($phone === "") {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "phone",
+        "message" => "Phone Number is required."
+    ]);
+
+    exit;
+}
+
+
+/*
+ * Indian mobile number:
+ *
+ * - Exactly 10 digits
+ * - First digit must be 6, 7, 8 or 9
+ */
+
+if (!preg_match(
+    '/^[6-9][0-9]{9}$/',
+    $phone
+)) {
 
     echo json_encode([
         "status"  => "error",
         "field"   => "phone",
         "message" =>
-            "Enter a valid 10-digit phone number."
+            "Enter a valid 10-digit Indian mobile number."
     ]);
 
     exit;
@@ -216,7 +309,22 @@ if (!preg_match('/^[6-9][0-9]{9}$/', $phone)) {
    COLLEGE EMAIL VALIDATION
 ========================================================== */
 
-if (!filter_var($college_email, FILTER_VALIDATE_EMAIL)) {
+if ($college_email === "") {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "email",
+        "message" => "College Email is required."
+    ]);
+
+    exit;
+}
+
+
+if (!filter_var(
+    $college_email,
+    FILTER_VALIDATE_EMAIL
+)) {
 
     echo json_encode([
         "status"  => "error",
@@ -251,7 +359,7 @@ if (
 
 
 /* ==========================================================
-   DEPARTMENT
+   DEPARTMENT VALIDATION
 ========================================================== */
 
 if ($department !== "MCA") {
@@ -259,8 +367,7 @@ if ($department !== "MCA") {
     echo json_encode([
         "status"  => "error",
         "field"   => "department",
-        "message" =>
-            "Only MCA students can register."
+        "message" => "Only MCA students can register."
     ]);
 
     exit;
@@ -268,7 +375,7 @@ if ($department !== "MCA") {
 
 
 /* ==========================================================
-   YEAR
+   YEAR VALIDATION
 ========================================================== */
 
 if (
@@ -290,7 +397,7 @@ if (
 
 
 /* ==========================================================
-   GENDER
+   GENDER VALIDATION
 ========================================================== */
 
 if (
@@ -312,8 +419,22 @@ if (
 
 
 /* ==========================================================
-   PASSWORD
+   PASSWORD VALIDATION
 ========================================================== */
+
+if ($password === "") {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "password",
+        "message" => "Password is required."
+    ]);
+
+    exit;
+}
+
+
+/* ---------- Minimum 8 characters ---------- */
 
 if (strlen($password) < 8) {
 
@@ -328,17 +449,45 @@ if (strlen($password) < 8) {
 }
 
 
-/* ==========================================================
-   CONFIRM PASSWORD
-========================================================== */
+/* ---------- Uppercase letter ---------- */
 
-if ($password !== $confirm_password) {
+if (!preg_match('/[A-Z]/', $password)) {
 
     echo json_encode([
         "status"  => "error",
-        "field"   => "confirmPassword",
+        "field"   => "password",
         "message" =>
-            "Passwords do not match."
+            "Password must contain at least one uppercase letter."
+    ]);
+
+    exit;
+}
+
+
+/* ---------- Number ---------- */
+
+if (!preg_match('/[0-9]/', $password)) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "password",
+        "message" =>
+            "Password must contain at least one number."
+    ]);
+
+    exit;
+}
+
+
+/* ---------- Special character ---------- */
+
+if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "password",
+        "message" =>
+            "Password must contain at least one special character."
     ]);
 
     exit;
@@ -346,7 +495,94 @@ if ($password !== $confirm_password) {
 
 
 /* ==========================================================
-   DUPLICATE ADMISSION NUMBER
+   CONFIRM PASSWORD
+========================================================== */
+
+if ($confirm_password === "") {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "confirmPassword",
+        "message" => "Please confirm your password."
+    ]);
+
+    exit;
+}
+
+
+if ($password !== $confirm_password) {
+
+    echo json_encode([
+        "status"  => "error",
+        "field"   => "confirmPassword",
+        "message" => "Passwords do not match."
+    ]);
+
+    exit;
+}
+
+
+/* ==========================================================
+   REMOVE OLD REJECTED RECORD
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Rejected registrations are not retained in the
+ * students table.
+ *
+ * This is a safety cleanup for any rejected record
+ * that may already exist from the previous system flow.
+ *
+ * Once a rejected record is found for the same
+ * Admission Number, Phone Number, or College Email,
+ * it is removed before duplicate checks.
+ *
+ * This allows the database UNIQUE constraints to
+ * remain active without blocking re-registration.
+ */
+
+$cleanupStmt = $conn->prepare(
+    "DELETE FROM students
+     WHERE LOWER(TRIM(status)) = 'rejected'
+     AND (
+         admission_no = ?
+         OR phone = ?
+         OR college_email = ?
+     )"
+);
+
+if (!$cleanupStmt) {
+
+    error_log(
+        "VOTIFY Registration Rejected Cleanup Prepare Error: " .
+        $conn->error
+    );
+
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Unable to process registration."
+    ]);
+
+    exit;
+}
+
+
+$cleanupStmt->bind_param(
+    "sss",
+    $admission_no,
+    $phone,
+    $college_email
+);
+
+$cleanupStmt->execute();
+
+$cleanupStmt->close();
+
+
+/* ==========================================================
+   DUPLICATE ADMISSION NUMBER CHECK
 ========================================================== */
 
 $stmt = $conn->prepare(
@@ -365,18 +601,22 @@ if (!$stmt) {
 
     echo json_encode([
         "status"  => "error",
-        "message" =>
-            "Unable to process registration."
+        "message" => "Unable to process registration."
     ]);
 
     exit;
 }
 
-$stmt->bind_param("s", $admission_no);
+
+$stmt->bind_param(
+    "s",
+    $admission_no
+);
 
 $stmt->execute();
 
 $stmt->store_result();
+
 
 if ($stmt->num_rows > 0) {
 
@@ -385,18 +625,18 @@ if ($stmt->num_rows > 0) {
     echo json_encode([
         "status"  => "error",
         "field"   => "admissionNo",
-        "message" =>
-            "Admission Number already registered."
+        "message" => "Admission Number already registered."
     ]);
 
     exit;
 }
 
+
 $stmt->close();
 
 
 /* ==========================================================
-   DUPLICATE PHONE NUMBER
+   DUPLICATE PHONE NUMBER CHECK
 ========================================================== */
 
 $stmt = $conn->prepare(
@@ -415,18 +655,22 @@ if (!$stmt) {
 
     echo json_encode([
         "status"  => "error",
-        "message" =>
-            "Unable to process registration."
+        "message" => "Unable to process registration."
     ]);
 
     exit;
 }
 
-$stmt->bind_param("s", $phone);
+
+$stmt->bind_param(
+    "s",
+    $phone
+);
 
 $stmt->execute();
 
 $stmt->store_result();
+
 
 if ($stmt->num_rows > 0) {
 
@@ -435,18 +679,18 @@ if ($stmt->num_rows > 0) {
     echo json_encode([
         "status"  => "error",
         "field"   => "phone",
-        "message" =>
-            "Phone Number already registered."
+        "message" => "Phone Number already registered."
     ]);
 
     exit;
 }
 
+
 $stmt->close();
 
 
 /* ==========================================================
-   DUPLICATE COLLEGE EMAIL
+   DUPLICATE COLLEGE EMAIL CHECK
 ========================================================== */
 
 $stmt = $conn->prepare(
@@ -465,18 +709,22 @@ if (!$stmt) {
 
     echo json_encode([
         "status"  => "error",
-        "message" =>
-            "Unable to process registration."
+        "message" => "Unable to process registration."
     ]);
 
     exit;
 }
 
-$stmt->bind_param("s", $college_email);
+
+$stmt->bind_param(
+    "s",
+    $college_email
+);
 
 $stmt->execute();
 
 $stmt->store_result();
+
 
 if ($stmt->num_rows > 0) {
 
@@ -485,12 +733,12 @@ if ($stmt->num_rows > 0) {
     echo json_encode([
         "status"  => "error",
         "field"   => "email",
-        "message" =>
-            "College Email already registered."
+        "message" => "College Email already registered."
     ]);
 
     exit;
 }
+
 
 $stmt->close();
 
@@ -508,8 +756,7 @@ if ($hashed_password === false) {
 
     echo json_encode([
         "status"  => "error",
-        "message" =>
-            "Unable to secure password."
+        "message" => "Unable to secure password."
     ]);
 
     exit;
@@ -517,7 +764,7 @@ if ($hashed_password === false) {
 
 
 /* ==========================================================
-   STORE TEMP REGISTRATION DATA
+   STORE TEMPORARY REGISTRATION DATA
 ========================================================== */
 
 /*
@@ -525,9 +772,10 @@ if ($hashed_password === false) {
  *
  * Student record is NOT inserted yet.
  *
- * Data is temporarily stored in session.
+ * Registration data is temporarily stored
+ * inside the session.
  *
- * Actual INSERT happens only after
+ * Actual student INSERT happens only after
  * successful OTP verification.
  */
 
@@ -574,12 +822,13 @@ if (
     !is_int($otp)
 ) {
 
-    unset($_SESSION["pending_registration"]);
+    unset(
+        $_SESSION["pending_registration"]
+    );
 
     echo json_encode([
         "status"  => "error",
-        "message" =>
-            "Unable to generate OTP."
+        "message" => "Unable to generate OTP."
     ]);
 
     exit;
@@ -592,15 +841,18 @@ if (
 
 $otpExpiry = 300;
 
+
 if (
     isset($emailConfig["otp_expiry"]) &&
     is_numeric($emailConfig["otp_expiry"])
 ) {
-    $otpExpiry =
-        (int)$emailConfig["otp_expiry"];
+
+    $otpExpiry = (int) $emailConfig["otp_expiry"];
 }
 
+
 if ($otpExpiry <= 0) {
+
     $otpExpiry = 300;
 }
 
@@ -649,21 +901,26 @@ if (
         $_SESSION["pending_registration"]
     );
 
+
     $mailMessage =
         "Unable to send OTP email. Please try again.";
+
 
     if (
         is_array($mailResult) &&
         !empty($mailResult["message"])
     ) {
+
         $mailMessage =
             $mailResult["message"];
     }
+
 
     error_log(
         "VOTIFY Registration OTP Mail Failed: " .
         $mailMessage
     );
+
 
     echo json_encode([
         "status"  => "error",
@@ -702,4 +959,5 @@ echo json_encode([
 $conn->close();
 
 exit;
+
 ?>

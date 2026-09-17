@@ -6,7 +6,6 @@
 ========================================================== */
 
 if (session_status() === PHP_SESSION_NONE) {
-
     session_start();
 }
 
@@ -34,17 +33,49 @@ function createOtpSession(
     int $expirySeconds = 300
 ): void {
 
+    /*
+     * Prevent invalid expiry values.
+     */
+
+    if ($expirySeconds <= 0) {
+        $expirySeconds = 300;
+    }
+
+
+    /*
+     * Store only the hashed OTP.
+     *
+     * The original OTP is never stored
+     * directly inside the session.
+     */
+
     $_SESSION[$type . "_otp_hash"] =
         password_hash(
             $otp,
             PASSWORD_DEFAULT
         );
 
+
+    /*
+     * OTP expiry timestamp.
+     */
+
     $_SESSION[$type . "_otp_expiry"] =
         time() + $expirySeconds;
 
+
+    /*
+     * Used for resend cooldown.
+     */
+
     $_SESSION[$type . "_otp_created_at"] =
         time();
+
+
+    /*
+     * Reset verification attempts
+     * whenever a new OTP is created.
+     */
 
     $_SESSION[$type . "_otp_attempts"] = 0;
 }
@@ -60,6 +91,15 @@ function verifyOtpSession(
     int $maxAttempts = 5
 ): array {
 
+    /*
+     * Prevent invalid maximum-attempt configuration.
+     */
+
+    if ($maxAttempts <= 0) {
+        $maxAttempts = 5;
+    }
+
+
     $hashKey =
         $type . "_otp_hash";
 
@@ -70,7 +110,9 @@ function verifyOtpSession(
         $type . "_otp_attempts";
 
 
-    /* OTP NOT FOUND */
+    /* ======================================================
+       OTP SESSION CHECK
+    ====================================================== */
 
     if (
         empty($_SESSION[$hashKey]) ||
@@ -78,98 +120,142 @@ function verifyOtpSession(
     ) {
 
         return [
-
             "success" => false,
-
             "message" =>
                 "OTP session not found. Please request a new OTP."
         ];
     }
 
 
-    /* MAX ATTEMPTS */
+    /* ======================================================
+       OTP FORMAT CHECK
+    ====================================================== */
 
-    $attempts =
-        $_SESSION[$attemptKey] ?? 0;
-
-    if ($attempts >= $maxAttempts) {
-
-        clearOtpSession($type);
-
-        return [
-
-            "success" => false,
-
-            "message" =>
-                "Maximum OTP attempts exceeded. Please request a new OTP."
-        ];
-    }
-
-
-    /* OTP EXPIRED */
-
-    if (time() > $_SESSION[$expiryKey]) {
-
-        clearOtpSession($type);
+    if (
+        !is_string($otp) ||
+        !preg_match('/^[0-9]{6}$/', $otp)
+    ) {
 
         return [
-
             "success" => false,
-
-            "message" =>
-                "OTP has expired. Please request a new OTP."
-        ];
-    }
-
-
-    /* INVALID FORMAT */
-
-    if (!preg_match('/^[0-9]{6}$/', $otp)) {
-
-        return [
-
-            "success" => false,
-
             "message" =>
                 "Enter a valid 6-digit OTP."
         ];
     }
 
 
-    /* INCREASE ATTEMPT */
-
-    $_SESSION[$attemptKey] =
-        $attempts + 1;
-
-
-    /* VERIFY HASH */
+    /* ======================================================
+       OTP EXPIRY CHECK
+    ====================================================== */
 
     if (
-        !password_verify(
-            $otp,
-            $_SESSION[$hashKey]
-        )
+        time() >=
+        (int)$_SESSION[$expiryKey]
     ) {
 
-        $remaining =
-            $maxAttempts -
-            $_SESSION[$attemptKey];
+        clearOtpSession($type);
 
         return [
-
             "success" => false,
+            "message" =>
+                "OTP has expired. Please request a new OTP."
+        ];
+    }
 
+
+    /* ======================================================
+       GET CURRENT ATTEMPTS
+    ====================================================== */
+
+    $attempts =
+        (int)(
+            $_SESSION[$attemptKey] ?? 0
+        );
+
+
+    /* ======================================================
+       MAXIMUM ATTEMPTS CHECK
+    ====================================================== */
+
+    if ($attempts >= $maxAttempts) {
+
+        clearOtpSession($type);
+
+        return [
+            "success" => false,
+            "message" =>
+                "Maximum OTP attempts exceeded. Please request a new OTP."
+        ];
+    }
+
+
+    /* ======================================================
+       INCREASE ATTEMPT COUNT
+    ====================================================== */
+
+    $attempts++;
+
+    $_SESSION[$attemptKey] =
+        $attempts;
+
+
+    /* ======================================================
+       VERIFY OTP HASH
+    ====================================================== */
+
+    $isValid =
+        password_verify(
+            $otp,
+            $_SESSION[$hashKey]
+        );
+
+
+    /* ======================================================
+       INVALID OTP
+    ====================================================== */
+
+    if (!$isValid) {
+
+        $remaining =
+            max(
+                0,
+                $maxAttempts - $attempts
+            );
+
+
+        /*
+         * If this was the final attempt,
+         * invalidate the OTP immediately.
+         */
+
+        if ($remaining === 0) {
+
+            clearOtpSession($type);
+
+            return [
+                "success" => false,
+                "message" =>
+                    "Incorrect OTP. Maximum OTP attempts exceeded. Please request a new OTP."
+            ];
+        }
+
+
+        return [
+            "success" => false,
             "message" =>
                 "Incorrect OTP. {$remaining} attempt(s) remaining."
         ];
     }
 
 
+    /* ======================================================
+       OTP VERIFIED
+    ====================================================== */
+
     return [
-
         "success" => true,
-
-        "message" => "OTP verified successfully."
+        "message" =>
+            "OTP verified successfully."
     ];
 }
 
@@ -183,10 +269,26 @@ function canResendOtp(
     int $cooldown = 30
 ): array {
 
+    /*
+     * Prevent invalid cooldown values.
+     */
+
+    if ($cooldown < 0) {
+        $cooldown = 30;
+    }
+
+
     $createdKey =
         $type . "_otp_created_at";
 
-    if (empty($_SESSION[$createdKey])) {
+
+    /* ======================================================
+       NO PREVIOUS OTP
+    ====================================================== */
+
+    if (
+        empty($_SESSION[$createdKey])
+    ) {
 
         return [
             "allowed" => true,
@@ -194,9 +296,19 @@ function canResendOtp(
         ];
     }
 
+
+    /* ======================================================
+       CALCULATE ELAPSED TIME
+    ====================================================== */
+
     $elapsed =
         time() -
-        $_SESSION[$createdKey];
+        (int)$_SESSION[$createdKey];
+
+
+    /* ======================================================
+       COOLDOWN COMPLETED
+    ====================================================== */
 
     if ($elapsed >= $cooldown) {
 
@@ -206,10 +318,13 @@ function canResendOtp(
         ];
     }
 
+
+    /* ======================================================
+       COOLDOWN STILL ACTIVE
+    ====================================================== */
+
     return [
-
         "allowed" => false,
-
         "remaining" =>
             $cooldown - $elapsed
     ];
@@ -241,42 +356,83 @@ function maskEmail(
     string $email
 ): string {
 
+    /*
+     * Split email into username
+     * and domain.
+     */
+
     $parts =
         explode(
             "@",
-            $email
+            $email,
+            2
         );
 
-    if (count($parts) !== 2) {
+
+    if (
+        count($parts) !== 2
+    ) {
 
         return $email;
     }
 
-    $username = $parts[0];
-    $domain = $parts[1];
+
+    $username =
+        $parts[0];
+
+    $domain =
+        $parts[1];
+
 
     $length =
         strlen($username);
 
+
+    /* ======================================================
+       SHORT USERNAME
+    ====================================================== */
+
     if ($length <= 3) {
 
         $masked =
-            substr($username, 0, 1) .
+            substr(
+                $username,
+                0,
+                1
+            ) .
             "***";
 
     } else {
 
+        /*
+         * Keep first 2 and last 2
+         * characters visible.
+         */
+
         $masked =
-            substr($username, 0, 2) .
+            substr(
+                $username,
+                0,
+                2
+            ) .
             str_repeat(
                 "*",
-                max(3, $length - 4)
+                max(
+                    3,
+                    $length - 4
+                )
             ) .
-            substr($username, -2);
+            substr(
+                $username,
+                -2
+            );
     }
+
 
     return
         $masked .
         "@" .
         $domain;
 }
+
+?>

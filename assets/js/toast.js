@@ -24,6 +24,14 @@ function showToast(type, title, message) {
     const toastMessage =
     document.getElementById("toastMessage");
 
+    /* ======================================================
+       TOAST FRONT LAYER
+       Only added to keep toast above OTP modal/blur
+    ====================================================== */
+
+    toast.style.position = "fixed";
+    toast.style.zIndex = "2147483647";
+
     /* Reset */
 
     wrapper.className =
