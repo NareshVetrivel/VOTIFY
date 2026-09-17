@@ -1,9 +1,11 @@
 /* ==========================================================
    VOTIFY
    Voters Management
+   File : assets/js/voters.js
 ========================================================== */
 
 "use strict";
+
 
 /* ==========================================================
    GLOBALS
@@ -17,15 +19,37 @@ let currentFilter = "all";
 
 let searchKeyword = "";
 
+
+/* ==========================================================
+   YEAR DROPDOWN GLOBAL STATE
+========================================================== */
+
+let yearDropdownInitialized = false;
+
+let yearDropdownMenuOriginalParent = null;
+
+let yearDropdownMenuOriginalNextSibling = null;
+
+let yearDropdownOutsideHandler = null;
+
+let yearDropdownEscapeHandler = null;
+
+let yearDropdownRepositionHandler = null;
+
+
 /* ==========================================================
    READY
 ========================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    initializeVoters();
+        initializeVoters();
 
-});
+    }
+);
+
 
 /* ==========================================================
    INITIALIZE
@@ -34,32 +58,715 @@ document.addEventListener("DOMContentLoaded", () => {
 function initializeVoters(){
 
     console.log("1 Search");
+
     initializeSearch();
 
+
     console.log("2 Entries");
+
     initializeEntries();
 
+
     console.log("3 Filters");
+
     initializeFilters();
 
-console.log("4 Pagination");
-initializePagination();
 
-console.log("5 View");
-initializeViewButtons();
+    console.log("4 Pagination");
 
-console.log("6 Edit");
-initializeEditButtons();
+    initializePagination();
 
-console.log("7 Delete");
-initializeDeleteButtons();
 
-console.log("8 Form");
-initializeVoterForm();
+    console.log("5 View");
 
-console.log("9 Export");
-initializeExport();
+    initializeViewButtons();
+
+
+    console.log("6 Edit");
+
+    initializeEditButtons();
+
+
+    console.log("7 Delete");
+
+    initializeDeleteButtons();
+
+
+    console.log("8 Form");
+
+    initializeVoterForm();
+
+
+    console.log("9 Export");
+
+    initializeExport();
+
+
+    console.log("10 Year Dropdown");
+
+    initializeYearDropdown();
+
+
+    console.log("11 Full Name");
+
+    initializeFullNameInput();
+
 }
+
+
+/* ==========================================================
+   FULL NAME — UPPERCASE
+========================================================== */
+
+function initializeFullNameInput(){
+
+    const fullName =
+        document.getElementById(
+            "fullName"
+        );
+
+
+    if(!fullName){
+
+        return;
+
+    }
+
+
+    fullName.addEventListener(
+        "input",
+        () => {
+
+            fullName.value =
+                fullName.value.toUpperCase();
+
+        }
+    );
+
+
+    /*
+     * Make already loaded value uppercase.
+     */
+
+    if(fullName.value){
+
+        fullName.value =
+            fullName.value.toUpperCase();
+
+    }
+
+}
+
+
+/* ==========================================================
+   YEAR CUSTOM DROPDOWN
+========================================================== */
+
+function initializeYearDropdown(){
+
+    if(yearDropdownInitialized){
+
+        return;
+
+    }
+
+
+    const dropdown =
+        document.getElementById(
+            "yearDropdown"
+        );
+
+
+    const button =
+        document.getElementById(
+            "yearDropdownButton"
+        );
+
+
+    const menu =
+        document.getElementById(
+            "yearDropdownMenu"
+        );
+
+
+    const hiddenInput =
+        document.getElementById(
+            "year"
+        );
+
+
+    const text =
+        document.getElementById(
+            "yearDropdownText"
+        );
+
+
+    const icon =
+        document.getElementById(
+            "yearDropdownIcon"
+        );
+
+
+    if(
+        !dropdown ||
+        !button ||
+        !menu ||
+        !hiddenInput ||
+        !text
+    ){
+
+        console.warn(
+            "VOTIFY: Year dropdown elements not found."
+        );
+
+        return;
+
+    }
+
+
+    yearDropdownInitialized = true;
+
+
+    /* ======================================================
+       STORE ORIGINAL POSITION
+    ====================================================== */
+
+    yearDropdownMenuOriginalParent =
+        menu.parentNode;
+
+
+    yearDropdownMenuOriginalNextSibling =
+        menu.nextSibling;
+
+
+    /* ======================================================
+       MOVE MENU TO BODY
+       
+       This prevents the dropdown from being
+       merged/clipped inside the scrollable modal.
+    ====================================================== */
+
+    document.body.appendChild(
+        menu
+    );
+
+
+    /* ======================================================
+       DROPDOWN MENU BASE STYLE
+       
+       Design is preserved.
+       We only change positioning/layering.
+    ====================================================== */
+
+    menu.style.position =
+        "fixed";
+
+    menu.style.zIndex =
+        "2147483646";
+
+    menu.style.marginTop =
+        "0";
+
+    menu.style.transform =
+        "none";
+
+
+    /* ======================================================
+       POSITION DROPDOWN
+    ====================================================== */
+
+    function positionYearDropdown(){
+
+        if(
+            menu.classList.contains(
+                "hidden"
+            )
+        ){
+
+            return;
+
+        }
+
+
+        const buttonRect =
+            button.getBoundingClientRect();
+
+
+        const viewportWidth =
+            window.innerWidth;
+
+
+        const viewportHeight =
+            window.innerHeight;
+
+
+        const gap =
+            8;
+
+
+        const menuHeight =
+            menu.offsetHeight;
+
+
+        const buttonHeight =
+            buttonRect.height;
+
+
+        /*
+         * Keep same width as trigger.
+         */
+
+        const width =
+            buttonRect.width;
+
+
+        /*
+         * Default: open downward.
+         */
+
+        let top =
+            buttonRect.bottom +
+            gap;
+
+
+        /*
+         * If there is not enough space below,
+         * open upward.
+         */
+
+        if(
+            top + menuHeight >
+            viewportHeight - 12
+        ){
+
+            const upwardTop =
+                buttonRect.top -
+                menuHeight -
+                gap;
+
+
+            if(
+                upwardTop >= 12
+            ){
+
+                top =
+                    upwardTop;
+
+            }
+
+        }
+
+
+        /*
+         * Keep dropdown inside viewport horizontally.
+         */
+
+        let left =
+            buttonRect.left;
+
+
+        if(
+            left + width >
+            viewportWidth - 12
+        ){
+
+            left =
+                viewportWidth -
+                width -
+                12;
+
+        }
+
+
+        if(left < 12){
+
+            left = 12;
+
+        }
+
+
+        menu.style.top =
+            Math.round(top) +
+            "px";
+
+
+        menu.style.left =
+            Math.round(left) +
+            "px";
+
+
+        menu.style.width =
+            Math.round(width) +
+            "px";
+
+    }
+
+
+    /* ======================================================
+       OPEN
+    ====================================================== */
+
+    function openYearDropdown(){
+
+        menu.classList.remove(
+            "hidden"
+        );
+
+
+        button.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+
+
+        if(icon){
+
+            icon.classList.add(
+                "rotate-180"
+            );
+
+        }
+
+
+        /*
+         * Position after menu becomes visible,
+         * so offsetHeight is available.
+         */
+
+        requestAnimationFrame(
+            () => {
+
+                positionYearDropdown();
+
+            }
+        );
+
+    }
+
+
+    /* ======================================================
+       CLOSE
+    ====================================================== */
+
+    function closeYearDropdown(){
+
+        menu.classList.add(
+            "hidden"
+        );
+
+
+        button.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+
+        if(icon){
+
+            icon.classList.remove(
+                "rotate-180"
+            );
+
+        }
+
+    }
+
+
+    /* ======================================================
+       TOGGLE
+    ====================================================== */
+
+    function toggleYearDropdown(){
+
+        if(
+            menu.classList.contains(
+                "hidden"
+            )
+        ){
+
+            openYearDropdown();
+
+        }
+        else{
+
+            closeYearDropdown();
+
+        }
+
+    }
+
+
+    /* ======================================================
+       SET YEAR VALUE
+    ====================================================== */
+
+    window.setYearDropdownValue =
+        function(value){
+
+            const validValues = [
+                "I Year",
+                "II Year"
+            ];
+
+
+            /*
+             * Safety fallback.
+             */
+
+            if(
+                !validValues.includes(
+                    value
+                )
+            ){
+
+                value =
+                    "I Year";
+
+            }
+
+
+            hiddenInput.value =
+                value;
+
+
+            text.textContent =
+                value;
+
+
+            /* ==================================================
+               UPDATE CHECK ICONS
+            ================================================== */
+
+            menu
+                .querySelectorAll(
+                    ".yearOption"
+                )
+                .forEach(
+                    option => {
+
+                        const optionValue =
+                            option.dataset.value;
+
+
+                        const check =
+                            option.querySelector(
+                                ".yearCheck"
+                            );
+
+
+                        if(
+                            optionValue ===
+                            value
+                        ){
+
+                            option.classList.add(
+                                "bg-blue-500/10",
+                                "text-blue-400"
+                            );
+
+
+                            if(check){
+
+                                check.classList.remove(
+                                    "hidden"
+                                );
+
+                            }
+
+                        }
+                        else{
+
+                            option.classList.remove(
+                                "bg-blue-500/10",
+                                "text-blue-400"
+                            );
+
+
+                            if(check){
+
+                                check.classList.add(
+                                    "hidden"
+                                );
+
+                            }
+
+                        }
+
+                    }
+                );
+
+        };
+
+
+    /* ======================================================
+       DROPDOWN BUTTON
+    ====================================================== */
+
+    button.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+            toggleYearDropdown();
+
+        }
+    );
+
+
+    /* ======================================================
+       YEAR OPTIONS
+    ====================================================== */
+
+    menu
+        .querySelectorAll(
+            ".yearOption"
+        )
+        .forEach(
+            option => {
+
+                option.addEventListener(
+                    "click",
+                    event => {
+
+                        event.preventDefault();
+
+                        event.stopPropagation();
+
+
+                        const value =
+                            option.dataset.value;
+
+
+                        if(!value){
+
+                            return;
+
+                        }
+
+
+                        window.setYearDropdownValue(
+                            value
+                        );
+
+
+                        closeYearDropdown();
+
+                    }
+                );
+
+            }
+        );
+
+
+    /* ======================================================
+       OUTSIDE CLICK
+    ====================================================== */
+
+    yearDropdownOutsideHandler =
+        event => {
+
+            const clickedInsideButton =
+                button.contains(
+                    event.target
+                );
+
+
+            const clickedInsideMenu =
+                menu.contains(
+                    event.target
+                );
+
+
+            if(
+                !clickedInsideButton &&
+                !clickedInsideMenu
+            ){
+
+                closeYearDropdown();
+
+            }
+
+        };
+
+
+    document.addEventListener(
+        "click",
+        yearDropdownOutsideHandler
+    );
+
+
+    /* ======================================================
+       ESCAPE
+    ====================================================== */
+
+    yearDropdownEscapeHandler =
+        event => {
+
+            if(
+                event.key ===
+                "Escape"
+            ){
+
+                closeYearDropdown();
+
+            }
+
+        };
+
+
+    document.addEventListener(
+        "keydown",
+        yearDropdownEscapeHandler
+    );
+
+
+    /* ======================================================
+       REPOSITION ON SCROLL
+    ====================================================== */
+
+    yearDropdownRepositionHandler =
+        () => {
+
+            if(
+                !menu.classList.contains(
+                    "hidden"
+                )
+            ){
+
+                positionYearDropdown();
+
+            }
+
+        };
+
+
+    window.addEventListener(
+        "resize",
+        yearDropdownRepositionHandler
+    );
+
+
+    window.addEventListener(
+        "scroll",
+        yearDropdownRepositionHandler,
+        true
+    );
+
+
+    /* ======================================================
+       DEFAULT VALUE
+    ====================================================== */
+
+    window.setYearDropdownValue(
+        hiddenInput.value ||
+        "I Year"
+    );
+
+}
+
 
 /* ==========================================================
    SEARCH
@@ -68,7 +775,10 @@ initializeExport();
 function initializeSearch(){
 
     const searchInput =
-    document.getElementById("voterSearch");
+        document.getElementById(
+            "voterSearch"
+        );
+
 
     if(!searchInput){
 
@@ -76,18 +786,27 @@ function initializeSearch(){
 
     }
 
-    searchInput.addEventListener("keyup",()=>{
 
-        searchKeyword =
-        searchInput.value
-        .toLowerCase()
-        .trim();
+    searchInput.addEventListener(
+        "keyup",
+        () => {
 
-        updateTable();
+            searchKeyword =
+                searchInput.value
+                    .toLowerCase()
+                    .trim();
 
-    });
+
+            currentPage = 1;
+
+
+            updateTable();
+
+        }
+    );
 
 }
+
 
 /* ==========================================================
    FILTER BUTTONS
@@ -96,51 +815,104 @@ function initializeSearch(){
 function initializeFilters(){
 
     const all =
-    document.getElementById("filterAll");
+        document.getElementById(
+            "filterAll"
+        );
+
 
     const voted =
-    document.getElementById("filterVoted");
+        document.getElementById(
+            "filterVoted"
+        );
+
 
     const unvoted =
-    document.getElementById("filterUnvoted");
+        document.getElementById(
+            "filterUnvoted"
+        );
 
-    if(!all){
+
+    if(
+        !all ||
+        !voted ||
+        !unvoted
+    ){
 
         return;
 
     }
 
-    all.addEventListener("click",()=>{
 
-        currentFilter="all";
+    all.addEventListener(
+        "click",
+        () => {
 
-        updateFilterButtons(all);
+            currentFilter =
+                "all";
 
-        updateTable();
 
-    });
+            currentPage =
+                1;
 
-    voted.addEventListener("click",()=>{
 
-        currentFilter="voted";
+            updateFilterButtons(
+                all
+            );
 
-        updateFilterButtons(voted);
 
-        updateTable();
+            updateTable();
 
-    });
+        }
+    );
 
-    unvoted.addEventListener("click",()=>{
 
-        currentFilter="unvoted";
+    voted.addEventListener(
+        "click",
+        () => {
 
-        updateFilterButtons(unvoted);
+            currentFilter =
+                "voted";
 
-        updateTable();
 
-    });
+            currentPage =
+                1;
+
+
+            updateFilterButtons(
+                voted
+            );
+
+
+            updateTable();
+
+        }
+    );
+
+
+    unvoted.addEventListener(
+        "click",
+        () => {
+
+            currentFilter =
+                "unvoted";
+
+
+            currentPage =
+                1;
+
+
+            updateFilterButtons(
+                unvoted
+            );
+
+
+            updateTable();
+
+        }
+    );
 
 }
+
 
 /* ==========================================================
    ENTRIES
@@ -149,10 +921,10 @@ function initializeFilters(){
 function initializeEntries(){
 
     const select =
+        document.getElementById(
+            "entriesSelect"
+        );
 
-    document.getElementById(
-        "entriesSelect"
-    );
 
     if(!select){
 
@@ -160,73 +932,109 @@ function initializeEntries(){
 
     }
 
-    select.addEventListener("change",()=>{
 
-        rowsPerPage =
+    select.addEventListener(
+        "change",
+        () => {
 
-        parseInt(select.value);
+            rowsPerPage =
+                parseInt(
+                    select.value,
+                    10
+                );
 
-        currentPage = 1;
 
-        updateTable();
+            currentPage =
+                1;
 
-    });
+
+            updateTable();
+
+        }
+    );
 
 }
 
+
 /* ==========================================================
-   INITIALIZE PAGINATION
+   PAGINATION
 ========================================================== */
 
 function initializePagination(){
 
     const prevButton =
-    document.getElementById("prevPage");
+        document.getElementById(
+            "prevPage"
+        );
+
 
     const nextButton =
-    document.getElementById("nextPage");
+        document.getElementById(
+            "nextPage"
+        );
+
 
     if(prevButton){
 
-        prevButton.addEventListener("click",()=>{
+        prevButton.addEventListener(
+            "click",
+            () => {
 
-            if(currentPage>1){
+                if(
+                    currentPage > 1
+                ){
 
-                currentPage--;
+                    currentPage--;
 
-                updateTable();
+                    updateTable();
+
+                }
 
             }
-
-        });
+        );
 
     }
+
 
     if(nextButton){
 
-        nextButton.addEventListener("click",()=>{
+        nextButton.addEventListener(
+            "click",
+            () => {
 
-            const totalRows =
-            getFilteredRows().length;
+                const totalRows =
+                    getFilteredRows()
+                        .length;
 
-            const totalPages =
-            Math.ceil(totalRows/rowsPerPage);
 
-            if(currentPage<totalPages){
+                const totalPages =
+                    Math.ceil(
+                        totalRows /
+                        rowsPerPage
+                    );
 
-                currentPage++;
 
-                updateTable();
+                if(
+                    currentPage <
+                    totalPages
+                ){
+
+                    currentPage++;
+
+                    updateTable();
+
+                }
 
             }
-
-        });
+        );
 
     }
+
 
     updateTable();
 
 }
+
 
 /* ==========================================================
    FILTERED ROWS
@@ -235,45 +1043,67 @@ function initializePagination(){
 function getFilteredRows(){
 
     const rows =
-    Array.from(
-        document.querySelectorAll(
-            "#votersTableBody tr[data-id]"
-        )
+        Array.from(
+            document.querySelectorAll(
+                "#votersTableBody tr[data-id]"
+            )
+        );
+
+
+    return rows.filter(
+        row => {
+
+            const text =
+                row.innerText
+                    .toLowerCase();
+
+
+            const status =
+                row.cells[4]
+                    ?.innerText
+                    .trim()
+                    .toLowerCase();
+
+
+            const searchMatch =
+                text.includes(
+                    searchKeyword
+                );
+
+
+            if(
+                currentFilter ===
+                "voted"
+            ){
+
+                return (
+                    searchMatch &&
+                    status === "voted"
+                );
+
+            }
+
+
+            if(
+                currentFilter ===
+                "unvoted"
+            ){
+
+                return (
+                    searchMatch &&
+                    status === "unvoted"
+                );
+
+            }
+
+
+            return searchMatch;
+
+        }
     );
 
-    return rows.filter(row=>{
-
-        const text =
-        row.innerText.toLowerCase();
-
-        const status =
-        row.cells[4]
-        .innerText
-        .trim()
-        .toLowerCase();
-
-        const searchMatch =
-        text.includes(searchKeyword);
-
-        if(currentFilter==="voted"){
-
-            return searchMatch &&
-            status==="voted";
-
-        }
-
-        if(currentFilter==="unvoted"){
-
-            return searchMatch &&
-            status==="unvoted";
-
-        }
-
-        return searchMatch;
-
-    });
-
 }
+
 
 /* ==========================================================
    UPDATE TABLE
@@ -281,122 +1111,148 @@ function getFilteredRows(){
 
 function updateTable(){
 
-    const rows = getFilteredRows();
+    const rows =
+        getFilteredRows();
 
-    const totalRows = rows.length;
+
+    const totalRows =
+        rows.length;
+
 
     const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                totalRows /
+                rowsPerPage
+            )
+        );
 
-    Math.max(
 
-        1,
+    if(
+        currentPage >
+        totalPages
+    ){
 
-        Math.ceil(totalRows / rowsPerPage)
-
-    );
-
-    if(currentPage > totalPages){
-
-        currentPage = totalPages;
+        currentPage =
+            totalPages;
 
     }
 
-    /* ==========================================
-       Hide All Rows
-    ========================================== */
 
     document
+        .querySelectorAll(
+            "#votersTableBody tr[data-id]"
+        )
+        .forEach(
+            row => {
 
-    .querySelectorAll("#votersTableBody tr[data-id]")
+                row.style.display =
+                    "none";
 
-    .forEach(row=>{
+            }
+        );
 
-        row.style.display="none";
-
-    });
-
-    /* ==========================================
-       Show Current Page Rows
-    ========================================== */
 
     const start =
+        (currentPage - 1) *
+        rowsPerPage;
 
-    (currentPage-1) * rowsPerPage;
 
     const end =
+        start +
+        rowsPerPage;
 
-    start + rowsPerPage;
 
     rows
+        .slice(
+            start,
+            end
+        )
+        .forEach(
+            row => {
 
-    .slice(start,end)
+                row.style.display =
+                    "";
 
-    .forEach(row=>{
+            }
+        );
 
-        row.style.display="";
-
-    });
-
-    /* ==========================================
-       Showing Text
-    ========================================== */
 
     const showingStart =
+        document.getElementById(
+            "showingStart"
+        );
 
-    document.getElementById("showingStart");
 
     const showingEnd =
+        document.getElementById(
+            "showingEnd"
+        );
 
-    document.getElementById("showingEnd");
 
     const totalRecords =
+        document.getElementById(
+            "totalRecords"
+        );
 
-    document.getElementById("totalRecords");
 
     if(showingStart){
 
         showingStart.textContent =
-
-        totalRows==0
-
-        ? 0
-
-        : start+1;
+            totalRows === 0
+            ? 0
+            : start + 1;
 
     }
+
 
     if(showingEnd){
 
         showingEnd.textContent =
-
-        Math.min(end,totalRows);
+            Math.min(
+                end,
+                totalRows
+            );
 
     }
+
 
     if(totalRecords){
 
         totalRecords.textContent =
-
-        totalRows;
+            totalRows;
 
     }
 
-if(typeof renderPagination === "function"){
 
-    renderPagination(totalPages);
+    if(
+        typeof renderPagination ===
+        "function"
+    ){
+
+        renderPagination(
+            totalPages
+        );
+
+    }
 
 }
 
-}
 
 /* ==========================================================
    RENDER PAGINATION
 ========================================================== */
 
-function renderPagination(totalPages){
+function renderPagination(
+    totalPages
+){
 
     const container =
-    document.getElementById("paginationNumbers");
+        document.getElementById(
+            "paginationNumbers"
+        );
+
 
     if(!container){
 
@@ -404,160 +1260,344 @@ function renderPagination(totalPages){
 
     }
 
-    container.innerHTML = "";
 
-    for(let i = 1; i <= totalPages; i++){
+    container.innerHTML =
+        "";
+
+
+    for(
+        let i = 1;
+        i <= totalPages;
+        i++
+    ){
 
         const button =
-        document.createElement("button");
+            document.createElement(
+                "button"
+            );
 
-        button.textContent = i;
+
+        button.type =
+            "button";
+
+
+        button.textContent =
+            i;
+
 
         button.className =
-        i === currentPage
-        ? "btn-primary"
-        : "btn-outline";
+            i === currentPage
+            ? "btn-primary"
+            : "btn-outline";
 
-        button.addEventListener("click",()=>{
 
-            currentPage = i;
+        button.addEventListener(
+            "click",
+            () => {
 
-            updateTable();
+                currentPage =
+                    i;
 
-        });
 
-        container.appendChild(button);
+                updateTable();
+
+            }
+        );
+
+
+        container.appendChild(
+            button
+        );
 
     }
 
 }
 
+
 /* ==========================================================
-   UPDATE TABLE
+   UPDATE TABLE ROW
 ========================================================== */
 
 function updateTableRow(){
 
-    const id = document.getElementById("voterId").value;
+    const voterId =
+        document.getElementById(
+            "voterId"
+        );
 
-    const row = document.querySelector(
-        'tr[data-id="'+id+'"]'
-    );
 
-    if(!row) return;
+    if(!voterId){
 
-    const nameElement =
-    row.cells[0].querySelector(".font-semibold");
-
-    if(nameElement){
-
-        nameElement.textContent =
-        document.getElementById("fullName").value;
+        return;
 
     }
 
-    if(row.cells[3]){
+
+    const id =
+        voterId.value;
+
+
+    const row =
+        document.querySelector(
+            'tr[data-id="' +
+            id +
+            '"]'
+        );
+
+
+    if(!row){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       NAME
+    ====================================================== */
+
+    const nameElement =
+        row.cells[0]
+            ?.querySelector(
+                ".font-semibold"
+            );
+
+
+    const fullName =
+        document.getElementById(
+            "fullName"
+        );
+
+
+    if(
+        nameElement &&
+        fullName
+    ){
+
+        nameElement.textContent =
+            fullName.value
+                .toUpperCase();
+
+    }
+
+
+    /* ======================================================
+       YEAR
+    ====================================================== */
+
+    const yearInput =
+        document.getElementById(
+            "year"
+        );
+
+
+    if(
+        row.cells[3] &&
+        yearInput
+    ){
 
         row.cells[3].textContent =
-        document.getElementById("year").value;
+            yearInput.value;
 
     }
 
 }
+
 
 /* ==========================================================
    ACTIVE FILTER BUTTON
 ========================================================== */
 
-function updateFilterButtons(active){
+function updateFilterButtons(
+    active
+){
 
     document
-    .querySelectorAll(".filterButton")
-    .forEach(button=>{
+        .querySelectorAll(
+            ".filterButton"
+        )
+        .forEach(
+            button => {
 
-        button.classList.remove(
+                button.classList.remove(
+                    "btn-primary"
+                );
 
-            "btn-primary"
 
+                button.classList.add(
+                    "btn-outline"
+                );
+
+            }
         );
 
-        button.classList.add(
 
-            "btn-outline"
+    if(!active){
 
-        );
+        return;
 
-    });
+    }
+
 
     active.classList.remove(
-
         "btn-outline"
-
     );
 
+
     active.classList.add(
-
         "btn-primary"
-
     );
 
 }
+
 
 /* ==========================================================
    LOAD VOTER
 ========================================================== */
 
-async function loadVoter(id){
+async function loadVoter(
+    id
+){
 
     try{
 
         const response =
-        await fetch(
+            await fetch(
 
-        "../../backend/admin/get-voter.php?id="+id
+                "../../backend/admin/get-voter.php?id=" +
+                encodeURIComponent(id)
 
-        );
+            );
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "Server returned HTTP " +
+                response.status
+            );
+
+        }
+
 
         const result =
-        await response.json();
+            await response.json();
 
-        if(!result.success){
 
-            alert(result.message);
+        if(
+            !result.success
+        ){
+
+            showToast(
+                "error",
+                "Failed",
+                result.message ||
+                "Unable to load voter."
+            );
 
             return;
 
         }
 
+
         const student =
-        result.student;
+            result.student;
 
-        document.getElementById("voterId").value =
-        student.id;
 
-        document.getElementById("fullName").value =
-        student.full_name;
+        /* ==================================================
+           VALUES
+        ================================================== */
 
-        document.getElementById("admissionNo").value =
-        student.admission_no;
+        document.getElementById(
+            "voterId"
+        ).value =
+            student.id;
 
-        document.getElementById("collegeEmail").value =
-        student.college_email;
 
-        document.getElementById("phone").value =
-        student.phone;
+        document.getElementById(
+            "fullName"
+        ).value =
+            (
+                student.full_name ||
+                ""
+            ).toUpperCase();
 
-        document.getElementById("gender").value =
-        student.gender;
 
-        document.getElementById("department").value =
-        student.department;
+        document.getElementById(
+            "admissionNo"
+        ).value =
+            student.admission_no;
 
-        document.getElementById("year").value =
-        student.year;
 
-        document.getElementById("voteStatus").value =
-        student.vote_status;
+        document.getElementById(
+            "collegeEmail"
+        ).value =
+            student.college_email;
+
+
+        document.getElementById(
+            "phone"
+        ).value =
+            student.phone;
+
+
+        document.getElementById(
+            "gender"
+        ).value =
+            student.gender;
+
+
+        document.getElementById(
+            "department"
+        ).value =
+            student.department;
+
+
+        /* ==================================================
+           YEAR DROPDOWN
+        ================================================== */
+
+        if(
+            typeof window.setYearDropdownValue ===
+            "function"
+        ){
+
+            window.setYearDropdownValue(
+                student.year
+            );
+
+        }
+        else{
+
+            const yearInput =
+                document.getElementById(
+                    "year"
+                );
+
+
+            if(yearInput){
+
+                yearInput.value =
+                    student.year;
+
+            }
+
+        }
+
+
+        /* ==================================================
+           VOTE STATUS
+        ================================================== */
+
+        document.getElementById(
+            "voteStatus"
+        ).value =
+            student.vote_status;
+
+
+        /* ==================================================
+           OPEN MODAL
+        ================================================== */
 
         openVoterModal();
 
@@ -565,87 +1605,225 @@ async function loadVoter(id){
 
     catch(error){
 
-        console.error(error);
+        console.error(
+            "VOTIFY Load Voter Error:",
+            error
+        );
+
+
+        showToast(
+            "error",
+            "Error",
+            "Unable to load voter information."
+        );
 
     }
 
 }
 
+
 /* ==========================================================
-   MODAL
+   OPEN VOTER MODAL
 ========================================================== */
 
 function openVoterModal(){
 
     const modal =
-    document.getElementById("voterModal");
+        document.getElementById(
+            "voterModal"
+        );
 
-    modal.classList.remove("hidden");
 
-    modal.classList.add("flex");
+    if(!modal){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       CLOSE YEAR DROPDOWN FIRST
+    ====================================================== */
+
+    const yearMenu =
+        document.getElementById(
+            "yearDropdownMenu"
+        );
+
+
+    if(yearMenu){
+
+        yearMenu.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    const yearIcon =
+        document.getElementById(
+            "yearDropdownIcon"
+        );
+
+
+    if(yearIcon){
+
+        yearIcon.classList.remove(
+            "rotate-180"
+        );
+
+    }
+
+
+    modal.classList.remove(
+        "hidden"
+    );
+
+
+    modal.classList.add(
+        "flex"
+    );
+
+
+    /*
+     * Prevent background page scrolling.
+     */
+
+    document.body.style.overflow =
+        "hidden";
 
 }
+
+
+/* ==========================================================
+   CLOSE VOTER MODAL
+========================================================== */
 
 function closeVoterModal(){
 
     const modal =
-    document.getElementById("voterModal");
+        document.getElementById(
+            "voterModal"
+        );
 
-    modal.classList.remove("flex");
 
-    modal.classList.add("hidden");
+    if(!modal){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       CLOSE YEAR DROPDOWN
+    ====================================================== */
+
+    const yearMenu =
+        document.getElementById(
+            "yearDropdownMenu"
+        );
+
+
+    if(yearMenu){
+
+        yearMenu.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    const yearIcon =
+        document.getElementById(
+            "yearDropdownIcon"
+        );
+
+
+    if(yearIcon){
+
+        yearIcon.classList.remove(
+            "rotate-180"
+        );
+
+    }
+
+
+    modal.classList.remove(
+        "flex"
+    );
+
+
+    modal.classList.add(
+        "hidden"
+    );
+
+
+    /*
+     * Restore background scrolling.
+     */
+
+    document.body.style.overflow =
+        "";
 
 }
 
-document
-
-.getElementById("closeVoterModal")
-
-?.addEventListener(
-
-"click",
-
-closeVoterModal
-
-);
-
-document
-
-.getElementById("cancelVoter")
-
-?.addEventListener(
-
-"click",
-
-closeVoterModal
-
-);
-
-document
-
-.getElementById("voterModal")
-
-?.addEventListener("click",e=>{
-
-if(e.target.id==="voterModal"){
-
-closeVoterModal();
-
-}
-
-});
 
 /* ==========================================================
-   EXPORT EXCEL
+   MODAL CLOSE BUTTONS
+========================================================== */
+
+document
+    .getElementById(
+        "closeVoterModal"
+    )
+    ?.addEventListener(
+        "click",
+        closeVoterModal
+    );
+
+
+document
+    .getElementById(
+        "cancelVoter"
+    )
+    ?.addEventListener(
+        "click",
+        closeVoterModal
+    );
+
+
+document
+    .getElementById(
+        "voterModal"
+    )
+    ?.addEventListener(
+        "click",
+        event => {
+
+            if(
+                event.target.id ===
+                "voterModal"
+            ){
+
+                closeVoterModal();
+
+            }
+
+        }
+    );
+
+
+/* ==========================================================
+   EXPORT
 ========================================================== */
 
 function initializeExport(){
 
     const exportButton =
+        document.getElementById(
+            "exportExcel"
+        );
 
-    document.getElementById(
-        "exportExcel"
-    );
 
     if(!exportButton){
 
@@ -653,13 +1831,18 @@ function initializeExport(){
 
     }
 
-    exportButton.addEventListener("click",()=>{
 
-        exportExcel();
+    exportButton.addEventListener(
+        "click",
+        () => {
 
-    });
+            exportExcel();
+
+        }
+    );
 
 }
+
 
 /* ==========================================================
    EXPORT FUNCTION
@@ -668,433 +1851,740 @@ function initializeExport(){
 function exportExcel(){
 
     const params =
+        new URLSearchParams({
 
-    new URLSearchParams({
+            search:
+                searchKeyword,
 
-        search : searchKeyword,
+            filter:
+                currentFilter
 
-        filter : currentFilter
+        });
 
-    });
 
     window.location.href =
 
-    "../../backend/admin/export-voters.php?"
+        "../../backend/admin/export-voters.php?" +
 
-    + params.toString();
+        params.toString();
 
 }
+
+
+/* ==========================================================
+   VOTER FORM
+========================================================== */
+
+function initializeVoterForm(){
+
+    const form =
+        document.getElementById(
+            "voterForm"
+        );
+
+
+    if(!form){
+
+        return;
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        updateVoter
+    );
+
+}
+
 
 /* ==========================================================
    UPDATE VOTER
 ========================================================== */
 
-function initializeVoterForm(){
+async function updateVoter(
+    e
+){
 
-const form=document.getElementById("voterForm");
-
-if(!form)return;
-
-form.addEventListener(
-
-"submit",
-
-updateVoter
-
-);
-
-}
-
-async function updateVoter(e){
-
-e.preventDefault();
-
-const form=document.getElementById("voterForm");
-
-const saveButton =
-
-form.querySelector(
-
-'button[type="submit"]'
-
-);
-
-saveButton.disabled = true;
-
-saveButton.innerHTML = "Saving...";
-
-const formData=new FormData();
-
-formData.append(
-
-"id",
-
-document.getElementById("voterId").value
-
-);
-
-formData.append(
-
-"full_name",
-
-document.getElementById("fullName").value
-
-);
-
-formData.append(
-
-"phone",
-
-document.getElementById("phone").value
-
-);
-
-formData.append(
-
-"year",
-
-document.getElementById("year").value
-
-);
+    e.preventDefault();
 
 
-try{
+    const form =
+        document.getElementById(
+            "voterForm"
+        );
 
-const response=
 
-await fetch(
+    if(!form){
 
-"../../backend/admin/update-voter.php",
+        return;
 
-{
+    }
 
-method:"POST",
 
-body:formData
+    const saveButton =
+        form.querySelector(
+            'button[type="submit"]'
+        );
 
-}
 
-);
+    if(!saveButton){
 
-const result = await response.json();
+        return;
 
-if(result.success){
+    }
 
-    closeVoterModal();
 
-    updateTableRow();
+    /* ======================================================
+       UPPERCASE NAME
+    ====================================================== */
 
-    showToast(
-        "success",
-        "Updated",
-        result.message
+    const fullNameInput =
+        document.getElementById(
+            "fullName"
+        );
+
+
+    if(fullNameInput){
+
+        fullNameInput.value =
+            fullNameInput.value
+                .toUpperCase();
+
+    }
+
+
+    /* ======================================================
+       CLOSE DROPDOWN BEFORE SAVE
+    ====================================================== */
+
+    const yearMenu =
+        document.getElementById(
+            "yearDropdownMenu"
+        );
+
+
+    if(yearMenu){
+
+        yearMenu.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    const yearIcon =
+        document.getElementById(
+            "yearDropdownIcon"
+        );
+
+
+    if(yearIcon){
+
+        yearIcon.classList.remove(
+            "rotate-180"
+        );
+
+    }
+
+
+    /* ======================================================
+       LOADING
+    ====================================================== */
+
+    saveButton.disabled =
+        true;
+
+
+    saveButton.innerHTML = `
+
+        <span
+            class="inline-flex items-center gap-2">
+
+            <i
+                class="ri-loader-4-line animate-spin">
+            </i>
+
+            Saving...
+
+        </span>
+
+    `;
+
+
+    /* ======================================================
+       FORM DATA
+    ====================================================== */
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "id",
+        document.getElementById(
+            "voterId"
+        ).value
     );
 
-}
-else{
 
-    showToast(
-        "error",
-        "Failed",
-        result.message
+    formData.append(
+        "full_name",
+        fullNameInput
+            ? fullNameInput.value
+            : ""
     );
 
-}
+
+    formData.append(
+        "phone",
+        document.getElementById(
+            "phone"
+        ).value
+    );
+
+
+    formData.append(
+        "year",
+        document.getElementById(
+            "year"
+        ).value
+    );
+
+
+    try{
+
+        const response =
+            await fetch(
+
+                "../../backend/admin/update-voter.php",
+
+                {
+
+                    method:
+                        "POST",
+
+                    body:
+                        formData
+
+                }
+
+            );
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "Server returned HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        if(
+            result.success
+        ){
+
+            updateTableRow();
+
+
+            closeVoterModal();
+
+
+            showToast(
+
+                "success",
+
+                "Updated",
+
+                result.message ||
+                "Voter information updated successfully."
+
+            );
+
+        }
+        else{
+
+            showToast(
+
+                "error",
+
+                "Failed",
+
+                result.message ||
+                "Unable to update voter."
+
+            );
+
+        }
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Update Voter Error:",
+            error
+        );
+
+
+        showToast(
+
+            "error",
+
+            "Error",
+
+            "Something went wrong. Please try again."
+
+        );
+
+    }
+
+    finally{
+
+        saveButton.disabled =
+            false;
+
+
+        saveButton.innerHTML =
+
+            '<i class="ri-save-line mr-2"></i>Save Changes';
+
+    }
 
 }
 
-catch(error){
-
-console.error(error);
-
-}
-
-finally{
-
-saveButton.disabled = false;
-
-saveButton.innerHTML =
-
-'<i class="ri-save-line mr-2"></i>Save Changes';
-
-}
-
-}
 
 /* ==========================================================
-DELETE BUTTONS
+   DELETE BUTTONS
 ========================================================== */
 
 function initializeDeleteButtons(){
 
     document
-    .querySelectorAll(".deleteVoter")
-    .forEach(button=>{
+        .querySelectorAll(
+            ".deleteVoter"
+        )
+        .forEach(
+            button => {
 
-        button.addEventListener("click",()=>{
+                button.addEventListener(
+                    "click",
+                    () => {
 
-            const id = button.dataset.id;
+                        const id =
+                            button.dataset.id;
 
-            const row = button.closest("tr");
 
-            openConfirmationModal({
+                        const row =
+                            button.closest(
+                                "tr"
+                            );
 
-                title:"Delete Voter",
 
-                message:"Delete this voter permanently?",
+                        if(
+                            !id ||
+                            !row
+                        ){
 
-                icon:"ri-delete-bin-line",
+                            return;
 
-                type:"reject",
+                        }
 
-                onConfirm(){
 
-                    deleteVoter(id,row);
+                        openConfirmationModal({
+
+                            title:
+                                "Delete Voter",
+
+                            message:
+                                "Delete this voter permanently?",
+
+                            icon:
+                                "ri-delete-bin-line",
+
+                            type:
+                                "reject",
+
+                            onConfirm(){
+
+                                return deleteVoter(
+                                    id,
+                                    row
+                                );
+
+                            }
+
+                        });
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* ==========================================================
+   DELETE VOTER
+========================================================== */
+
+async function deleteVoter(
+    id,
+    row
+){
+
+    try{
+
+        const response =
+            await fetch(
+
+                "../../backend/admin/delete-voter.php",
+
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+
+                    },
+
+                    body:
+                        "id=" +
+                        encodeURIComponent(
+                            id
+                        )
 
                 }
 
-            });
+            );
 
-        });
 
-    });
+        if(!response.ok){
+
+            throw new Error(
+                "Server returned HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        if(
+            result.success
+        ){
+
+            removeVoterRow(
+                row
+            );
+
+
+            updateCardsAfterDelete(
+                row
+            );
+
+
+            showToast(
+
+                "success",
+
+                "Deleted",
+
+                result.message ||
+                "Voter deleted successfully."
+
+            );
+
+
+            return true;
+
+        }
+
+
+        showToast(
+
+            "error",
+
+            "Delete Failed",
+
+            result.message ||
+            "Unable to delete voter."
+
+        );
+
+
+        return false;
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Delete Error:",
+            error
+        );
+
+
+        showToast(
+
+            "error",
+
+            "Error",
+
+            "Something went wrong."
+
+        );
+
+
+        return false;
+
+    }
 
 }
 
-async function deleteVoter(id,row){
-
-try{
-
-const response = await fetch(
-
-"../../backend/admin/delete-voter.php",
-
-{
-
-method:"POST",
-
-headers:{
-
-"Content-Type":"application/x-www-form-urlencoded"
-
-},
-
-body:"id="+encodeURIComponent(id)
-
-}
-
-);
-
-const result = await response.json();
-
-if(result.success){
-
-removeVoterRow(row);
-
-updateCardsAfterDelete(row);
-
-showToast(
-
-"success",
-
-"Deleted",
-
-result.message
-
-);
-
-}
-
-else{
-
-showToast(
-
-"error",
-
-"Delete Failed",
-
-result.message
-
-);
-
-}
-
-}
-
-catch(error){
-
-console.error(error);
-
-showToast(
-
-"error",
-
-"Error",
-
-"Something went wrong."
-
-);
-
-}
-
-}
 
 /* ==========================================================
-REMOVE ROW
+   REMOVE ROW
 ========================================================== */
 
-function removeVoterRow(row){
+function removeVoterRow(
+    row
+){
 
-row.style.transition=".35s";
+    if(!row){
 
-row.style.opacity="0";
+        return;
 
-row.style.transform=
+    }
 
-"translateX(40px) scale(.96)";
 
-row.style.filter="blur(4px)";
+    row.style.transition =
+        ".35s";
 
-setTimeout(()=>{
 
-row.remove();
+    row.style.opacity =
+        "0";
 
-checkEmptyVoters();
 
-updateTable();
+    row.style.transform =
+        "translateX(40px) scale(.96)";
 
-},350);
+
+    row.style.filter =
+        "blur(4px)";
+
+
+    setTimeout(
+        () => {
+
+            if(
+                row.parentNode
+            ){
+
+                row.remove();
+
+            }
+
+
+            checkEmptyVoters();
+
+
+            updateTable();
+
+        },
+        350
+    );
 
 }
 
+
 /* ==========================================================
-UPDATE CARDS
+   UPDATE CARDS
 ========================================================== */
 
-function updateCardsAfterDelete(row){
+function updateCardsAfterDelete(
+    row
+){
 
-const approved =
-document.getElementById("approvedStudents");
+    if(!row){
 
-const voted =
-document.getElementById("votedStudents");
+        return;
 
-const unvoted =
-document.getElementById("unvotedStudents");
+    }
 
-if(approved){
 
-approved.textContent =
+    const approved =
+        document.getElementById(
+            "approvedStudents"
+        );
 
-Math.max(
 
-0,
+    const voted =
+        document.getElementById(
+            "votedStudents"
+        );
 
-parseInt(approved.textContent)-1
 
-);
+    const unvoted =
+        document.getElementById(
+            "unvotedStudents"
+        );
+
+
+    if(approved){
+
+        approved.textContent =
+
+            Math.max(
+
+                0,
+
+                parseInt(
+                    approved.textContent,
+                    10
+                ) - 1
+
+            );
+
+    }
+
+
+    const status =
+        row.dataset.status;
+
+
+    if(
+        status === "Voted"
+    ){
+
+        if(voted){
+
+            voted.textContent =
+
+                Math.max(
+
+                    0,
+
+                    parseInt(
+                        voted.textContent,
+                        10
+                    ) - 1
+
+                );
+
+        }
+
+    }
+    else{
+
+        if(unvoted){
+
+            unvoted.textContent =
+
+                Math.max(
+
+                    0,
+
+                    parseInt(
+                        unvoted.textContent,
+                        10
+                    ) - 1
+
+                );
+
+        }
+
+    }
 
 }
 
-const status =
-
-row.dataset.status;
-
-if(status==="Voted"){
-
-if(voted){
-
-voted.textContent=
-
-Math.max(
-
-0,
-
-parseInt(voted.textContent)-1
-
-);
-
-}
-
-}
-
-else{
-
-if(unvoted){
-
-unvoted.textContent=
-
-Math.max(
-
-0,
-
-parseInt(unvoted.textContent)-1
-
-);
-
-}
-
-}
-
-}
 
 /* ==========================================================
-EMPTY TABLE
+   EMPTY TABLE
 ========================================================== */
 
 function checkEmptyVoters(){
 
-const tbody=
+    const tbody =
+        document.getElementById(
+            "votersTableBody"
+        );
 
-document.getElementById(
 
-"votersTableBody"
+    if(!tbody){
 
-);
+        return;
 
-if(
+    }
 
-tbody.querySelectorAll("tr").length
 
-===0
+    if(
+        tbody.querySelectorAll(
+            "tr[data-id]"
+        ).length === 0
+    ){
 
-){
+        tbody.innerHTML = `
 
-tbody.innerHTML=`
+            <tr>
 
-<tr>
+                <td
+                    colspan="7"
+                    class="py-16 text-center text-slate-400">
 
-<td colspan="7"
+                    <div
+                        class="flex justify-center mb-6">
 
-class="py-16 text-center text-slate-400">
+                        <i
+                            class="
+                            ri-user-search-line
+                            text-7xl
+                            text-slate-500">
+                        </i>
 
-<div class="flex justify-center mb-6">
+                    </div>
 
-<i class="ri-user-search-line text-7xl text-slate-500"></i>
+                    <h3
+                        class="
+                        text-2xl
+                        font-bold
+                        text-white">
 
-</div>
+                        No Approved Voters
 
-<h3 class="text-2xl font-bold text-white">
+                    </h3>
 
-No Approved Voters
+                    <p
+                        class="mt-3 text-slate-400">
 
-</h3>
+                        No approved students available.
 
-<p class="mt-3 text-slate-400">
+                    </p>
 
-No approved students available.
+                </td>
 
-</p>
+            </tr>
 
-</td>
+        `;
 
-</tr>
-
-`;
+    }
 
 }
 
-}
 
 /* ==========================================================
    VIEW BUTTONS
@@ -1103,66 +2593,121 @@ No approved students available.
 function initializeViewButtons(){
 
     document
-    .querySelectorAll(".viewVoter")
-    .forEach(button=>{
+        .querySelectorAll(
+            ".viewVoter"
+        )
+        .forEach(
+            button => {
 
-        button.addEventListener("click",()=>{
+                button.addEventListener(
+                    "click",
+                    () => {
 
-            loadStudentDetails(button.dataset.id);
+                        loadStudentDetails(
+                            button.dataset.id
+                        );
 
-        });
+                    }
+                );
 
-    });
+            }
+        );
 
 }
+
 
 /* ==========================================================
    LOAD STUDENT DETAILS
 ========================================================== */
 
-async function loadStudentDetails(id){
+async function loadStudentDetails(
+    id
+){
 
     try{
 
-        const response = await fetch(
+        const response =
+            await fetch(
 
-            "../../backend/admin/get-voter.php?id="+id
+                "../../backend/admin/get-voter.php?id=" +
+                encodeURIComponent(id)
 
-        );
+            );
 
-        const result = await response.json();
 
-        if(!result.success){
+        if(!response.ok){
+
+            throw new Error(
+                "Server returned HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        if(
+            !result.success
+        ){
 
             showToast(
+
                 "error",
+
                 "Failed",
-                result.message
+
+                result.message ||
+                "Unable to load student details."
+
             );
 
             return;
 
         }
 
-        const student = result.student;
 
-        document.getElementById("studentName").textContent =
-        student.full_name;
+        const student =
+            result.student;
 
-        document.getElementById("studentAdmission").textContent =
-        student.admission_no;
 
-        document.getElementById("studentEmail").textContent =
-        student.college_email;
+        document.getElementById(
+            "studentName"
+        ).textContent =
+            student.full_name;
 
-        document.getElementById("studentDepartment").textContent =
-        student.department;
 
-        document.getElementById("studentYear").textContent =
-        student.year;
+        document.getElementById(
+            "studentAdmission"
+        ).textContent =
+            student.admission_no;
 
-        document.getElementById("studentStatus").textContent =
-        student.vote_status;
+
+        document.getElementById(
+            "studentEmail"
+        ).textContent =
+            student.college_email;
+
+
+        document.getElementById(
+            "studentDepartment"
+        ).textContent =
+            student.department;
+
+
+        document.getElementById(
+            "studentYear"
+        ).textContent =
+            student.year;
+
+
+        document.getElementById(
+            "studentStatus"
+        ).textContent =
+            student.vote_status;
+
 
         openStudentModal();
 
@@ -1170,11 +2715,26 @@ async function loadStudentDetails(id){
 
     catch(error){
 
-        console.error(error);
+        console.error(
+            "VOTIFY Student Details Error:",
+            error
+        );
+
+
+        showToast(
+
+            "error",
+
+            "Error",
+
+            "Unable to load student details."
+
+        );
 
     }
 
 }
+
 
 /* ==========================================================
    STUDENT MODAL
@@ -1182,49 +2742,98 @@ async function loadStudentDetails(id){
 
 function openStudentModal(){
 
-    const modal = document.getElementById("studentModal");
+    const modal =
+        document.getElementById(
+            "studentModal"
+        );
 
-    modal.classList.remove("hidden");
 
-    modal.classList.add("flex");
+    if(!modal){
 
-}
-
-function closeStudentModal(){
-
-    const modal = document.getElementById("studentModal");
-
-    modal.classList.remove("flex");
-
-    modal.classList.add("hidden");
-
-}
-
-document
-.getElementById("closeStudentModal")
-?.addEventListener(
-"click",
-closeStudentModal
-);
-
-document
-.getElementById("closeStudentButton")
-?.addEventListener(
-"click",
-closeStudentModal
-);
-
-document
-.getElementById("studentModal")
-?.addEventListener("click",e=>{
-
-    if(e.target.id==="studentModal"){
-
-        closeStudentModal();
+        return;
 
     }
 
-});
+
+    modal.classList.remove(
+        "hidden"
+    );
+
+
+    modal.classList.add(
+        "flex"
+    );
+
+}
+
+
+function closeStudentModal(){
+
+    const modal =
+        document.getElementById(
+            "studentModal"
+        );
+
+
+    if(!modal){
+
+        return;
+
+    }
+
+
+    modal.classList.remove(
+        "flex"
+    );
+
+
+    modal.classList.add(
+        "hidden"
+    );
+
+}
+
+
+document
+    .getElementById(
+        "closeStudentModal"
+    )
+    ?.addEventListener(
+        "click",
+        closeStudentModal
+    );
+
+
+document
+    .getElementById(
+        "closeStudentButton"
+    )
+    ?.addEventListener(
+        "click",
+        closeStudentModal
+    );
+
+
+document
+    .getElementById(
+        "studentModal"
+    )
+    ?.addEventListener(
+        "click",
+        event => {
+
+            if(
+                event.target.id ===
+                "studentModal"
+            ){
+
+                closeStudentModal();
+
+            }
+
+        }
+    );
+
 
 /* ==========================================================
    EDIT BUTTONS
@@ -1233,27 +2842,37 @@ document
 function initializeEditButtons(){
 
     document
-    .querySelectorAll(".editVoter")
-    .forEach(button=>{
+        .querySelectorAll(
+            ".editVoter"
+        )
+        .forEach(
+            button => {
 
-        button.addEventListener("click",()=>{
+                button.addEventListener(
+                    "click",
+                    () => {
 
-            loadVoter(button.dataset.id);
+                        loadVoter(
+                            button.dataset.id
+                        );
 
-        });
+                    }
+                );
 
-    });
+            }
+        );
 
 }
 
+
 /* ==========================================================
-READY
+   FINAL READY
 ========================================================== */
 
 console.log(
 
-"%cVOTIFY Voters Ready",
+    "%cVOTIFY Voters Ready",
 
-"color:#3B82F6;font-size:14px;font-weight:bold;"
+    "color:#3B82F6;font-size:14px;font-weight:bold;"
 
 );

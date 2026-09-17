@@ -79,10 +79,10 @@ $result = mysqli_query(
 
 );
 
-if($result){
+if ($result) {
 
     $totalRequests =
-    mysqli_fetch_assoc($result)["total"];
+        mysqli_fetch_assoc($result)["total"];
 
 }
 
@@ -98,10 +98,10 @@ $result = mysqli_query(
 
 );
 
-if($result){
+if ($result) {
 
     $pendingRequests =
-    mysqli_fetch_assoc($result)["total"];
+        mysqli_fetch_assoc($result)["total"];
 
 }
 
@@ -117,10 +117,10 @@ $result = mysqli_query(
 
 );
 
-if($result){
+if ($result) {
 
     $approvedRequests =
-    mysqli_fetch_assoc($result)["total"];
+        mysqli_fetch_assoc($result)["total"];
 
 }
 
@@ -136,10 +136,10 @@ $result = mysqli_query(
 
 );
 
-if($result){
+if ($result) {
 
     $rejectedRequests =
-    mysqli_fetch_assoc($result)["total"];
+        mysqli_fetch_assoc($result)["total"];
 
 }
 
@@ -170,23 +170,17 @@ Voters Requests | VOTIFY
 <!-- Remix Icons -->
 
 <link
-
 href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"
-
 rel="stylesheet">
 
 <!-- CSS -->
 
 <link
-
 rel="stylesheet"
-
 href="../../assets/css/custom.css">
 
 <link
-
 rel="stylesheet"
-
 href="../../assets/css/animations.css">
 
 </head>
@@ -194,17 +188,11 @@ href="../../assets/css/animations.css">
 <body
 
 class="
-
 bg-[#0B1020]
-
 text-white
-
 min-h-screen
-
 overflow-x-hidden
-
 flex
-
 flex-col">
 
 <!-- =====================================================
@@ -220,73 +208,41 @@ BACKGROUND
 <div class="fixed inset-0 -z-10 overflow-hidden">
 
 <div
-
 class="
-
 absolute
-
 top-0
-
 left-0
-
 w-96
-
 h-96
-
 bg-blue-600/20
-
 blur-[150px]
-
 rounded-full">
-
 </div>
 
 <div
-
 class="
-
 absolute
-
 bottom-0
-
 right-0
-
 w-96
-
 h-96
-
 bg-pink-600/20
-
 blur-[150px]
-
 rounded-full">
-
 </div>
 
 <div
-
 class="
-
 absolute
-
 top-1/2
-
 left-1/2
-
 w-80
-
 h-80
-
 bg-purple-600/20
-
 blur-[130px]
-
 rounded-full
-
 -translate-x-1/2
-
 -translate-y-1/2">
-
 </div>
 
 </div>
@@ -298,23 +254,14 @@ rounded-full
 <!-- Mobile Overlay -->
 
 <div
-
 id="sidebarOverlay"
-
 class="
-
 fixed
-
 inset-0
-
 bg-black/60
-
 hidden
-
 z-40
-
 lg:hidden">
-
 </div>
 
 <!-- =====================================================
@@ -324,35 +271,22 @@ MAIN
 <main
 
 class="
-
 flex-1
-
 max-w-7xl
-
 w-full
-
 mx-auto
-
 px-4
-
 sm:px-6
-
 lg:px-8
-
 py-8">
 
 <div
 
 class="
-
 grid
-
 grid-cols-1
-
 lg:grid-cols-[280px_1fr]
-
 gap-8
-
 items-start">
 
 <!-- Sidebar -->
@@ -378,9 +312,7 @@ include "../../components/admin_topbar.php";
 ?>
 
 <div
-
 id="requestsContent"
-
 class="space-y-8">
 
 <!-- =====================================================
@@ -390,15 +322,10 @@ STATISTICS
 <div
 
 class="
-
 grid
-
 grid-cols-1
-
 md:grid-cols-2
-
 xl:grid-cols-4
-
 gap-6">
 
 <!-- Total -->
@@ -426,19 +353,12 @@ Total Requests
 <div
 
 class="
-
 w-16
-
 h-16
-
 rounded-2xl
-
 bg-blue-500/20
-
 flex
-
 items-center
-
 justify-center">
 
 <i class="ri-user-line text-3xl text-blue-400"></i>
@@ -474,19 +394,12 @@ Pending Requests
 <div
 
 class="
-
 w-16
-
 h-16
-
 rounded-2xl
-
 bg-yellow-500/20
-
 flex
-
 items-center
-
 justify-center">
 
 <i class="ri-time-line text-3xl text-yellow-400"></i>
@@ -522,19 +435,12 @@ Approved Requests
 <div
 
 class="
-
 w-16
-
 h-16
-
 rounded-2xl
-
 bg-green-500/20
-
 flex
-
 items-center
-
 justify-center">
 
 <i class="ri-check-line text-3xl text-green-400"></i>
@@ -570,19 +476,12 @@ Rejected Requests
 <div
 
 class="
-
 w-16
-
 h-16
-
 rounded-2xl
-
 bg-red-500/20
-
 flex
-
 items-center
-
 justify-center">
 
 <i class="ri-close-line text-3xl text-red-400"></i>
@@ -604,19 +503,12 @@ REQUESTS TABLE START
 <div
 
 class="
-
 flex
-
 flex-col
-
 lg:flex-row
-
 lg:items-center
-
 lg:justify-between
-
 gap-6
-
 mb-8">
 
 <div>
@@ -638,14 +530,33 @@ Review and verify student registration requests.
 <div class="relative w-full lg:w-80">
 
 <i
-class="ri-search-2-line absolute left-4 top-1/2 -translate-y-1/2 text-lg text-slate-400 pointer-events-none">
+class="
+ri-search-2-line
+absolute
+left-4
+top-1/2
+-translate-y-1/2
+text-lg
+text-slate-400
+pointer-events-none">
 </i>
 
 <input
 type="text"
 id="requestSearch"
 placeholder="Search students..."
-class="w-full h-14 pl-12 pr-5 rounded-2xl bg-white/5 border border-white/10 focus:border-blue-500 outline-none transition">
+class="
+w-full
+h-14
+pl-12
+pr-5
+rounded-2xl
+bg-white/5
+border
+border-white/10
+focus:border-blue-500
+outline-none
+transition">
 
 </div>
 
@@ -659,19 +570,47 @@ class="w-full h-14 pl-12 pr-5 rounded-2xl bg-white/5 border border-white/10 focu
 
 <tr>
 
-<th class="px-6 py-4 text-left">Student</th>
+<th class="px-6 py-4 text-left">
 
-<th class="px-6 py-4 text-left">Admission No</th>
+Student
 
-<th class="px-6 py-4 text-left">Department</th>
+</th>
 
-<th class="px-6 py-4 text-left">Year</th>
+<th class="px-6 py-4 text-left">
 
-<th class="px-6 py-4 text-left">Registered</th>
+Admission No
 
-<th class="px-6 py-4 text-center">Status</th>
+</th>
 
-<th class="px-6 py-4 text-center">Actions</th>
+<th class="px-6 py-4 text-left">
+
+Department
+
+</th>
+
+<th class="px-6 py-4 text-left">
+
+Year
+
+</th>
+
+<th class="px-6 py-4 text-left">
+
+Registered
+
+</th>
+
+<th class="px-6 py-4 text-center">
+
+Status
+
+</th>
+
+<th class="px-6 py-4 text-center">
+
+Actions
+
+</th>
 
 </tr>
 
@@ -711,7 +650,11 @@ foreach ($requests as $student) {
 
 <tr
 data-id="<?= $student["id"]; ?>"
-class="border-b border-white/5 hover:bg-white/5 transition">
+class="
+border-b
+border-white/5
+hover:bg-white/5
+transition">
 
 <!-- Student -->
 
@@ -721,13 +664,17 @@ class="border-b border-white/5 hover:bg-white/5 transition">
 
 <div class="font-semibold">
 
-<?= htmlspecialchars($student["full_name"]); ?>
+<?= htmlspecialchars(
+    $student["full_name"]
+); ?>
 
 </div>
 
 <div class="text-xs text-slate-400 mt-1">
 
-<?= htmlspecialchars($student["college_email"]); ?>
+<?= htmlspecialchars(
+    $student["college_email"]
+); ?>
 
 </div>
 
@@ -739,7 +686,9 @@ class="border-b border-white/5 hover:bg-white/5 transition">
 
 <td class="px-6 py-5">
 
-<?= htmlspecialchars($student["admission_no"]); ?>
+<?= htmlspecialchars(
+    $student["admission_no"]
+); ?>
 
 </td>
 
@@ -747,7 +696,9 @@ class="border-b border-white/5 hover:bg-white/5 transition">
 
 <td class="px-6 py-5">
 
-<?= htmlspecialchars($student["department"]); ?>
+<?= htmlspecialchars(
+    $student["department"]
+); ?>
 
 </td>
 
@@ -755,7 +706,9 @@ class="border-b border-white/5 hover:bg-white/5 transition">
 
 <td class="px-6 py-5">
 
-<?= htmlspecialchars($student["year"]); ?>
+<?= htmlspecialchars(
+    $student["year"]
+); ?>
 
 </td>
 
@@ -764,11 +717,8 @@ class="border-b border-white/5 hover:bg-white/5 transition">
 <td class="px-6 py-5">
 
 <?= date(
-
-"d M Y",
-
-strtotime($student["created_at"])
-
+    "d M Y",
+    strtotime($student["created_at"])
 ); ?>
 
 </td>
@@ -778,7 +728,12 @@ strtotime($student["created_at"])
 <td class="px-6 py-5 text-center">
 
 <span
-class="px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400">
+class="
+px-4
+py-2
+rounded-full
+bg-yellow-500/20
+text-yellow-400">
 
 Pending
 
@@ -794,22 +749,18 @@ Pending
 class="flex justify-center gap-3"
 data-actions="<?= $student["id"]; ?>">
 
+<!-- View -->
+
 <button
 
-class="viewRequest
-
+class="
+viewRequest
 w-11
-
 h-11
-
 rounded-xl
-
 bg-blue-500/20
-
 text-blue-400
-
 hover:bg-blue-500/30
-
 transition"
 
 data-id="<?= $student["id"]; ?>"
@@ -820,22 +771,18 @@ title="View">
 
 </button>
 
+<!-- Approve -->
+
 <button
 
-class="approveRequest
-
+class="
+approveRequest
 w-11
-
 h-11
-
 rounded-xl
-
 bg-green-500/20
-
 text-green-400
-
 hover:bg-green-500/30
-
 transition"
 
 data-id="<?= $student["id"]; ?>"
@@ -846,22 +793,18 @@ title="Approve">
 
 </button>
 
+<!-- Reject -->
+
 <button
 
-class="rejectRequest
-
+class="
+rejectRequest
 w-11
-
 h-11
-
 rounded-xl
-
 bg-red-500/20
-
 text-red-400
-
 hover:bg-red-500/30
-
 transition"
 
 data-id="<?= $student["id"]; ?>"
@@ -924,6 +867,14 @@ JAVASCRIPT
 
 <script src="../../assets/js/app.js"></script>
 
+<!-- IMPORTANT:
+     toast.php provides the HTML.
+     toast.js provides window.showToast().
+     It MUST load before requests.js.
+-->
+
+<script src="../../assets/js/toast.js"></script>
+
 <script src="../../assets/js/dashboard.js"></script>
 
 <script src="../../assets/js/confirmation_modal.js"></script>
@@ -931,6 +882,7 @@ JAVASCRIPT
 <script src="../../assets/js/student_modal.js"></script>
 
 <script src="../../assets/js/requests.js"></script>
+
 </body>
 
 </html>

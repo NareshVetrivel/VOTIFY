@@ -49,6 +49,8 @@ Student Details
 
 </h2>
 
+<!-- TOP X BUTTON — KEEP -->
+
 <button
 
 id="closeStudentModal"
@@ -186,20 +188,6 @@ Pending
 </h3>
 
 </div>
-
-</div>
-
-<div class="mt-10 text-right">
-
-<button
-
-id="closeStudentButton"
-
-class="btn-outline">
-
-Close
-
-</button>
 
 </div>
 

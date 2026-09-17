@@ -1,6 +1,7 @@
 /* ==========================================================
    VOTIFY
    Requests Page JavaScript
+   File : assets/js/requests.js
 ========================================================== */
 
 "use strict";
@@ -19,11 +20,14 @@ let currentAction = null;
    INITIALIZE
 ========================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    initializeRequests();
+        initializeRequests();
 
-});
+    }
+);
 
 
 /* ==========================================================
@@ -50,11 +54,15 @@ function initializeRequests() {
 /*
  * Uses the existing VOTIFY toast.js design.
  *
- * Expected global function:
+ * Existing toast function:
  *
  * showToast(type, title, message)
  *
- * We do NOT create another toast design here.
+ * No new toast UI is created.
+ *
+ * Inline transform is used as a safety fallback so the
+ * existing toast remains visible even if Tailwind does not
+ * process the dynamically-added translate-x-0 class.
  */
 
 function requestToast(
@@ -63,8 +71,34 @@ function requestToast(
     message
 ) {
 
+    const toast =
+        document.getElementById(
+            "requestToast"
+        );
+
+
+    /* ------------------------------------------------------
+       TOAST ELEMENT CHECK
+    ------------------------------------------------------ */
+
+    if (!toast) {
+
+        console.error(
+            "VOTIFY: #requestToast element not found."
+        );
+
+        return;
+
+    }
+
+
+    /* ------------------------------------------------------
+       USE EXISTING toast.js
+    ------------------------------------------------------ */
+
     if (
-        typeof window.showToast === "function"
+        typeof window.showToast ===
+        "function"
     ) {
 
         window.showToast(
@@ -73,13 +107,96 @@ function requestToast(
             message
         );
 
+
+        /*
+         * Safety fallback:
+         *
+         * Make sure the existing toast is actually moved
+         * into the visible position.
+         *
+         * This does NOT create a new toast design.
+         */
+
+        toast.style.transform =
+            "translateX(0)";
+
+
+        toast.style.opacity =
+            "1";
+
+
+        toast.style.visibility =
+            "visible";
+
+
+        toast.style.pointerEvents =
+            "auto";
+
+
+        /*
+         * Keep the existing VOTIFY toast above every
+         * modal/overlay.
+         */
+
+        toast.style.position =
+            "fixed";
+
+
+        toast.style.zIndex =
+            "2147483647";
+
+
+        /*
+         * Hide again using the same existing toast timing.
+         */
+
+        clearTimeout(
+            window.requestPageToastTimer
+        );
+
+
+        window.requestPageToastTimer =
+            setTimeout(
+                () => {
+
+                    toast.style.transform =
+                        "translateX(120%)";
+
+                    toast.style.opacity =
+                        "";
+
+                    toast.style.visibility =
+                        "";
+
+                    toast.style.pointerEvents =
+                        "";
+
+                },
+                3500
+            );
+
+
         return;
+
     }
 
 
-    console.warn(
-        "VOTIFY: toast.js is not loaded."
+    /* ======================================================
+       FALLBACK
+       toast.js was not loaded.
+    ====================================================== */
+
+    console.error(
+        "VOTIFY: toast.js is not loaded. " +
+        "Please check requests.php script order."
     );
+
+
+    /*
+     * We intentionally do not create a different toast UI.
+     *
+     * The project must use the existing VOTIFY toast design.
+     */
 
 }
 
@@ -95,7 +212,12 @@ function initializeSearch() {
             "requestSearch"
         );
 
-    if (!search) return;
+
+    if (!search) {
+
+        return;
+
+    }
 
 
     search.addEventListener(
@@ -112,16 +234,18 @@ function initializeSearch() {
                 .querySelectorAll(
                     "#requestsTableBody tr"
                 )
-                .forEach(row => {
+                .forEach(
+                    row => {
 
-                    row.style.display =
-                        row.innerText
-                            .toLowerCase()
-                            .includes(keyword)
-                            ? ""
-                            : "none";
+                        row.style.display =
+                            row.innerText
+                                .toLowerCase()
+                                .includes(keyword)
+                                ? ""
+                                : "none";
 
-                });
+                    }
+                );
 
         }
     );
@@ -139,63 +263,97 @@ function initializeViewButtons() {
         .querySelectorAll(
             ".viewRequest"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                    const row =
-                        button.closest("tr");
+                        const row =
+                            button.closest(
+                                "tr"
+                            );
 
-                    if (!row) return;
+
+                        if (!row) {
+
+                            return;
+
+                        }
 
 
-                    openStudentModal({
-
-                        name:
+                        const nameElement =
                             row.cells[0]
-                                .querySelector(
+                                ?.querySelector(
                                     ".font-semibold"
-                                )
-                                .textContent,
+                                );
 
-                        email:
+
+                        const emailElement =
                             row.cells[0]
-                                .querySelector(
+                                ?.querySelector(
                                     ".text-xs"
-                                )
-                                .textContent,
+                                );
 
-                        admission:
-                            row.cells[1]
-                                .textContent,
 
-                        department:
-                            row.cells[2]
-                                .textContent,
+                        openStudentModal({
 
-                        year:
-                            row.cells[3]
-                                .textContent,
+                            name:
+                                nameElement
+                                    ? nameElement
+                                        .textContent
+                                        .trim()
+                                    : "",
 
-                        status:
-                            row.cells[5]
-                                .textContent
-                                .trim()
+                            email:
+                                emailElement
+                                    ? emailElement
+                                        .textContent
+                                        .trim()
+                                    : "",
 
-                    });
+                            admission:
+                                row.cells[1]
+                                    ? row.cells[1]
+                                        .textContent
+                                        .trim()
+                                    : "",
 
-                }
-            );
+                            department:
+                                row.cells[2]
+                                    ? row.cells[2]
+                                        .textContent
+                                        .trim()
+                                    : "",
 
-        });
+                            year:
+                                row.cells[3]
+                                    ? row.cells[3]
+                                        .textContent
+                                        .trim()
+                                    : "",
+
+                            status:
+                                row.cells[5]
+                                    ? row.cells[5]
+                                        .textContent
+                                        .trim()
+                                    : ""
+
+                        });
+
+                    }
+                );
+
+            }
+        );
 
 }
 
 
 /* ==========================================================
-   APPROVE
+   APPROVE BUTTON
 ========================================================== */
 
 function initializeApproveButtons() {
@@ -204,58 +362,76 @@ function initializeApproveButtons() {
         .querySelectorAll(
             ".approveRequest"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                    const id =
-                        button.dataset.id;
-
-                    const row =
-                        button.closest("tr");
-
-                    if (!id || !row) {
-                        return;
-                    }
+                        const id =
+                            button.dataset.id;
 
 
-                    openConfirmationModal({
-
-                        title:
-                            "Approve Student",
-
-                        message:
-                            "Are you sure you want to approve this student?",
-
-                        icon:
-                            "ri-check-line",
-
-                        type:
-                            "approve",
-
-                        onConfirm() {
-
-                            return approveStudent(
-                                id,
-                                row
+                        const row =
+                            button.closest(
+                                "tr"
                             );
+
+
+                        if (
+                            !id ||
+                            !row
+                        ) {
+
+                            return;
 
                         }
 
-                    });
 
-                }
-            );
+                        currentStudentId =
+                            id;
 
-        });
+                        currentAction =
+                            "approve";
+
+
+                        openConfirmationModal({
+
+                            title:
+                                "Approve Student",
+
+                            message:
+                                "Are you sure you want to approve this student?",
+
+                            icon:
+                                "ri-check-line",
+
+                            type:
+                                "approve",
+
+                            onConfirm() {
+
+                                return approveStudent(
+                                    id,
+                                    row
+                                );
+
+                            }
+
+                        });
+
+                    }
+                );
+
+            }
+        );
 
 }
 
 
 /* ==========================================================
-   REJECT
+   REJECT BUTTON
 ========================================================== */
 
 function initializeRejectButtons() {
@@ -264,52 +440,70 @@ function initializeRejectButtons() {
         .querySelectorAll(
             ".rejectRequest"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                    const id =
-                        button.dataset.id;
-
-                    const row =
-                        button.closest("tr");
-
-                    if (!id || !row) {
-                        return;
-                    }
+                        const id =
+                            button.dataset.id;
 
 
-                    openConfirmationModal({
-
-                        title:
-                            "Reject Student",
-
-                        message:
-                            "Are you sure you want to reject this student?",
-
-                        icon:
-                            "ri-close-line",
-
-                        type:
-                            "reject",
-
-                        onConfirm() {
-
-                            return rejectStudent(
-                                id,
-                                row
+                        const row =
+                            button.closest(
+                                "tr"
                             );
+
+
+                        if (
+                            !id ||
+                            !row
+                        ) {
+
+                            return;
 
                         }
 
-                    });
 
-                }
-            );
+                        currentStudentId =
+                            id;
 
-        });
+                        currentAction =
+                            "reject";
+
+
+                        openConfirmationModal({
+
+                            title:
+                                "Reject Student",
+
+                            message:
+                                "Are you sure you want to reject this student?",
+
+                            icon:
+                                "ri-close-line",
+
+                            type:
+                                "reject",
+
+                            onConfirm() {
+
+                                return rejectStudent(
+                                    id,
+                                    row
+                                );
+
+                            }
+
+                        });
+
+                    }
+                );
+
+            }
+        );
 
 }
 
@@ -344,12 +538,18 @@ async function approveStudent(
 
                     body:
                         "id=" +
-                        encodeURIComponent(id)
+                        encodeURIComponent(
+                            id
+                        )
 
                 }
 
             );
 
+
+        /* --------------------------------------------------
+           HTTP ERROR
+        -------------------------------------------------- */
 
         if (!response.ok) {
 
@@ -361,11 +561,31 @@ async function approveStudent(
         }
 
 
+        /* --------------------------------------------------
+           JSON RESPONSE
+        -------------------------------------------------- */
+
         const result =
             await response.json();
 
 
-        if (result.success) {
+        console.log(
+            "VOTIFY Approve Response:",
+            result
+        );
+
+
+        /* ==================================================
+           APPROVE SUCCESS
+        ================================================== */
+
+        if (
+            result.success
+        ) {
+
+            /*
+             * Show existing VOTIFY toast.
+             */
 
             requestToast(
 
@@ -378,28 +598,59 @@ async function approveStudent(
             );
 
 
-            removeRequestRow(row);
+            /*
+             * Remove approved request
+             * from pending table.
+             */
+
+            removeRequestRow(
+                row
+            );
+
+
+            /*
+             * Update dashboard counters.
+             */
 
             updateStatistics(
                 "approve"
             );
 
+
+            currentStudentId =
+                null;
+
+            currentAction =
+                null;
+
+
+            /*
+             * Tell confirmation modal that
+             * backend operation succeeded.
+             */
+
+            return true;
+
         }
 
-        else {
 
-            requestToast(
+        /* ==================================================
+           APPROVE FAILED
+        ================================================== */
 
-                "error",
+        requestToast(
 
-                "Approval Failed",
+            "error",
 
-                result.message ||
-                "Unable to approve student."
+            "Approval Failed",
 
-            );
+            result.message ||
+            "Unable to approve student."
 
-        }
+        );
+
+
+        return false;
 
     }
 
@@ -420,6 +671,9 @@ async function approveStudent(
             "Unable to process the request. Please try again."
 
         );
+
+
+        return false;
 
     }
 
@@ -456,12 +710,18 @@ async function rejectStudent(
 
                     body:
                         "id=" +
-                        encodeURIComponent(id)
+                        encodeURIComponent(
+                            id
+                        )
 
                 }
 
             );
 
+
+        /* --------------------------------------------------
+           HTTP ERROR
+        -------------------------------------------------- */
 
         if (!response.ok) {
 
@@ -473,15 +733,31 @@ async function rejectStudent(
         }
 
 
+        /* --------------------------------------------------
+           JSON RESPONSE
+        -------------------------------------------------- */
+
         const result =
             await response.json();
+
+
+        console.log(
+            "VOTIFY Reject Response:",
+            result
+        );
 
 
         /* ==================================================
            REJECT SUCCESS
         ================================================== */
 
-        if (result.success) {
+        if (
+            result.success
+        ) {
+
+            /*
+             * Show existing VOTIFY toast.
+             */
 
             requestToast(
 
@@ -495,12 +771,13 @@ async function rejectStudent(
 
 
             /*
-             * Remove request from the current
-             * admin table only after the backend
-             * confirms successful deletion.
+             * Remove rejected request
+             * from current table.
              */
 
-            removeRequestRow(row);
+            removeRequestRow(
+                row
+            );
 
 
             /*
@@ -511,22 +788,41 @@ async function rejectStudent(
                 "reject"
             );
 
+
+            currentStudentId =
+                null;
+
+            currentAction =
+                null;
+
+
+            /*
+             * Tell confirmation modal that
+             * backend operation succeeded.
+             */
+
+            return true;
+
         }
 
-        else {
 
-            requestToast(
+        /* ==================================================
+           REJECT FAILED
+        ================================================== */
 
-                "error",
+        requestToast(
 
-                "Reject Failed",
+            "error",
 
-                result.message ||
-                "Unable to reject student."
+            "Reject Failed",
 
-            );
+            result.message ||
+            "Unable to reject student."
 
-        }
+        );
+
+
+        return false;
 
     }
 
@@ -548,6 +844,9 @@ async function rejectStudent(
 
         );
 
+
+        return false;
+
     }
 
 }
@@ -561,17 +860,24 @@ function removeRequestRow(
     row
 ) {
 
-    if (!row) return;
+    if (!row) {
+
+        return;
+
+    }
 
 
     row.style.transition =
         "all .35s ease";
 
+
     row.style.opacity =
         "0";
 
+
     row.style.transform =
         "translateX(40px) scale(.96)";
+
 
     row.style.filter =
         "blur(4px)";
@@ -580,11 +886,14 @@ function removeRequestRow(
     setTimeout(
         () => {
 
-            if (row.parentNode) {
+            if (
+                row.parentNode
+            ) {
 
                 row.remove();
 
             }
+
 
             checkEmptyTable();
 
@@ -609,7 +918,9 @@ function updateStatistics(
         );
 
 
-    if (counters.length < 4) {
+    if (
+        counters.length < 4
+    ) {
 
         return;
 
@@ -619,11 +930,14 @@ function updateStatistics(
     const total =
         counters[0];
 
+
     const pending =
         counters[1];
 
+
     const approved =
         counters[2];
+
 
     const rejected =
         counters[3];
@@ -639,14 +953,15 @@ function updateStatistics(
             0,
 
             parseInt(
-                pending.textContent
+                pending.textContent,
+                10
             ) - 1
 
         );
 
 
     /* ======================================================
-       TOTAL PENDING REQUESTS
+       TOTAL
     ====================================================== */
 
     total.textContent =
@@ -655,7 +970,8 @@ function updateStatistics(
             0,
 
             parseInt(
-                total.textContent
+                total.textContent,
+                10
             ) - 1
 
         );
@@ -671,7 +987,8 @@ function updateStatistics(
 
         approved.textContent =
             parseInt(
-                approved.textContent
+                approved.textContent,
+                10
             ) + 1;
 
     }
@@ -681,19 +998,18 @@ function updateStatistics(
     ) {
 
         /*
-         * IMPORTANT:
-         *
-         * Rejected students are now deleted
+         * Rejected students are deleted
          * from the students table.
          *
-         * The counter here represents the
-         * admin action during the current page
-         * session.
+         * This counter represents the
+         * rejection action during the
+         * current page session.
          */
 
         rejected.textContent =
             parseInt(
-                rejected.textContent
+                rejected.textContent,
+                10
             ) + 1;
 
     }
@@ -714,7 +1030,9 @@ function checkEmptyTable() {
 
 
     if (!tbody) {
+
         return;
+
     }
 
 
@@ -730,38 +1048,47 @@ function checkEmptyTable() {
 
         tbody.innerHTML = `
 
-<tr class="fade-up">
+            <tr class="fade-up">
 
-<td colspan="7">
+                <td colspan="7">
 
-<div class="py-16 text-center">
+                    <div class="py-16 text-center">
 
-    <div class="flex justify-center mb-6">
+                        <div class="flex justify-center mb-6">
 
-        <i class="ri-inbox-archive-line text-7xl text-slate-500"></i>
+                            <i
+                                class="ri-inbox-archive-line text-7xl text-slate-500">
+                            </i>
 
-    </div>
+                        </div>
 
-    <h3 class="text-2xl font-bold text-white">
+                        <h3
+                            class="text-2xl font-bold text-white">
 
-        No Pending Requests
+                            No Pending Requests
 
-    </h3>
+                        </h3>
 
-    <p class="mt-3 text-slate-400">
+                        <p
+                            class="mt-3 text-slate-400">
 
-        All student registration requests have been processed.
+                            All student registration requests have been processed.
 
-    </p>
+                        </p>
 
-</div>
+                    </div>
 
-</td>
+                </td>
 
-</tr>
+            </tr>
 
-`;
+        `;
 
     }
 
 }
+
+
+/* ==========================================================
+   END OF REQUESTS.JS
+========================================================== */
