@@ -1836,7 +1836,9 @@ function initializeExport(){
         "click",
         () => {
 
-            exportExcel();
+            exportExcel(
+                exportButton
+            );
 
         }
     );
@@ -1848,7 +1850,33 @@ function initializeExport(){
    EXPORT FUNCTION
 ========================================================== */
 
-function exportExcel(){
+async function exportExcel(
+    exportButton
+){
+
+    if(!exportButton){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       PREVENT DOUBLE CLICK
+    ====================================================== */
+
+    if(
+        exportButton.disabled
+    ){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       BUILD FILTER PARAMETERS
+    ====================================================== */
 
     const params =
         new URLSearchParams({
@@ -1862,11 +1890,392 @@ function exportExcel(){
         });
 
 
-    window.location.href =
+    /* ======================================================
+       STORE ORIGINAL BUTTON
+    ====================================================== */
 
-        "../../backend/admin/export-voters.php?" +
+    const originalButtonHTML =
+        exportButton.innerHTML;
 
-        params.toString();
+
+    try{
+
+        /* ==================================================
+           BUTTON LOADING
+        ================================================== */
+
+        exportButton.disabled =
+            true;
+
+
+        exportButton.innerHTML = `
+
+            <span
+                class="inline-flex items-center justify-center gap-2">
+
+                <i
+                    class="ri-loader-4-line animate-spin text-xl"
+                    aria-hidden="true">
+                </i>
+
+                Exporting...
+
+            </span>
+
+        `;
+
+
+        /* ==================================================
+           REQUEST EXPORT
+           
+           IMPORTANT:
+           fetch prevents browser navigation.
+        ================================================== */
+
+        const response =
+            await fetch(
+
+                "../../backend/admin/export-voters.php?" +
+                params.toString(),
+
+                {
+
+                    method:
+                        "GET",
+
+                    headers: {
+
+                        "Accept":
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,application/json"
+
+                    }
+
+                }
+
+            );
+
+
+        /* ==================================================
+           HTTP ERROR
+        ================================================== */
+
+        if(!response.ok){
+
+            throw new Error(
+                "Server returned HTTP " +
+                response.status
+            );
+
+        }
+
+
+        /* ==================================================
+           CHECK CONTENT TYPE
+        ================================================== */
+
+        const contentType =
+            (
+                response.headers.get(
+                    "content-type"
+                ) ||
+                ""
+            ).toLowerCase();
+
+
+        /* ==================================================
+           EMPTY / TEXT RESPONSE
+           
+           Backend currently sends:
+           "No records available for export."
+        ================================================== */
+
+        if(
+            contentType.includes(
+                "text/plain"
+            ) ||
+            contentType.includes(
+                "text/html"
+            ) ||
+            contentType.includes(
+                "application/json"
+            )
+        ){
+
+            const responseText =
+                await response.text();
+
+
+            let message =
+                responseText.trim();
+
+
+            /*
+             * If backend returns JSON,
+             * try to extract its message.
+             */
+
+            if(
+                contentType.includes(
+                    "application/json"
+                )
+            ){
+
+                try{
+
+                    const data =
+                        JSON.parse(
+                            responseText
+                        );
+
+
+                    message =
+                        data.message ||
+                        message;
+
+                }
+                catch(error){
+
+                    /*
+                     * Keep original response text
+                     * if it is not valid JSON.
+                     */
+
+                }
+
+            }
+
+
+            /*
+             * Remove any accidental HTML tags
+             * from backend output.
+             */
+
+            const temp =
+                document.createElement(
+                    "div"
+                );
+
+
+            temp.innerHTML =
+                message;
+
+
+            message =
+                (
+                    temp.textContent ||
+                    temp.innerText ||
+                    ""
+                ).trim();
+
+
+            /*
+             * Empty message fallback.
+             */
+
+            if(!message){
+
+                message =
+                    "No voters available to export.";
+
+            }
+
+
+            showToast(
+
+                "warning",
+
+                "No Records",
+
+                message
+
+            );
+
+
+            return;
+
+        }
+
+
+        /* ==================================================
+           EXCEL FILE RESPONSE
+        ================================================== */
+
+        const blob =
+            await response.blob();
+
+
+        /*
+         * Safety check:
+         * Do not download an empty file.
+         */
+
+        if(
+            !blob ||
+            blob.size === 0
+        ){
+
+            showToast(
+
+                "warning",
+
+                "No Records",
+
+                "No voters available to export."
+
+            );
+
+
+            return;
+
+        }
+
+
+        /* ==================================================
+           CREATE DOWNLOAD URL
+        ================================================== */
+
+        const downloadUrl =
+            window.URL.createObjectURL(
+                blob
+            );
+
+
+        /* ==================================================
+           FILE NAME
+        ================================================== */
+
+        let fileName =
+            "VOTIFY_Voters.xlsx";
+
+
+        const contentDisposition =
+            response.headers.get(
+                "content-disposition"
+            );
+
+
+        if(contentDisposition){
+
+            const fileNameMatch =
+                contentDisposition.match(
+                    /filename\*?=(?:UTF-8'')?["']?([^;"']+)["']?/i
+                );
+
+
+            if(
+                fileNameMatch &&
+                fileNameMatch[1]
+            ){
+
+                fileName =
+                    decodeURIComponent(
+                        fileNameMatch[1]
+                    );
+
+            }
+
+        }
+
+
+        /* ==================================================
+           DOWNLOAD FILE
+        ================================================== */
+
+        const downloadLink =
+            document.createElement(
+                "a"
+            );
+
+
+        downloadLink.href =
+            downloadUrl;
+
+
+        downloadLink.download =
+            fileName;
+
+
+        downloadLink.style.display =
+            "none";
+
+
+        document.body.appendChild(
+            downloadLink
+        );
+
+
+        downloadLink.click();
+
+
+        downloadLink.remove();
+
+
+        /* ==================================================
+           RELEASE OBJECT URL
+        ================================================== */
+
+        setTimeout(
+            () => {
+
+                window.URL.revokeObjectURL(
+                    downloadUrl
+                );
+
+            },
+            1000
+        );
+
+
+        /* ==================================================
+           SUCCESS TOAST
+        ================================================== */
+
+        showToast(
+
+            "success",
+
+            "Exported",
+
+            "Voter data exported successfully."
+
+        );
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Export Voters Error:",
+            error
+        );
+
+
+        showToast(
+
+            "error",
+
+            "Export Failed",
+
+            "Unable to export voter data. Please try again."
+
+        );
+
+    }
+
+    finally{
+
+        /* ==================================================
+           RESTORE BUTTON
+        ================================================== */
+
+        exportButton.disabled =
+            false;
+
+
+        exportButton.innerHTML =
+            originalButtonHTML;
+
+    }
 
 }
 

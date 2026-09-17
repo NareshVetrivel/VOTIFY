@@ -1,23 +1,30 @@
 /* ==========================================================
    VOTIFY
    Candidate Management
+   File : assets/js/candidates.js
 ========================================================== */
 
 "use strict";
+
 
 let editMode = false;
 
 let editingCandidateId = null;
 
+
 /* ==========================================================
    READY
 ========================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    initializeCandidates();
+        initializeCandidates();
 
-});
+    }
+);
+
 
 /* ==========================================================
    INITIALIZE
@@ -25,32 +32,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeCandidates(){
 
-initializeCandidateModal();
+    initializeCandidateModal();
 
-initializeCandidateViewModal();
+    initializeCandidateViewModal();
 
-initializePhotoPreview();
+    initializePhotoPreview();
 
-initializeManifestoCounter();
+    initializeManifestoCounter();
 
-initializeStudentSearch();
+    initializeStudentSearch();
 
-initializeCandidateForm();
+    initializeCandidateForm();
 
-initializeCandidateFilters();
+    initializeCandidateFilters();
 
-initializeCandidateSearch();
+    initializeCandidateSearch();
 
-initializeEntriesFilter();
+    initializeEntriesFilter();
 
-initializeViewCandidate();
+    initializeViewCandidate();
 
-initializeEditCandidate();
+    initializeEditCandidate();
 
-initializeDeleteCandidate();
+    initializeDeleteCandidate();
 
-initializeExportExcel();
+    initializeExportExcel();
+
 }
+
 
 /* ==========================================================
    MODAL
@@ -59,56 +68,63 @@ initializeExportExcel();
 function initializeCandidateModal(){
 
     document
+        .getElementById(
+            "addCandidate"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-    .getElementById("addCandidate")
+                resetCandidateForm();
 
-    ?.addEventListener("click",()=>{
+                openCandidateModal();
 
-        resetCandidateForm();
+            }
+        );
 
-        openCandidateModal();
-
-    });
-
-    document
-
-    .getElementById("closeCandidateModal")
-
-    ?.addEventListener(
-
-        "click",
-
-        closeCandidateModal
-
-    );
 
     document
+        .getElementById(
+            "closeCandidateModal"
+        )
+        ?.addEventListener(
+            "click",
+            closeCandidateModal
+        );
 
-    .getElementById("cancelCandidate")
-
-    ?.addEventListener(
-
-        "click",
-
-        closeCandidateModal
-
-    );
 
     document
+        .getElementById(
+            "cancelCandidate"
+        )
+        ?.addEventListener(
+            "click",
+            closeCandidateModal
+        );
 
-    .getElementById("candidateModal")
 
-    ?.addEventListener("click",e=>{
+    document
+        .getElementById(
+            "candidateModal"
+        )
+        ?.addEventListener(
+            "click",
+            e => {
 
-        if(e.target.id==="candidateModal"){
+                if(
+                    e.target.id ===
+                    "candidateModal"
+                ){
 
-            closeCandidateModal();
+                    closeCandidateModal();
 
-        }
+                }
 
-    });
+            }
+        );
 
 }
+
 
 /* ==========================================================
    OPEN MODAL
@@ -117,12 +133,10 @@ function initializeCandidateModal(){
 function openCandidateModal(){
 
     const modal =
+        document.getElementById(
+            "candidateModal"
+        );
 
-    document.getElementById(
-
-        "candidateModal"
-
-    );
 
     if(!modal){
 
@@ -130,11 +144,18 @@ function openCandidateModal(){
 
     }
 
-    modal.classList.remove("hidden");
 
-    modal.classList.add("flex");
+    modal.classList.remove(
+        "hidden"
+    );
+
+
+    modal.classList.add(
+        "flex"
+    );
 
 }
+
 
 /* ==========================================================
    CLOSE MODAL
@@ -143,12 +164,10 @@ function openCandidateModal(){
 function closeCandidateModal(){
 
     const modal =
+        document.getElementById(
+            "candidateModal"
+        );
 
-    document.getElementById(
-
-        "candidateModal"
-
-    );
 
     if(!modal){
 
@@ -156,11 +175,18 @@ function closeCandidateModal(){
 
     }
 
-    modal.classList.remove("flex");
 
-    modal.classList.add("hidden");
+    modal.classList.remove(
+        "flex"
+    );
+
+
+    modal.classList.add(
+        "hidden"
+    );
 
 }
+
 
 /* ==========================================================
    RESET FORM
@@ -169,93 +195,116 @@ function closeCandidateModal(){
 function resetCandidateForm(){
 
     const form =
+        document.getElementById(
+            "candidateForm"
+        );
 
-    document.getElementById(
-
-        "candidateForm"
-
-    );
 
     if(form){
 
         form.reset();
 
-        document.getElementById(
 
-            "candidateManifesto"
-
-        ).blur();
+        document
+            .getElementById(
+                "candidateManifesto"
+            )
+            .blur();
 
     }
 
-    document.getElementById(
 
+    document.getElementById(
         "candidateId"
-
     ).value = "";
 
-    document.getElementById(
 
+    document.getElementById(
         "studentId"
-
     ).value = "";
 
-    document.getElementById(
 
+    document.getElementById(
         "candidateName"
-
     ).value = "";
 
-    document.getElementById(
 
+    document.getElementById(
         "candidateDepartment"
-
     ).value = "";
 
-    document.getElementById(
 
+    document.getElementById(
         "candidateYear"
-
     ).value = "";
 
+
     document.getElementById(
-
         "manifestoCount"
+    ).textContent =
+        "0 / 255";
 
-    ).textContent = "0 / 255";
 
-const preview =
+    const preview =
+        document.getElementById(
+            "photoPreview"
+        );
 
-document.getElementById(
 
-    "photoPreview"
+    preview.src = "";
 
-);
 
-preview.src = "";
+    preview.classList.add(
+        "hidden"
+    );
 
-preview.classList.add("hidden");
 
-editMode = false;
+    editMode = false;
 
-editingCandidateId = null;
+    editingCandidateId = null;
 
-document.getElementById("admissionNo").readOnly = false;
 
-document.getElementById("admissionNo").classList.remove("cursor-not-allowed");
+    document.getElementById(
+        "admissionNo"
+    ).readOnly = false;
 
-document.getElementById("saveCandidate").innerHTML =
-'<i class="ri-save-line mr-2"></i>Save Candidate';
 
-document.getElementById("candidateManifesto").readOnly = false;
+    document.getElementById(
+        "admissionNo"
+    ).classList.remove(
+        "cursor-not-allowed"
+    );
 
-document.getElementById("candidatePhoto").disabled = false;
 
-document.getElementById("searchStudent").disabled = false;
+    document.getElementById(
+        "saveCandidate"
+    ).innerHTML =
+        '<i class="ri-save-line mr-2"></i>Save Candidate';
 
-document.getElementById("saveCandidate").classList.remove("hidden");
+
+    document.getElementById(
+        "candidateManifesto"
+    ).readOnly = false;
+
+
+    document.getElementById(
+        "candidatePhoto"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "searchStudent"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "saveCandidate"
+    ).classList.remove(
+        "hidden"
+    );
 
 }
+
 
 /* ==========================================================
    PHOTO PREVIEW
@@ -264,36 +313,34 @@ document.getElementById("saveCandidate").classList.remove("hidden");
 function initializePhotoPreview(){
 
     const input =
+        document.getElementById(
+            "candidatePhoto"
+        );
 
-    document.getElementById(
-
-        "candidatePhoto"
-
-    );
 
     const preview =
+        document.getElementById(
+            "photoPreview"
+        );
 
-    document.getElementById(
 
-        "photoPreview"
-
-    );
-
-    if(!input || !preview){
+    if(
+        !input ||
+        !preview
+    ){
 
         return;
 
     }
 
+
     input.addEventListener(
-
         "change",
-
-        ()=>{
+        () => {
 
             const file =
+                input.files[0];
 
-            input.files[0];
 
             if(!file){
 
@@ -301,21 +348,31 @@ function initializePhotoPreview(){
 
             }
 
-preview.src = URL.createObjectURL(file);
 
-preview.classList.remove("hidden");
+            preview.src =
+                URL.createObjectURL(
+                    file
+                );
 
-preview.onload = () => {
 
-    URL.revokeObjectURL(preview.src);
+            preview.classList.remove(
+                "hidden"
+            );
 
-};
+
+            preview.onload = () => {
+
+                URL.revokeObjectURL(
+                    preview.src
+                );
+
+            };
 
         }
-
     );
 
 }
+
 
 /* ==========================================================
    MANIFESTO COUNTER
@@ -324,44 +381,42 @@ preview.onload = () => {
 function initializeManifestoCounter(){
 
     const textarea =
+        document.getElementById(
+            "candidateManifesto"
+        );
 
-    document.getElementById(
-
-        "candidateManifesto"
-
-    );
 
     const counter =
+        document.getElementById(
+            "manifestoCount"
+        );
 
-    document.getElementById(
 
-        "manifestoCount"
-
-    );
-
-    if(!textarea || !counter){
+    if(
+        !textarea ||
+        !counter
+    ){
 
         return;
 
     }
 
+
     textarea.addEventListener(
-
         "input",
-
-        ()=>{
+        () => {
 
             counter.textContent =
 
-            textarea.value.length +
+                textarea.value.length +
 
-            " / 255";
+                " / 255";
 
         }
-
     );
 
 }
+
 
 /* ==========================================================
    STUDENT SEARCH
@@ -369,46 +424,53 @@ function initializeManifestoCounter(){
 
 function initializeStudentSearch(){
 
-const searchButton =
-document.getElementById("searchStudent");
+    const searchButton =
+        document.getElementById(
+            "searchStudent"
+        );
 
-const admissionInput =
-document.getElementById("admissionNo");
 
-if(!searchButton || !admissionInput){
+    const admissionInput =
+        document.getElementById(
+            "admissionNo"
+        );
 
-    return;
 
-}
-
-admissionInput.addEventListener("input",()=>{
-
-    admissionInput.value =
-    admissionInput.value.toUpperCase();
-
-});
-
-    if(!searchButton || !admissionInput){
+    if(
+        !searchButton ||
+        !admissionInput
+    ){
 
         return;
 
     }
 
-    searchButton.addEventListener(
-
-        "click",
-
-        searchStudent
-
-    );
 
     admissionInput.addEventListener(
+        "input",
+        () => {
 
+            admissionInput.value =
+                admissionInput.value.toUpperCase();
+
+        }
+    );
+
+
+    searchButton.addEventListener(
+        "click",
+        searchStudent
+    );
+
+
+    admissionInput.addEventListener(
         "keydown",
+        e => {
 
-        e=>{
-
-            if(e.key==="Enter"){
+            if(
+                e.key ===
+                "Enter"
+            ){
 
                 e.preventDefault();
 
@@ -417,10 +479,10 @@ admissionInput.addEventListener("input",()=>{
             }
 
         }
-
     );
 
 }
+
 
 /* ==========================================================
    SEARCH STUDENT
@@ -429,16 +491,18 @@ admissionInput.addEventListener("input",()=>{
 async function searchStudent(){
 
     const admission =
+        document
+            .getElementById(
+                "admissionNo"
+            )
+            .value
+            .trim();
 
-    document
 
-    .getElementById("admissionNo")
-
-    .value
-
-    .trim();
-
-    if(admission===""){
+    if(
+        admission ===
+        ""
+    ){
 
         showToast(
 
@@ -454,51 +518,52 @@ async function searchStudent(){
 
     }
 
+
     const searchButton =
+        document.getElementById(
+            "searchStudent"
+        );
 
-    document.getElementById(
 
-        "searchStudent"
+    searchButton.disabled =
+        true;
 
-    );
-
-    searchButton.disabled = true;
 
     searchButton.innerHTML =
+        '<i class="ri-loader-4-line animate-spin"></i>';
 
-    '<i class="ri-loader-4-line animate-spin"></i>';
 
     try{
 
         const response =
+            await fetch(
 
-        await fetch(
+                "../../backend/admin/check-student.php?admission_no=" +
 
-        "../../backend/admin/check-student.php?admission_no="
-
-        +
-
-        encodeURIComponent(admission)
-
-        );
-
-        const result =
-
-        await response.json();
-
-        if(result.success){
-
-            fillStudentDetails(
-
-                result.student
+                encodeURIComponent(
+                    admission
+                )
 
             );
 
-        }
 
+        const result =
+            await response.json();
+
+
+        if(
+            result.success
+        ){
+
+            fillStudentDetails(
+                result.student
+            );
+
+        }
         else{
 
             clearStudentDetails();
+
 
             showToast(
 
@@ -516,59 +581,76 @@ async function searchStudent(){
 
     catch(error){
 
-        console.error(error);
+        console.error(
+            "VOTIFY Student Search Error:",
+            error
+        );
+
+
+        showToast(
+
+            "error",
+
+            "Server Error",
+
+            "Unable to search student."
+
+        );
 
     }
 
     finally{
 
-        searchButton.disabled = false;
+        searchButton.disabled =
+            false;
+
 
         searchButton.innerHTML =
-
-        '<i class="ri-search-line text-xl"></i>';
+            '<i class="ri-search-line text-xl"></i>';
 
     }
 
 }
 
+
 /* ==========================================================
    FILL STUDENT DETAILS
 ========================================================== */
 
-function fillStudentDetails(student){
+function fillStudentDetails(
+    student
+){
 
     document.getElementById(
-
         "studentId"
+    ).value =
+        student.id;
 
-    ).value = student.id;
 
     document.getElementById(
-
         "candidateName"
+    ).value =
+        student.full_name;
 
-    ).value = student.full_name;
 
     document.getElementById(
-
         "candidateDepartment"
+    ).value =
+        student.department;
 
-    ).value = student.department;
 
     document.getElementById(
-
         "candidateYear"
+    ).value =
+        student.year;
 
-    ).value = student.year;
 
     document.getElementById(
-
         "candidatePhoto"
-
     ).focus();
 
 }
+
 
 /* ==========================================================
    CLEAR STUDENT DETAILS
@@ -577,36 +659,36 @@ function fillStudentDetails(student){
 function clearStudentDetails(){
 
     document.getElementById(
-
         "studentId"
+    ).value =
+        "";
 
-    ).value="";
 
-document.getElementById(
+    document.getElementById(
+        "candidateName"
+    ).value =
+        "";
 
-    "candidateName"
 
-).value = "";
+    document.getElementById(
+        "candidateDepartment"
+    ).value =
+        "";
 
-document.getElementById(
 
-    "candidateDepartment"
+    document.getElementById(
+        "candidateYear"
+    ).value =
+        "";
 
-).value = "";
 
-document.getElementById(
-
-    "candidateYear"
-
-).value = "";
-
-document.getElementById(
-
-    "candidatePhoto"
-
-).value = "";
+    document.getElementById(
+        "candidatePhoto"
+    ).value =
+        "";
 
 }
+
 
 /* ==========================================================
    FORM VALIDATION
@@ -615,10 +697,10 @@ document.getElementById(
 function initializeCandidateForm(){
 
     const form =
+        document.getElementById(
+            "candidateForm"
+        );
 
-    document.getElementById(
-        "candidateForm"
-    );
 
     if(!form){
 
@@ -626,49 +708,54 @@ function initializeCandidateForm(){
 
     }
 
+
     form.addEventListener(
-
         "submit",
-
         validateCandidateForm
-
     );
 
 }
+
 
 /* ==========================================================
    VALIDATE FORM
 ========================================================== */
 
-function validateCandidateForm(e){
+function validateCandidateForm(
+    e
+){
 
     e.preventDefault();
 
-    const admission =
 
-    document.getElementById(
-        "admissionNo"
-    ).value.trim();
+    const admission =
+        document.getElementById(
+            "admissionNo"
+        ).value.trim();
+
 
     const studentId =
+        document.getElementById(
+            "studentId"
+        ).value.trim();
 
-    document.getElementById(
-        "studentId"
-    ).value.trim();
 
     const manifesto =
+        document.getElementById(
+            "candidateManifesto"
+        ).value.trim();
 
-    document.getElementById(
-        "candidateManifesto"
-    ).value.trim();
 
     const photo =
+        document.getElementById(
+            "candidatePhoto"
+        ).files.length;
 
-    document.getElementById(
-        "candidatePhoto"
-    ).files.length;
 
-    if(admission===""){
+    if(
+        admission ===
+        ""
+    ){
 
         showToast(
 
@@ -680,17 +767,23 @@ function validateCandidateForm(e){
 
         );
 
-        document.getElementById(
 
-            "admissionNo"
+        document
+            .getElementById(
+                "admissionNo"
+            )
+            .focus();
 
-        ).focus();
 
         return;
 
     }
 
-    if(studentId===""){
+
+    if(
+        studentId ===
+        ""
+    ){
 
         showToast(
 
@@ -702,17 +795,23 @@ function validateCandidateForm(e){
 
         );
 
-        document.getElementById(
 
-            "admissionNo"
+        document
+            .getElementById(
+                "admissionNo"
+            )
+            .focus();
 
-        ).focus();
 
         return;
 
     }
 
-    if(!editMode && photo===0){
+
+    if(
+        !editMode &&
+        photo === 0
+    ){
 
         showToast(
 
@@ -724,11 +823,16 @@ function validateCandidateForm(e){
 
         );
 
+
         return;
 
     }
 
-    if(manifesto===""){
+
+    if(
+        manifesto ===
+        ""
+    ){
 
         showToast(
 
@@ -740,23 +844,23 @@ function validateCandidateForm(e){
 
         );
 
-        document.getElementById(
 
-            "candidateManifesto"
+        document
+            .getElementById(
+                "candidateManifesto"
+            )
+            .focus();
 
-        ).focus();
 
         return;
 
     }
 
+
     saveCandidate();
 
 }
 
-/* ==========================================================
-   SAVE CANDIDATE
-========================================================== */
 
 /* ==========================================================
    SAVE CANDIDATE
@@ -765,65 +869,86 @@ function validateCandidateForm(e){
 async function saveCandidate(){
 
     const form =
+        document.getElementById(
+            "candidateForm"
+        );
 
-    document.getElementById(
-
-        "candidateForm"
-
-    );
 
     const saveButton =
+        document.getElementById(
+            "saveCandidate"
+        );
 
-    document.getElementById(
-
-        "saveCandidate"
-
-    );
 
     const originalButton =
+        saveButton.innerHTML;
 
-    saveButton.innerHTML;
 
-    saveButton.disabled = true;
+    saveButton.disabled =
+        true;
+
 
     saveButton.innerHTML =
+        '<i class="ri-loader-4-line animate-spin mr-2"></i>Saving...';
 
-    '<i class="ri-loader-4-line animate-spin mr-2"></i>Saving...';
 
     try{
 
         const formData =
+            new FormData(
+                form
+            );
 
-        new FormData(form);
 
         if(editMode){
 
-    formData.append(
-        "candidateId",
-        editingCandidateId
-    );
+            formData.append(
+                "candidateId",
+                editingCandidateId
+            );
 
-}
+        }
 
-const url = editMode
 
-? "../../backend/admin/update-candidate.php"
+        const url =
+            editMode
 
-: "../../backend/admin/add-candidate.php";
+            ? "../../backend/admin/update-candidate.php"
 
-const response = await fetch(
-    url,
-    {
-        method:"POST",
-        body:formData
-    }
-);
+            : "../../backend/admin/add-candidate.php";
 
-const text = await response.text();
 
-const result = JSON.parse(text);
+        const response =
+            await fetch(
 
-        if(result.success){
+                url,
+
+                {
+
+                    method:
+                        "POST",
+
+                    body:
+                        formData
+
+                }
+
+            );
+
+
+        const text =
+            await response.text();
+
+
+        const result =
+            JSON.parse(
+                text
+            );
+
+
+        if(
+            result.success
+        ){
 
             showToast(
 
@@ -835,16 +960,20 @@ const result = JSON.parse(text);
 
             );
 
+
             closeCandidateModal();
 
-            setTimeout(()=>{
 
-                location.reload();
+            setTimeout(
+                () => {
 
-            },800);
+                    location.reload();
+
+                },
+                800
+            );
 
         }
-
         else{
 
             showToast(
@@ -863,7 +992,11 @@ const result = JSON.parse(text);
 
     catch(error){
 
-        console.error(error);
+        console.error(
+            "VOTIFY Save Candidate Error:",
+            error
+        );
+
 
         showToast(
 
@@ -879,15 +1012,17 @@ const result = JSON.parse(text);
 
     finally{
 
-        saveButton.disabled = false;
+        saveButton.disabled =
+            false;
+
 
         saveButton.innerHTML =
-
-        originalButton;
+            originalButton;
 
     }
 
 }
+
 
 /* ==========================================================
    FILTER CANDIDATES
@@ -895,71 +1030,115 @@ const result = JSON.parse(text);
 
 function initializeCandidateFilters(){
 
-const rows =
-document.querySelectorAll(
-"#candidatesTableBody tr"
-);
+    const rows =
+        document.querySelectorAll(
+            "#candidatesTableBody tr"
+        );
 
-document.getElementById("filterAll")
-?.addEventListener("click",()=>{
 
-setActiveFilter(
-document.getElementById("filterAll")
-);
+    document
+        .getElementById(
+            "filterAll"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-rows.forEach(row=>{
+                setActiveFilter(
+                    document.getElementById(
+                        "filterAll"
+                    )
+                );
 
-row.style.display="";
 
-});
+                rows.forEach(
+                    row => {
 
-});
+                        row.style.display =
+                            "";
 
-document.getElementById("filterFirstYear")
-?.addEventListener("click",()=>{
+                    }
+                );
 
-setActiveFilter(
-document.getElementById("filterFirstYear")
-);
+            }
+        );
 
-rows.forEach(row=>{
 
-row.style.display=
+    document
+        .getElementById(
+            "filterFirstYear"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-row.dataset.year==="1st Year" ||
-row.dataset.year==="I Year"
+                setActiveFilter(
+                    document.getElementById(
+                        "filterFirstYear"
+                    )
+                );
 
-? ""
 
-: "none";
+                rows.forEach(
+                    row => {
 
-});
+                        row.style.display =
 
-});
+                            row.dataset.year ===
+                                "1st Year" ||
 
-document.getElementById("filterSecondYear")
-?.addEventListener("click",()=>{
+                            row.dataset.year ===
+                                "I Year"
 
-setActiveFilter(
-document.getElementById("filterSecondYear")
-);
+                            ? ""
 
-rows.forEach(row=>{
+                            : "none";
 
-row.style.display=
+                    }
+                );
 
-row.dataset.year==="2nd Year" ||
-row.dataset.year==="II Year"
+            }
+        );
 
-? ""
 
-: "none";
+    document
+        .getElementById(
+            "filterSecondYear"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-});
+                setActiveFilter(
+                    document.getElementById(
+                        "filterSecondYear"
+                    )
+                );
 
-});
+
+                rows.forEach(
+                    row => {
+
+                        row.style.display =
+
+                            row.dataset.year ===
+                                "2nd Year" ||
+
+                            row.dataset.year ===
+                                "II Year"
+
+                            ? ""
+
+                            : "none";
+
+                    }
+                );
+
+            }
+        );
 
 }
+
 
 /* ==========================================================
    SEARCH
@@ -967,66 +1146,98 @@ row.dataset.year==="II Year"
 
 function initializeCandidateSearch(){
 
-const input =
-document.getElementById(
-"candidateSearch"
-);
+    const input =
+        document.getElementById(
+            "candidateSearch"
+        );
 
-if(!input){
 
-return;
+    if(!input){
+
+        return;
+
+    }
+
+
+    input.addEventListener(
+        "input",
+        () => {
+
+            const keyword =
+                input.value
+                    .toLowerCase();
+
+
+            document
+                .querySelectorAll(
+                    "#candidatesTableBody tr"
+                )
+                .forEach(
+                    row => {
+
+                        const search =
+                            row.dataset.search ||
+                            "";
+
+
+                        row.style.display =
+
+                            search.includes(
+                                keyword
+                            )
+
+                            ? ""
+
+                            : "none";
+
+                    }
+                );
+
+        }
+    );
 
 }
 
-input.addEventListener("input",()=>{
-
-const keyword =
-input.value.toLowerCase();
-
-document
-.querySelectorAll(
-"#candidatesTableBody tr"
-)
-.forEach(row=>{
-
-const search =
-row.dataset.search || "";
-
-row.style.display=
-
-search.includes(keyword)
-
-? ""
-
-: "none";
-
-});
-
-});
-
-}
 
 /* ==========================================================
    ACTIVE FILTER BUTTON
 ========================================================== */
 
-function setActiveFilter(button){
+function setActiveFilter(
+    button
+){
 
-document
-.querySelectorAll(".filterButton")
-.forEach(btn=>{
+    document
+        .querySelectorAll(
+            ".filterButton"
+        )
+        .forEach(
+            btn => {
 
-btn.classList.remove("btn-primary");
+                btn.classList.remove(
+                    "btn-primary"
+                );
 
-btn.classList.add("btn-outline");
 
-});
+                btn.classList.add(
+                    "btn-outline"
+                );
 
-button.classList.remove("btn-outline");
+            }
+        );
 
-button.classList.add("btn-primary");
+
+    button.classList.remove(
+        "btn-outline"
+    );
+
+
+    button.classList.add(
+        "btn-primary"
+    );
 
 }
+
 
 /* ==========================================================
    ENTRIES
@@ -1034,212 +1245,782 @@ button.classList.add("btn-primary");
 
 function initializeEntriesFilter(){
 
-const select =
-document.getElementById(
-"entriesSelect"
-);
+    const select =
+        document.getElementById(
+            "entriesSelect"
+        );
 
-if(!select){
 
-return;
+    if(!select){
+
+        return;
+
+    }
+
+
+    select.addEventListener(
+        "change",
+        () => {
+
+            const limit =
+                parseInt(
+                    select.value,
+                    10
+                );
+
+
+            const rows =
+                document.querySelectorAll(
+                    "#candidatesTableBody tr"
+                );
+
+
+            rows.forEach(
+                (row, index) => {
+
+                    row.style.display =
+
+                        index < limit
+
+                        ? ""
+
+                        : "none";
+
+                }
+            );
+
+        }
+    );
+
+
+    select.dispatchEvent(
+        new Event(
+            "change"
+        )
+    );
 
 }
 
-select.addEventListener("change",()=>{
 
-const limit =
-parseInt(select.value);
-
-const rows =
-document.querySelectorAll(
-"#candidatesTableBody tr"
-);
-
-rows.forEach((row,index)=>{
-
-row.style.display=
-
-index < limit
-
-? ""
-
-: "none";
-
-});
-
-});
-
-select.dispatchEvent(
-
-new Event("change")
-
-);
-
-}
+/* ==========================================================
+   VIEW CANDIDATE BUTTONS
+========================================================== */
 
 function initializeViewCandidate(){
 
     document
-    .querySelectorAll(".viewCandidate")
-    .forEach(button=>{
+        .querySelectorAll(
+            ".viewCandidate"
+        )
+        .forEach(
+            button => {
 
-        button.addEventListener(
-            "click",
-            ()=>{
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                viewCandidate(
-                    button.dataset.id
+                        viewCandidate(
+                            button.dataset.id
+                        );
+
+                    }
                 );
 
             }
-
         );
 
-    });
-
 }
+
+
+/* ==========================================================
+   EDIT CANDIDATE BUTTONS
+========================================================== */
 
 function initializeEditCandidate(){
 
-document
-.querySelectorAll(".editCandidate")
-.forEach(button=>{
+    document
+        .querySelectorAll(
+            ".editCandidate"
+        )
+        .forEach(
+            button => {
 
-button.addEventListener(
-"click",
-()=>{
+                button.addEventListener(
+                    "click",
+                    () => {
 
-editCandidate(
-button.dataset.id
-);
+                        editCandidate(
+                            button.dataset.id
+                        );
 
-});
+                    }
+                );
 
-});
+            }
+        );
 
 }
+
+
+/* ==========================================================
+   DELETE CANDIDATE BUTTONS
+========================================================== */
 
 function initializeDeleteCandidate(){
 
-document
-.querySelectorAll(".deleteCandidate")
-.forEach(button=>{
+    document
+        .querySelectorAll(
+            ".deleteCandidate"
+        )
+        .forEach(
+            button => {
 
-button.addEventListener(
-"click",
-()=>{
+                button.addEventListener(
+                    "click",
+                    () => {
 
-deleteCandidate(
-button.dataset.id
-);
+                        deleteCandidate(
+                            button.dataset.id
+                        );
 
-});
+                    }
+                );
 
-});
+            }
+        );
 
 }
+
+
+/* ==========================================================
+   EXPORT EXCEL
+========================================================== */
 
 function initializeExportExcel(){
 
-document
-.getElementById(
-"exportCandidates"
-)
-?.addEventListener(
-"click",
-()=>{
+    const exportButton =
+        document.getElementById(
+            "exportCandidates"
+        );
 
-const search =
 
-document.getElementById(
-"candidateSearch"
-).value.trim();
+    if(!exportButton){
 
-let filter = "all";
+        return;
 
-if(
+    }
 
-document.getElementById(
-"filterFirstYear"
-).classList.contains("btn-primary")
 
+    exportButton.addEventListener(
+        "click",
+        () => {
+
+            exportCandidatesExcel(
+                exportButton
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   EXPORT CANDIDATES EXCEL
+========================================================== */
+
+async function exportCandidatesExcel(
+    exportButton
 ){
 
-filter = "first";
+    if(!exportButton){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       PREVENT DOUBLE CLICK
+    ====================================================== */
+
+    if(
+        exportButton.disabled
+    ){
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       SEARCH VALUE
+    ====================================================== */
+
+    const searchInput =
+        document.getElementById(
+            "candidateSearch"
+        );
+
+
+    const search =
+        searchInput
+            ? searchInput.value.trim()
+            : "";
+
+
+    /* ======================================================
+       CURRENT FILTER
+    ====================================================== */
+
+    let filter =
+        "all";
+
+
+    const firstYearButton =
+        document.getElementById(
+            "filterFirstYear"
+        );
+
+
+    const secondYearButton =
+        document.getElementById(
+            "filterSecondYear"
+        );
+
+
+    if(
+        firstYearButton &&
+        firstYearButton.classList.contains(
+            "btn-primary"
+        )
+    ){
+
+        filter =
+            "first";
+
+    }
+    else if(
+        secondYearButton &&
+        secondYearButton.classList.contains(
+            "btn-primary"
+        )
+    ){
+
+        filter =
+            "second";
+
+    }
+
+
+    /* ======================================================
+       BUILD PARAMETERS
+    ====================================================== */
+
+    const params =
+        new URLSearchParams({
+
+            search:
+                search,
+
+            filter:
+                filter
+
+        });
+
+
+    /* ======================================================
+       STORE ORIGINAL BUTTON
+    ====================================================== */
+
+    const originalButtonHTML =
+        exportButton.innerHTML;
+
+
+    try{
+
+        /* ==================================================
+           BUTTON LOADING
+        ================================================== */
+
+        exportButton.disabled =
+            true;
+
+
+        exportButton.innerHTML = `
+
+            <span
+                class="inline-flex items-center justify-center gap-2">
+
+                <i
+                    class="ri-loader-4-line animate-spin text-xl"
+                    aria-hidden="true">
+                </i>
+
+                Exporting...
+
+            </span>
+
+        `;
+
+
+        /* ==================================================
+           FETCH EXPORT
+           
+           IMPORTANT:
+           Do NOT use window.location.href.
+           Fetch keeps the user on the same page.
+        ================================================== */
+
+        const response =
+            await fetch(
+
+                "../../backend/admin/export-candidates.php?" +
+                params.toString(),
+
+                {
+
+                    method:
+                        "GET",
+
+                    headers: {
+
+                        "Accept":
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/html,application/json"
+
+                    }
+
+                }
+
+            );
+
+
+        /* ==================================================
+           HTTP ERROR
+        ================================================== */
+
+        if(!response.ok){
+
+            throw new Error(
+                "Server returned HTTP " +
+                response.status
+            );
+
+        }
+
+
+        /* ==================================================
+           CONTENT TYPE
+        ================================================== */
+
+        const contentType =
+            (
+                response.headers.get(
+                    "content-type"
+                ) ||
+                ""
+            ).toLowerCase();
+
+
+        /* ==================================================
+           NO RECORDS RESPONSE
+           
+           Handles backend responses such as:
+
+           No records available for export.
+
+           OR JSON:
+
+           {
+               "success": false,
+               "message": "No candidates available."
+           }
+        ================================================== */
+
+        if(
+
+            contentType.includes(
+                "text/plain"
+            )
+
+            ||
+
+            contentType.includes(
+                "text/html"
+            )
+
+            ||
+
+            contentType.includes(
+                "application/json"
+            )
+
+        ){
+
+            const responseText =
+                await response.text();
+
+
+            let message =
+                responseText.trim();
+
+
+            /* ==================================================
+               TRY JSON RESPONSE
+            ================================================== */
+
+            if(
+                contentType.includes(
+                    "application/json"
+                )
+            ){
+
+                try{
+
+                    const data =
+                        JSON.parse(
+                            responseText
+                        );
+
+
+                    message =
+                        data.message ||
+                        message;
+
+                }
+                catch(error){
+
+                    /*
+                     * Keep original text if
+                     * response is not valid JSON.
+                     */
+
+                }
+
+            }
+
+
+            /* ==================================================
+               CLEAN HTML RESPONSE
+            ================================================== */
+
+            const temp =
+                document.createElement(
+                    "div"
+                );
+
+
+            temp.innerHTML =
+                message;
+
+
+            message =
+                (
+                    temp.textContent ||
+                    temp.innerText ||
+                    ""
+                ).trim();
+
+
+            /* ==================================================
+               FALLBACK MESSAGE
+            ================================================== */
+
+            if(!message){
+
+                message =
+                    "No candidates available to export.";
+
+            }
+
+
+            /* ==================================================
+               SHOW EXISTING VOTIFY TOAST
+            ================================================== */
+
+            showToast(
+
+                "warning",
+
+                "No Records",
+
+                message
+
+            );
+
+
+            return;
+
+        }
+
+
+        /* ==================================================
+           EXCEL RESPONSE
+        ================================================== */
+
+        const blob =
+            await response.blob();
+
+
+        /* ==================================================
+           EMPTY FILE SAFETY CHECK
+        ================================================== */
+
+        if(
+            !blob ||
+            blob.size === 0
+        ){
+
+            showToast(
+
+                "warning",
+
+                "No Records",
+
+                "No candidates available to export."
+
+            );
+
+
+            return;
+
+        }
+
+
+        /* ==================================================
+           CREATE TEMPORARY DOWNLOAD URL
+        ================================================== */
+
+        const downloadUrl =
+            window.URL.createObjectURL(
+                blob
+            );
+
+
+        /* ==================================================
+           DEFAULT FILE NAME
+        ================================================== */
+
+        let fileName =
+            "VOTIFY_Candidates.xlsx";
+
+
+        /* ==================================================
+           READ SERVER FILE NAME
+        ================================================== */
+
+        const contentDisposition =
+            response.headers.get(
+                "content-disposition"
+            );
+
+
+        if(
+            contentDisposition
+        ){
+
+            const fileNameMatch =
+                contentDisposition.match(
+                    /filename\*?=(?:UTF-8'')?["']?([^;"']+)["']?/i
+                );
+
+
+            if(
+                fileNameMatch &&
+                fileNameMatch[1]
+            ){
+
+                try{
+
+                    fileName =
+                        decodeURIComponent(
+                            fileNameMatch[1]
+                        );
+
+                }
+                catch(error){
+
+                    fileName =
+                        fileNameMatch[1];
+
+                }
+
+            }
+
+        }
+
+
+        /* ==================================================
+           CREATE DOWNLOAD LINK
+        ================================================== */
+
+        const downloadLink =
+            document.createElement(
+                "a"
+            );
+
+
+        downloadLink.href =
+            downloadUrl;
+
+
+        downloadLink.download =
+            fileName;
+
+
+        downloadLink.style.display =
+            "none";
+
+
+        document.body.appendChild(
+            downloadLink
+        );
+
+
+        /* ==================================================
+           START DOWNLOAD
+        ================================================== */
+
+        downloadLink.click();
+
+
+        /* ==================================================
+           REMOVE LINK
+        ================================================== */
+
+        downloadLink.remove();
+
+
+        /* ==================================================
+           RELEASE OBJECT URL
+        ================================================== */
+
+        setTimeout(
+            () => {
+
+                window.URL.revokeObjectURL(
+                    downloadUrl
+                );
+
+            },
+            1000
+        );
+
+
+        /* ==================================================
+           SUCCESS TOAST
+        ================================================== */
+
+        showToast(
+
+            "success",
+
+            "Exported",
+
+            "Candidate data exported successfully."
+
+        );
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Export Candidates Error:",
+            error
+        );
+
+
+        showToast(
+
+            "error",
+
+            "Export Failed",
+
+            "Unable to export candidate data. Please try again."
+
+        );
+
+    }
+
+    finally{
+
+        /* ==================================================
+           RESTORE BUTTON
+        ================================================== */
+
+        exportButton.disabled =
+            false;
+
+
+        exportButton.innerHTML =
+            originalButtonHTML;
+
+    }
 
 }
 
-else if(
 
-document.getElementById(
-"filterSecondYear"
-).classList.contains("btn-primary")
-
-){
-
-filter = "second";
-
-}
-
-window.location.href =
-
-"../../backend/admin/export-candidates.php"
-
-+
-
-"?search="
-
-+
-
-encodeURIComponent(search)
-
-+
-
-"&filter="
-
-+
-
-encodeURIComponent(filter);
-
-});
-
-}
+/* ==========================================================
+   CANDIDATE VIEW MODAL
+========================================================== */
 
 function initializeCandidateViewModal(){
 
     document
-    .getElementById("closeCandidateViewModal")
-    ?.addEventListener(
-        "click",
-        closeCandidateViewModal
-    );
+        .getElementById(
+            "closeCandidateViewModal"
+        )
+        ?.addEventListener(
+            "click",
+            closeCandidateViewModal
+        );
+
 
     document
-    .getElementById("closeCandidateView")
-    ?.addEventListener(
-        "click",
-        closeCandidateViewModal
-    );
+        .getElementById(
+            "closeCandidateView"
+        )
+        ?.addEventListener(
+            "click",
+            closeCandidateViewModal
+        );
+
 
     document
-    .getElementById("candidateViewModal")
-    ?.addEventListener("click",e=>{
+        .getElementById(
+            "candidateViewModal"
+        )
+        ?.addEventListener(
+            "click",
+            e => {
 
-        if(e.target.id==="candidateViewModal"){
+                if(
+                    e.target.id ===
+                    "candidateViewModal"
+                ){
 
-            closeCandidateViewModal();
+                    closeCandidateViewModal();
 
-        }
+                }
 
-    });
+            }
+        );
 
 }
+
+
+/* ==========================================================
+   OPEN CANDIDATE VIEW MODAL
+========================================================== */
 
 function openCandidateViewModal(){
 
-    const modal=document.getElementById(
-        "candidateViewModal"
-    );
+    const modal =
+        document.getElementById(
+            "candidateViewModal"
+        );
+
 
     if(!modal){
 
@@ -1247,17 +2028,30 @@ function openCandidateViewModal(){
 
     }
 
-    modal.classList.remove("hidden");
 
-    modal.classList.add("flex");
+    modal.classList.remove(
+        "hidden"
+    );
+
+
+    modal.classList.add(
+        "flex"
+    );
 
 }
+
+
+/* ==========================================================
+   CLOSE CANDIDATE VIEW MODAL
+========================================================== */
 
 function closeCandidateViewModal(){
 
-    const modal=document.getElementById(
-        "candidateViewModal"
-    );
+    const modal =
+        document.getElementById(
+            "candidateViewModal"
+        );
+
 
     if(!modal){
 
@@ -1265,58 +2059,109 @@ function closeCandidateViewModal(){
 
     }
 
-    modal.classList.remove("flex");
 
-    modal.classList.add("hidden");
+    modal.classList.remove(
+        "flex"
+    );
+
+
+    modal.classList.add(
+        "hidden"
+    );
 
 }
+
 
 /* ==========================================================
    VIEW CANDIDATE
 ========================================================== */
 
-async function viewCandidate(id){
+async function viewCandidate(
+    id
+){
 
     try{
 
-        const response = await fetch(
-            "../../backend/admin/get-candidate.php?id=" +
-            encodeURIComponent(id)
-        );
+        const response =
+            await fetch(
 
-        const result = await response.json();
+                "../../backend/admin/get-candidate.php?id=" +
 
-        if(!result.success){
+                encodeURIComponent(
+                    id
+                )
 
-            showToast(
-                "error",
-                "Failed",
-                result.message
             );
 
+
+        const result =
+            await response.json();
+
+
+        if(
+            !result.success
+        ){
+
+            showToast(
+
+                "error",
+
+                "Failed",
+
+                result.message
+
+            );
+
+
             return;
+
         }
 
-        const candidate = result.candidate;
 
-        document.getElementById("viewCandidatePhoto").src =
-        "../../backend/candidate-photo.php?id=" +
-        encodeURIComponent(candidate.id);
+        const candidate =
+            result.candidate;
 
-        document.getElementById("viewCandidateName").textContent =
-        candidate.full_name;
 
-        document.getElementById("viewCandidateAdmission").textContent =
-        candidate.admission_no;
+        document.getElementById(
+            "viewCandidatePhoto"
+        ).src =
 
-        document.getElementById("viewCandidateDepartment").textContent =
-        candidate.department;
+            "../../backend/candidate-photo.php?id=" +
 
-        document.getElementById("viewCandidateYear").textContent =
-        candidate.year;
+            encodeURIComponent(
+                candidate.id
+            );
 
-        document.getElementById("viewCandidateManifesto").textContent =
-        candidate.manifesto;
+
+        document.getElementById(
+            "viewCandidateName"
+        ).textContent =
+            candidate.full_name;
+
+
+        document.getElementById(
+            "viewCandidateAdmission"
+        ).textContent =
+            candidate.admission_no;
+
+
+        document.getElementById(
+            "viewCandidateDepartment"
+        ).textContent =
+            candidate.department;
+
+
+        document.getElementById(
+            "viewCandidateYear"
+        ).textContent =
+            candidate.year;
+
+
+        document.getElementById(
+            "viewCandidateManifesto"
+        ).textContent =
+            candidate.manifesto;
+
 
         openCandidateViewModal();
 
@@ -1324,107 +2169,206 @@ async function viewCandidate(id){
 
     catch(error){
 
-        console.error(error);
+        console.error(
+            "VOTIFY View Candidate Error:",
+            error
+        );
+
 
         showToast(
+
             "error",
+
             "Server Error",
+
             "Unable to load candidate."
+
         );
 
     }
 
 }
 
+
 /* ==========================================================
    EDIT CANDIDATE
 ========================================================== */
 
-async function editCandidate(id){
+async function editCandidate(
+    id
+){
 
     try{
 
-        const response = await fetch(
+        const response =
+            await fetch(
 
-            "../../backend/admin/get-candidate.php?id=" +
+                "../../backend/admin/get-candidate.php?id=" +
 
-            encodeURIComponent(id)
+                encodeURIComponent(
+                    id
+                )
 
-        );
+            );
 
-        const result = await response.json();
 
-        if(!result.success){
+        const result =
+            await response.json();
+
+
+        if(
+            !result.success
+        ){
 
             showToast(
+
                 "error",
+
                 "Failed",
+
                 result.message
+
             );
+
 
             return;
 
         }
 
-        const candidate = result.candidate;
+
+        const candidate =
+            result.candidate;
+
 
         resetCandidateForm();
 
-        editMode = true;
 
-        editingCandidateId = candidate.id;
+        editMode =
+            true;
 
-        document.getElementById("candidateId").value =
-        candidate.id;
 
-        document.getElementById("studentId").value =
-        candidate.student_id;
+        editingCandidateId =
+            candidate.id;
 
-        document.getElementById("admissionNo").value =
-        candidate.admission_no;
 
-        document.getElementById("candidateName").value =
-        candidate.full_name;
+        document.getElementById(
+            "candidateId"
+        ).value =
+            candidate.id;
 
-        document.getElementById("candidateDepartment").value =
-        candidate.department;
 
-        document.getElementById("candidateYear").value =
-        candidate.year;
+        document.getElementById(
+            "studentId"
+        ).value =
+            candidate.student_id;
 
-        document.getElementById("candidateManifesto").value =
-        candidate.manifesto;
 
-        document.getElementById("manifestoCount").textContent =
-        candidate.manifesto.length + " / 255";
+        document.getElementById(
+            "admissionNo"
+        ).value =
+            candidate.admission_no;
+
+
+        document.getElementById(
+            "candidateName"
+        ).value =
+            candidate.full_name;
+
+
+        document.getElementById(
+            "candidateDepartment"
+        ).value =
+            candidate.department;
+
+
+        document.getElementById(
+            "candidateYear"
+        ).value =
+            candidate.year;
+
+
+        document.getElementById(
+            "candidateManifesto"
+        ).value =
+            candidate.manifesto;
+
+
+        document.getElementById(
+            "manifestoCount"
+        ).textContent =
+
+            candidate.manifesto.length +
+
+            " / 255";
+
 
         const preview =
-        document.getElementById("photoPreview");
+            document.getElementById(
+                "photoPreview"
+            );
+
 
         preview.src =
-        "../../backend/candidate-photo.php?id=" +
-        encodeURIComponent(candidate.id);
 
-        preview.classList.remove("hidden");
+            "../../backend/candidate-photo.php?id=" +
 
-        /* ---------- EDIT MODE ---------- */
+            encodeURIComponent(
+                candidate.id
+            );
 
-        document.getElementById("admissionNo").readOnly = true;
 
-        document.getElementById("admissionNo").classList.add(
+        preview.classList.remove(
+            "hidden"
+        );
+
+
+        /* ==================================================
+           EDIT MODE
+        ================================================== */
+
+        document.getElementById(
+            "admissionNo"
+        ).readOnly =
+            true;
+
+
+        document.getElementById(
+            "admissionNo"
+        ).classList.add(
             "cursor-not-allowed"
         );
 
-        document.getElementById("candidateManifesto").readOnly = false;
 
-        document.getElementById("candidatePhoto").disabled = false;
+        document.getElementById(
+            "candidateManifesto"
+        ).readOnly =
+            false;
 
-        document.getElementById("searchStudent").disabled = true;
 
-        document.getElementById("saveCandidate").classList.remove("hidden");
+        document.getElementById(
+            "candidatePhoto"
+        ).disabled =
+            false;
 
-        document.getElementById("saveCandidate").innerHTML =
-        '<i class="ri-save-line mr-2"></i>Update Candidate';
+
+        document.getElementById(
+            "searchStudent"
+        ).disabled =
+            true;
+
+
+        document.getElementById(
+            "saveCandidate"
+        ).classList.remove(
+            "hidden"
+        );
+
+
+        document.getElementById(
+            "saveCandidate"
+        ).innerHTML =
+            '<i class="ri-save-line mr-2"></i>Update Candidate';
+
 
         openCandidateModal();
 
@@ -1432,89 +2376,143 @@ async function editCandidate(id){
 
     catch(error){
 
-        console.error(error);
+        console.error(
+            "VOTIFY Edit Candidate Error:",
+            error
+        );
+
 
         showToast(
+
             "error",
+
             "Server Error",
+
             "Unable to load candidate."
+
         );
 
     }
 
 }
 
+
 /* ==========================================================
    DELETE CANDIDATE
 ========================================================== */
 
-async function deleteCandidate(id){
+async function deleteCandidate(
+    id
+){
 
     openConfirmationModal({
 
-        type: "reject",
+        type:
+            "reject",
 
-        icon: "ri-delete-bin-6-line",
+        icon:
+            "ri-delete-bin-6-line",
 
-        title: "Delete Candidate",
+        title:
+            "Delete Candidate",
 
-        message: "Are you sure you want to delete this candidate? This action cannot be undone.",
+        message:
+            "Are you sure you want to delete this candidate? This action cannot be undone.",
 
-        onConfirm: async ()=>{
+        onConfirm:
+            async () => {
 
-            try{
+                try{
 
-                const response = await fetch(
+                    const response =
+                        await fetch(
 
-                    "../../backend/admin/delete-candidate.php",
+                            "../../backend/admin/delete-candidate.php",
 
-                    {
+                            {
 
-                        method:"POST",
+                                method:
+                                    "POST",
 
-                        headers:{
+                                headers: {
 
-                            "Content-Type":"application/x-www-form-urlencoded"
+                                    "Content-Type":
+                                        "application/x-www-form-urlencoded"
 
-                        },
+                                },
 
-                        body:"candidateId="+encodeURIComponent(id)
+                                body:
+                                    "candidateId=" +
+
+                                    encodeURIComponent(
+                                        id
+                                    )
+
+                            }
+
+                        );
+
+
+                    const result =
+                        await response.json();
+
+
+                    if(
+                        result.success
+                    ){
+
+                        showToast(
+
+                            "success",
+
+                            "Deleted",
+
+                            result.message
+
+                        );
+
+
+                        setTimeout(
+                            () => {
+
+                                location.reload();
+
+                            },
+                            800
+                        );
+
+                    }
+                    else{
+
+                        showToast(
+
+                            "error",
+
+                            "Delete Failed",
+
+                            result.message
+
+                        );
 
                     }
 
-                );
-
-                const result = await response.json();
-
-                if(result.success){
-
-                    showToast(
-
-                        "success",
-
-                        "Deleted",
-
-                        result.message
-
-                    );
-
-                    setTimeout(()=>{
-
-                        location.reload();
-
-                    },800);
-
                 }
 
-                else{
+                catch(error){
+
+                    console.error(
+                        "VOTIFY Delete Candidate Error:",
+                        error
+                    );
+
 
                     showToast(
 
                         "error",
 
-                        "Delete Failed",
+                        "Server Error",
 
-                        result.message
+                        "Unable to delete candidate."
 
                     );
 
@@ -1522,36 +2520,19 @@ async function deleteCandidate(id){
 
             }
 
-            catch(error){
-
-                console.error(error);
-
-                showToast(
-
-                    "error",
-
-                    "Server Error",
-
-                    "Unable to delete candidate."
-
-                );
-
-            }
-
-        }
-
     });
 
 }
 
+
 /* ==========================================================
-   READY
+   READY MESSAGE
 ========================================================== */
 
 console.log(
 
-"%cVOTIFY Candidates Ready",
+    "%cVOTIFY Candidates Ready",
 
-"color:#22C55E;font-size:14px;font-weight:bold;"
+    "color:#22C55E;font-size:14px;font-weight:bold;"
 
 );

@@ -2,19 +2,33 @@
 /* ==========================================================
    VOTIFY
    Export Candidates Excel
+   File : backend/admin/export-candidates.php
 ========================================================== */
 
 session_start();
 
+
 /* ==========================================================
-   SESSION
+   SESSION PROTECTION
 ========================================================== */
 
-if(!isset($_SESSION["admin_id"])){
+if(
+    !isset($_SESSION["admin_id"]) ||
+    (int)$_SESSION["admin_id"] <= 0
+){
 
-    exit("Unauthorized");
+    http_response_code(401);
+
+    header(
+        "Content-Type: text/plain; charset=UTF-8"
+    );
+
+    echo "Unauthorized access.";
+
+    exit();
 
 }
+
 
 /* ==========================================================
    DATABASE
@@ -24,109 +38,215 @@ require_once "../../config/database.php";
 
 /** @var mysqli $conn */
 
+
 /* ==========================================================
    GET FILTERS
 ========================================================== */
 
-$search = trim($_GET["search"] ?? "");
+$search =
+    trim(
+        $_GET["search"] ?? ""
+    );
 
-$filter = trim($_GET["filter"] ?? "all");
+
+$filter =
+    trim(
+        $_GET["filter"] ?? "all"
+    );
+
+
+/*
+ * Only allow known filter values.
+ *
+ * This prevents unexpected values from
+ * affecting the query.
+ */
+
+$allowedFilters = [
+
+    "all",
+    "first",
+    "second"
+
+];
+
+
+if(
+    !in_array(
+        $filter,
+        $allowedFilters,
+        true
+    )
+){
+
+    $filter =
+        "all";
+
+}
+
 
 /* ==========================================================
-   QUERY
+   BASE QUERY
 ========================================================== */
 
 $query = "
 
-SELECT *
+    SELECT
 
-FROM candidates
+        id,
+        student_id,
+        admission_no,
+        full_name,
+        department,
+        year,
+        manifesto,
+        status,
+        vote_count,
+        created_at,
+        updated_at
 
-WHERE 1=1
+    FROM candidates
+
+    WHERE 1=1
 
 ";
 
-/* ==========================================================
-   FILTER
-========================================================== */
-
-if($filter=="first"){
-
-    $query .= "
-
-    AND (
-
-        year='1st Year'
-
-        OR
-
-        year='I Year'
-
-    )
-
-    ";
-
-}
-
-elseif($filter=="second"){
-
-    $query .= "
-
-    AND (
-
-        year='2nd Year'
-
-        OR
-
-        year='II Year'
-
-    )
-
-    ";
-
-}
 
 /* ==========================================================
-   SEARCH
+   QUERY PARAMETERS
 ========================================================== */
 
-if($search!=""){
+$types = "";
 
-    $search = mysqli_real_escape_string(
+$params = [];
 
-        $conn,
 
-        $search
+/* ==========================================================
+   YEAR FILTER
+========================================================== */
 
-    );
+if(
+    $filter ===
+    "first"
+){
 
     $query .= "
 
-    AND (
+        AND (
 
-        full_name LIKE '%$search%'
+            year = ?
 
-        OR
+            OR
 
-        admission_no LIKE '%$search%'
+            year = ?
 
-        OR
-
-        department LIKE '%$search%'
-
-        OR
-
-        year LIKE '%$search%'
-
-        OR
-
-        manifesto LIKE '%$search%'
-
-    )
+        )
 
     ";
 
+    $types .= "ss";
+
+    $params[] =
+        "1st Year";
+
+    $params[] =
+        "I Year";
+
 }
+
+
+elseif(
+    $filter ===
+    "second"
+){
+
+    $query .= "
+
+        AND (
+
+            year = ?
+
+            OR
+
+            year = ?
+
+        )
+
+    ";
+
+    $types .= "ss";
+
+    $params[] =
+        "2nd Year";
+
+    $params[] =
+        "II Year";
+
+}
+
+
+/* ==========================================================
+   SEARCH FILTER
+========================================================== */
+
+if(
+    $search !==
+    ""
+){
+
+    $searchPattern =
+        "%" .
+        $search .
+        "%";
+
+
+    $query .= "
+
+        AND (
+
+            full_name LIKE ?
+
+            OR
+
+            admission_no LIKE ?
+
+            OR
+
+            department LIKE ?
+
+            OR
+
+            year LIKE ?
+
+            OR
+
+            manifesto LIKE ?
+
+        )
+
+    ";
+
+
+    $types .= "sssss";
+
+
+    $params[] =
+        $searchPattern;
+
+    $params[] =
+        $searchPattern;
+
+    $params[] =
+        $searchPattern;
+
+    $params[] =
+        $searchPattern;
+
+    $params[] =
+        $searchPattern;
+
+}
+
 
 /* ==========================================================
    ORDER
@@ -134,117 +254,254 @@ if($search!=""){
 
 $query .= "
 
-ORDER BY created_at DESC
+    ORDER BY created_at DESC
 
 ";
 
-/* ==========================================================
-   EXECUTE QUERY
-========================================================== */
-
-$result = mysqli_query(
-
-    $conn,
-
-    $query
-
-);
 
 /* ==========================================================
-   DATABASE ERROR
+   PREPARE QUERY
 ========================================================== */
 
-if(!$result){
+$stmt =
+    mysqli_prepare(
+        $conn,
+        $query
+    );
 
-    exit(
 
-        "Database Error : "
+/* ==========================================================
+   PREPARE ERROR
+========================================================== */
 
-        .
+if(
+    !$stmt
+){
 
-        mysqli_error($conn)
+    http_response_code(500);
 
+    header(
+        "Content-Type: text/plain; charset=UTF-8"
+    );
+
+    echo "Unable to prepare export request.";
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   BIND PARAMETERS
+========================================================== */
+
+if(
+    $types !==
+    ""
+){
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        $types,
+        ...$params
     );
 
 }
+
+
+/* ==========================================================
+   EXECUTE
+========================================================== */
+
+if(
+    !mysqli_stmt_execute(
+        $stmt
+    )
+){
+
+    mysqli_stmt_close(
+        $stmt
+    );
+
+
+    http_response_code(500);
+
+    header(
+        "Content-Type: text/plain; charset=UTF-8"
+    );
+
+    echo "Unable to export candidate data.";
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   GET RESULT
+========================================================== */
+
+$result =
+    mysqli_stmt_get_result(
+        $stmt
+    );
+
+
+/* ==========================================================
+   RESULT ERROR
+========================================================== */
+
+if(
+    !$result
+){
+
+    mysqli_stmt_close(
+        $stmt
+    );
+
+
+    http_response_code(500);
+
+    header(
+        "Content-Type: text/plain; charset=UTF-8"
+    );
+
+    echo "Unable to read candidate records.";
+
+    exit();
+
+}
+
 
 /* ==========================================================
    NO RECORDS
 ========================================================== */
 
 if(
-
-mysqli_num_rows($result)==0
-
+    mysqli_num_rows(
+        $result
+    ) === 0
 ){
 
-    exit(
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT redirect.
+     *
+     * The frontend fetch() receives this response
+     * and displays the existing VOTIFY toast.
+     */
 
-        "No candidate records available for export."
+    http_response_code(200);
 
+    header(
+        "Content-Type: text/plain; charset=UTF-8"
     );
 
+    header(
+        "Cache-Control: no-store, no-cache, must-revalidate"
+    );
+
+    header(
+        "Pragma: no-cache"
+    );
+
+
+    echo
+        "No candidate records available for export.";
+
+
+    mysqli_stmt_close(
+        $stmt
+    );
+
+
+    exit();
+
 }
+
+
+/* ==========================================================
+   FILE NAME PREFIX
+========================================================== */
+
+switch(
+    $filter
+){
+
+    case "first":
+
+        $prefix =
+            "VOTIFY_First_Year_Candidates";
+
+        break;
+
+
+    case "second":
+
+        $prefix =
+            "VOTIFY_Second_Year_Candidates";
+
+        break;
+
+
+    default:
+
+        $prefix =
+            "VOTIFY_All_Candidates";
+
+        break;
+
+}
+
 
 /* ==========================================================
    FILE NAME
 ========================================================== */
 
-switch($filter){
-
-    case "first":
-
-        $prefix = "VOTIFY_First_Year_Candidates";
-
-    break;
-
-    case "second":
-
-        $prefix = "VOTIFY_Second_Year_Candidates";
-
-    break;
-
-    default:
-
-        $prefix = "VOTIFY_All_Candidates";
-
-}
-
 $fileName =
 
-$prefix
+    $prefix
 
-.
+    . "_"
 
-"_"
+    . date(
+        "Y-m-d_H-i-s"
+    )
 
-.
+    . ".xls";
 
-date("Y-m-d_H-i-s")
-
-.
-
-".xls";
 
 /* ==========================================================
    EXCEL HEADERS
 ========================================================== */
 
 header(
-
-"Content-Type: application/vnd.ms-excel; charset=UTF-8"
-
+    "Content-Type: application/vnd.ms-excel; charset=UTF-8"
 );
+
 
 header(
-
-"Content-Disposition: attachment; filename=\"$fileName\""
-
+    'Content-Disposition: attachment; filename="' .
+    $fileName .
+    '"'
 );
 
-header("Pragma: no-cache");
 
-header("Expires: 0");
+header(
+    "Cache-Control: no-store, no-cache, must-revalidate"
+);
+
+
+header(
+    "Pragma: no-cache"
+);
+
+
+header(
+    "Expires: 0"
+);
+
 
 /* ==========================================================
    UTF-8 BOM
@@ -252,15 +509,26 @@ header("Expires: 0");
 
 echo "\xEF\xBB\xBF";
 
+
 /* ==========================================================
-   TABLE START
+   EXCEL TABLE START
 ========================================================== */
 
 echo "
 
-<table border='1' cellpadding='8' cellspacing='0'>
+<table
+    border='1'
+    cellpadding='8'
+    cellspacing='0'
+>
 
-<tr style='background:#2563EB;color:#FFFFFF;font-weight:bold;'>
+<tr
+    style='
+        background:#2563EB;
+        color:#FFFFFF;
+        font-weight:bold;
+    '
+>
 
 <th>S.No</th>
 
@@ -280,67 +548,195 @@ echo "
 
 ";
 
+
 /* ==========================================================
    TABLE DATA
 ========================================================== */
 
-$serial = 1;
+$serial =
+    1;
+
 
 while(
-
-$row = mysqli_fetch_assoc($result)
-
+    $row =
+    mysqli_fetch_assoc(
+        $result
+    )
 ){
 
-echo "
+    $admissionNo =
+        htmlspecialchars(
+            $row["admission_no"] ?? "",
+            ENT_QUOTES,
+            "UTF-8"
+        );
 
-<tr>
 
-<td>".$serial++."</td>
+    $fullName =
+        htmlspecialchars(
+            $row["full_name"] ?? "",
+            ENT_QUOTES,
+            "UTF-8"
+        );
 
-<td>".htmlspecialchars($row["admission_no"])."</td>
 
-<td>".htmlspecialchars($row["full_name"])."</td>
+    $department =
+        htmlspecialchars(
+            $row["department"] ?? "",
+            ENT_QUOTES,
+            "UTF-8"
+        );
 
-<td>".htmlspecialchars($row["department"])."</td>
 
-<td>".htmlspecialchars($row["year"])."</td>
+    $year =
+        htmlspecialchars(
+            $row["year"] ?? "",
+            ENT_QUOTES,
+            "UTF-8"
+        );
 
-<td>".htmlspecialchars(
 
-mb_strimwidth(
+    $manifesto =
+        $row["manifesto"] ?? "";
 
-$row["manifesto"],
 
-0,
+    /*
+     * Keep exported manifesto readable.
+     */
 
-120,
+    if(
+        mb_strlen(
+            $manifesto,
+            "UTF-8"
+        ) > 120
+    ){
 
-"..."
+        $manifesto =
+            mb_substr(
+                $manifesto,
+                0,
+                120,
+                "UTF-8"
+            )
+            . "...";
 
-)
+    }
 
-)."</td>
 
-<td>".date(
+    $manifesto =
+        htmlspecialchars(
+            $manifesto,
+            ENT_QUOTES,
+            "UTF-8"
+        );
 
-"d-m-Y",
 
-strtotime($row["created_at"])
+    /* ======================================================
+       ADDED DATE
+    ====================================================== */
 
-)."</td>
+    $createdAt =
+        $row["created_at"] ?? "";
 
-</tr>
 
-";
+    $addedDate =
+        "";
+
+
+    if(
+        !empty(
+            $createdAt
+        )
+    ){
+
+        $timestamp =
+            strtotime(
+                $createdAt
+            );
+
+
+        if(
+            $timestamp !==
+            false
+        ){
+
+            $addedDate =
+                date(
+                    "d-m-Y",
+                    $timestamp
+                );
+
+        }
+
+    }
+
+
+    /* ======================================================
+       ROW
+    ====================================================== */
+
+    echo "
+
+    <tr>
+
+        <td>"
+        . $serial++
+        . "</td>
+
+        <td>"
+        . $admissionNo
+        . "</td>
+
+        <td>"
+        . $fullName
+        . "</td>
+
+        <td>"
+        . $department
+        . "</td>
+
+        <td>"
+        . $year
+        . "</td>
+
+        <td>"
+        . $manifesto
+        . "</td>
+
+        <td>"
+        . $addedDate
+        . "</td>
+
+    </tr>
+
+    ";
 
 }
+
 
 /* ==========================================================
    TABLE END
 ========================================================== */
 
-echo "</table>";
+echo "
+
+</table>
+
+";
+
+
+/* ==========================================================
+   CLOSE STATEMENT
+========================================================== */
+
+mysqli_stmt_close(
+    $stmt
+);
+
+
+/* ==========================================================
+   END
+========================================================== */
 
 exit();
 
