@@ -5,19 +5,42 @@
    File : pages/student/check-login.php
 ========================================================== */
 
-if(session_status() === PHP_SESSION_NONE){
+
+/* ==========================================================
+   SESSION
+========================================================== */
+
+if (session_status() === PHP_SESSION_NONE) {
 
     session_start();
 
 }
 
+
 /* ==========================================================
    DATABASE
 ========================================================== */
 
-require_once "../../config/database.php";
+require_once __DIR__ . "/../../config/database.php";
 
 /** @var mysqli $conn */
+
+
+/* ==========================================================
+   DATABASE CONNECTION CHECK
+========================================================== */
+
+if (
+    !isset($conn) ||
+    !($conn instanceof mysqli)
+) {
+
+    exit(
+        "Unable to verify election status."
+    );
+
+}
+
 
 /* ==========================================================
    GET ELECTION STATUS
@@ -25,138 +48,218 @@ require_once "../../config/database.php";
 
 $query = "
 
-SELECT
+    SELECT
+        election_status,
+        updated_at
 
-    election_status,
+    FROM election_settings
 
-    updated_at
-
-FROM election_settings
-
-LIMIT 1
+    LIMIT 1
 
 ";
 
-$result = mysqli_query(
 
-    $conn,
+$result =
+    mysqli_query(
+        $conn,
+        $query
+    );
 
-    $query
-
-);
 
 /* ==========================================================
    DATABASE ERROR
 ========================================================== */
 
-if(!$result){
+if (!$result) {
 
-    exit("Unable to verify election status.");
+    error_log(
+        "VOTIFY CHECK LOGIN ERROR: " .
+        mysqli_error($conn)
+    );
 
-}
 
-/* ==========================================================
-   NO CONFIGURATION
-========================================================== */
-
-if(mysqli_num_rows($result) == 0){
-
-    header("Location: election_not_started.php");
-
-    exit();
+    exit(
+        "Unable to verify election status."
+    );
 
 }
 
-/* ==========================================================
-   FETCH STATUS
-========================================================== */
-
-$row = mysqli_fetch_assoc($result);
-
-$status = strtolower(
-
-    trim($row["election_status"])
-
-);
-
-$updatedAt = strtotime(
-
-    $row["updated_at"]
-
-);
-
-$currentTime = time();
 
 /* ==========================================================
-   READY
+   NO ELECTION CONFIGURATION
 ========================================================== */
 
-if($status === "ready"){
+if (
+    mysqli_num_rows($result) === 0
+) {
+
+    mysqli_free_result($result);
+
 
     header(
-
         "Location: election_not_started.php"
-
     );
 
     exit();
 
 }
 
+
+/* ==========================================================
+   FETCH ELECTION STATUS
+========================================================== */
+
+$row =
+    mysqli_fetch_assoc(
+        $result
+    );
+
+
+mysqli_free_result(
+    $result
+);
+
+
+$status =
+    strtolower(
+        trim(
+            (string)(
+                $row["election_status"] ?? ""
+            )
+        )
+    );
+
+
+$updatedAt =
+    strtotime(
+        (string)(
+            $row["updated_at"] ?? ""
+        )
+    );
+
+
+$currentTime =
+    time();
+
+
+/* ==========================================================
+   READY
+========================================================== */
+
+/*
+ * Election is configured but voting
+ * has not started yet.
+ */
+
+if (
+    $status === "ready"
+) {
+
+    header(
+        "Location: election_not_started.php"
+    );
+
+    exit();
+
+}
+
+
 /* ==========================================================
    STARTED
 ========================================================== */
 
-if($status === "started"){
+/*
+ * Election is currently active.
+ *
+ * Allow student_login.php to continue.
+ */
+
+if (
+    $status === "started"
+) {
 
     return true;
 
 }
 
+
 /* ==========================================================
    STOPPED
 ========================================================== */
 
-if($status === "stopped"){
+/*
+ * Election has been stopped.
+ */
 
-    $difference =
+if (
+    $status === "stopped"
+) {
 
-        $currentTime - $updatedAt;
 
-    /* --------------------------------------
-       Less Than One Hour
-    --------------------------------------- */
+    /* ------------------------------------------------------
+       INVALID / MISSING UPDATED TIME
+    ------------------------------------------------------ */
 
-    if($difference < 3600){
+    if (
+        $updatedAt === false
+    ) {
 
         header(
-
-            "Location: election_has_ended.php"
-
+            "Location: election_not_started.php"
         );
 
         exit();
 
     }
 
-    /* --------------------------------------
-       After One Hour
-    --------------------------------------- */
+
+    $difference =
+        $currentTime -
+        $updatedAt;
+
+
+    /* ------------------------------------------------------
+       LESS THAN ONE HOUR
+    ------------------------------------------------------ */
+
+    if (
+        $difference < 3600
+    ) {
+
+        header(
+            "Location: election_has_ended.php"
+        );
+
+        exit();
+
+    }
+
+
+    /* ------------------------------------------------------
+       AFTER ONE HOUR
+    ------------------------------------------------------ */
 
     header(
-
         "Location: election_not_started.php"
-
     );
 
     exit();
 
 }
 
+
 /* ==========================================================
-   INVALID STATUS
+   INVALID ELECTION STATUS
 ========================================================== */
 
-exit("Invalid election status.");
+error_log(
+    "VOTIFY CHECK LOGIN: Invalid election status - " .
+    $status
+);
+
+
+exit(
+    "Invalid election status."
+);
 
 ?>

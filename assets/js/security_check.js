@@ -34,52 +34,46 @@ const checkboxIcon = document.getElementById(
    CONFIGURATION
 ========================================================== */
 
-const VOTING_URL =
-
-"voting.php";
+/*
+ * security_check.php and voting.php are inside
+ * the same pages/student/ directory.
+ */
+const VOTING_URL = "voting.php";
 
 /* ==========================================================
-   BUTTON STATE
+   PROCESSING STATE
 ========================================================== */
 
 let isProcessing = false;
 
 /* ==========================================================
-   SHOW ERROR
+   SHOW FULLSCREEN ERROR
 ========================================================== */
 
-function showFullscreenError(){
+function showFullscreenError() {
 
-    if(!fullscreenError){
-
+    if (!fullscreenError) {
         return;
-
     }
 
     fullscreenError.classList.remove(
-
         "hidden"
-
     );
 
 }
 
 /* ==========================================================
-   HIDE ERROR
+   HIDE FULLSCREEN ERROR
 ========================================================== */
 
-function hideFullscreenError(){
+function hideFullscreenError() {
 
-    if(!fullscreenError){
-
+    if (!fullscreenError) {
         return;
-
     }
 
     fullscreenError.classList.add(
-
         "hidden"
-
     );
 
 }
@@ -88,11 +82,19 @@ function hideFullscreenError(){
    UPDATE CUSTOM CHECKBOX
 ========================================================== */
 
-function updateCustomCheckbox(){
+function updateCustomCheckbox() {
 
-    if(
-        agreeCheckbox.checked
-    ){
+    if (
+        !agreeCheckbox ||
+        !customCheckbox ||
+        !checkboxIcon
+    ) {
+
+        return;
+
+    }
+
+    if (agreeCheckbox.checked) {
 
         customCheckbox.classList.remove(
             "border-slate-500",
@@ -113,7 +115,7 @@ function updateCustomCheckbox(){
 
     }
 
-    else{
+    else {
 
         customCheckbox.classList.remove(
             "border-blue-500",
@@ -140,15 +142,17 @@ function updateCustomCheckbox(){
    ENABLE CONTINUE BUTTON
 ========================================================== */
 
-function enableContinueButton(){
+function enableContinueButton() {
+
+    if (!continueButton) {
+        return;
+    }
 
     continueButton.disabled = false;
 
     continueButton.classList.remove(
-
         "opacity-50",
         "cursor-not-allowed"
-
     );
 
 }
@@ -157,24 +161,30 @@ function enableContinueButton(){
    DISABLE CONTINUE BUTTON
 ========================================================== */
 
-function disableContinueButton(){
+function disableContinueButton() {
+
+    if (!continueButton) {
+        return;
+    }
 
     continueButton.disabled = true;
 
     continueButton.classList.add(
-
         "opacity-50",
         "cursor-not-allowed"
-
     );
 
 }
 
 /* ==========================================================
-   LOADING STATE
+   SHOW LOADING STATE
 ========================================================== */
 
-function showLoadingState(){
+function showLoadingState() {
+
+    if (!continueButton) {
+        return;
+    }
 
     isProcessing = true;
 
@@ -194,7 +204,11 @@ function showLoadingState(){
    RESTORE BUTTON
 ========================================================== */
 
-function restoreButton(){
+function restoreButton() {
+
+    if (!continueButton) {
+        return;
+    }
 
     isProcessing = false;
 
@@ -206,17 +220,16 @@ function restoreButton(){
 
     `;
 
-    if(
-
+    if (
+        agreeCheckbox &&
         agreeCheckbox.checked
-
-    ){
+    ) {
 
         enableContinueButton();
 
     }
 
-    else{
+    else {
 
         disableContinueButton();
 
@@ -228,33 +241,32 @@ function restoreButton(){
    CHECKBOX EVENT
 ========================================================== */
 
-agreeCheckbox.addEventListener(
+if (agreeCheckbox) {
 
-    "change",
+    agreeCheckbox.addEventListener(
+        "change",
+        function () {
 
-    function(){
+            hideFullscreenError();
 
-        hideFullscreenError();
+            updateCustomCheckbox();
 
-        updateCustomCheckbox();
+            if (agreeCheckbox.checked) {
 
-        if(
-            agreeCheckbox.checked
-        ){
+                enableContinueButton();
 
-            enableContinueButton();
+            }
+
+            else {
+
+                disableContinueButton();
+
+            }
 
         }
+    );
 
-        else{
-
-            disableContinueButton();
-
-        }
-
-    }
-
-);
+}
 
 /* ==========================================================
    INITIAL STATE
@@ -270,45 +282,53 @@ updateCustomCheckbox();
    FULLSCREEN SUPPORT
 ========================================================== */
 
-async function requestSecureFullscreen(){
+async function requestSecureFullscreen() {
 
-    if(
-
+    /*
+     * Browser does not support Fullscreen API.
+     */
+    if (
         !document.documentElement.requestFullscreen
-
-    ){
-
-        showFullscreenError();
-
-        restoreButton();
-
-        return;
-
-    }
-
-    try{
-
-        await document.documentElement.requestFullscreen();
-
-        window.location.href =
-
-        VOTING_URL;
-
-    }
-
-    catch(error){
+    ) {
 
         console.error(
-
-            "Fullscreen Error :",
-
-            error
-
+            "Fullscreen API is not supported."
         );
 
         showFullscreenError();
 
         restoreButton();
+
+        return false;
+
+    }
+
+    try {
+
+        await document.documentElement.requestFullscreen();
+
+        /*
+         * Fullscreen successfully requested.
+         * Continue to voting page.
+         */
+        window.location.href = VOTING_URL;
+
+        return true;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Fullscreen Error:",
+            error
+        );
+
+        showFullscreenError();
+
+        restoreButton();
+
+        return false;
 
     }
 
@@ -318,64 +338,83 @@ async function requestSecureFullscreen(){
    CONTINUE BUTTON
 ========================================================== */
 
-continueButton.addEventListener(
+if (continueButton) {
 
-    "click",
+    continueButton.addEventListener(
+        "click",
+        async function () {
 
-    async function(){
+            /*
+             * Prevent multiple clicks.
+             */
+            if (isProcessing) {
+                return;
+            }
 
-        if(
+            hideFullscreenError();
 
-            isProcessing
+            /*
+             * Agreement is mandatory.
+             */
+            if (
+                !agreeCheckbox ||
+                !agreeCheckbox.checked
+            ) {
 
-        ){
+                updateCustomCheckbox();
 
-            return;
+                disableContinueButton();
+
+                return;
+
+            }
+
+            /*
+             * Show loading state before
+             * requesting fullscreen.
+             */
+            showLoadingState();
+
+            await requestSecureFullscreen();
 
         }
+    );
 
-        hideFullscreenError();
-
-        if(
-
-            !agreeCheckbox.checked
-
-        ){
-
-            return;
-
-        }
-
-        showLoadingState();
-
-        await requestSecureFullscreen();
-
-    }
-
-);
+}
 
 /* ==========================================================
-   EXIT FULLSCREEN EVENT
+   FULLSCREEN CHANGE EVENT
 ========================================================== */
 
 document.addEventListener(
-
     "fullscreenchange",
+    function () {
 
-    function(){
+        /*
+         * Fullscreen entered successfully.
+         */
+        if (document.fullscreenElement) {
 
-        if(
-
-            document.fullscreenElement
-
-        ){
+            hideFullscreenError();
 
             return;
 
         }
 
-    }
+        /*
+         * If processing is active and the user
+         * exits fullscreen before navigation,
+         * restore the button.
+         */
+        if (isProcessing) {
 
+            showFullscreenError();
+
+            restoreButton();
+
+        }
+
+    }
 );
 
 /* ==========================================================
@@ -383,47 +422,81 @@ document.addEventListener(
 ========================================================== */
 
 document.addEventListener(
-
     "visibilitychange",
+    function () {
 
-    function(){
+        /*
+         * Do not change voting flow while the page
+         * is being navigated.
+         */
+        if (
+            document.visibilityState === "visible"
+        ) {
 
-        if(
+            /*
+             * Only clear stale fullscreen error
+             * when the page is not processing.
+             */
+            if (!isProcessing) {
 
-            document.visibilityState ===
+                hideFullscreenError();
 
-            "visible"
-
-        ){
-
-            hideFullscreenError();
+            }
 
         }
 
     }
-
 );
+
+/* ==========================================================
+   KEYBOARD ACCESSIBILITY
+========================================================== */
+
+if (agreeCheckbox) {
+
+    agreeCheckbox.addEventListener(
+        "keydown",
+        function (event) {
+
+            /*
+             * Allow Space key to toggle the
+             * custom checkbox naturally.
+             */
+            if (event.key === " ") {
+
+                event.preventDefault();
+
+                agreeCheckbox.checked =
+                    !agreeCheckbox.checked;
+
+                agreeCheckbox.dispatchEvent(
+                    new Event("change")
+                );
+
+            }
+
+        }
+    );
+
+}
 
 /* ==========================================================
    INITIALIZE
 ========================================================== */
 
 document.addEventListener(
-
     "DOMContentLoaded",
-
-    function(){
+    function () {
 
         disableContinueButton();
 
         hideFullscreenError();
 
+        updateCustomCheckbox();
+
         console.log(
-
             "VOTIFY Secure Voting Entry Initialized"
-
         );
 
     }
-
 );

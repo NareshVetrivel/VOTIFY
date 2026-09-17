@@ -11,11 +11,11 @@
        ↓
    OTP sent
        ↓
-   OTP modal
+   6-Digit OTP Modal
        ↓
    Verify OTP
        ↓
-   Student Dashboard
+   Secure Identity Verification
 ========================================================== */
 
 "use strict";
@@ -29,11 +29,54 @@ const LOGIN_API =
     "../../backend/student/login.php";
 
 
-const DASHBOARD_URL =
-    "/VOTIFY/pages/student/student_dashboard.php";
+/*
+ * Backend normally returns:
+ * security_check.php
+ */
+const SECURITY_CHECK_URL =
+    "security_check.php";
 
+
+/*
+ * VOTIFY Student Admission Number Format
+ *
+ * Example:
+ * 25CAPMCA080
+ *
+ * Format:
+ * 2 digits + CAPMCA + 3 digits
+ */
+const ADMISSION_NUMBER_REGEX =
+    /^[0-9]{2}CAPMCA[0-9]{3}$/;
+
+
+/*
+ * Only official Sona College email domain.
+ */
+const COLLEGE_EMAIL_REGEX =
+    /^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/i;
+
+
+/* ==========================================================
+   GLOBAL STATE
+========================================================== */
 
 let otpTimer = null;
+
+
+/*
+ * Prevent duplicate login requests.
+ *
+ * Once the login button is clicked and the request
+ * starts, another click/submit is ignored.
+ */
+let loginProcessing = false;
+
+
+/*
+ * Prevent duplicate OTP verification requests.
+ */
+let otpProcessing = false;
 
 
 /* ==========================================================
@@ -48,11 +91,55 @@ document.addEventListener(
             "VOTIFY login.js loaded successfully."
         );
 
-
         initializeLoginForm();
 
     }
 );
+
+
+/* ==========================================================
+   VOTIFY COMMON TOAST
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Login uses the existing VOTIFY toast system.
+ *
+ * components/toast.php
+ * assets/js/toast.js
+ *
+ * Existing function:
+ *
+ * showToast(type, title, message)
+ */
+
+function showLoginToast(
+    type,
+    title,
+    message
+) {
+
+    if (
+        typeof window.showToast ===
+        "function"
+    ) {
+
+        window.showToast(
+            type,
+            title,
+            message
+        );
+
+        return;
+    }
+
+
+    console.error(
+        "VOTIFY: toast.js is not loaded."
+    );
+
+}
 
 
 /* ==========================================================
@@ -80,6 +167,7 @@ function initializeLoginForm() {
         );
 
         return;
+
     }
 
 
@@ -87,6 +175,220 @@ function initializeLoginForm() {
         "submit",
         handleLogin
     );
+
+
+    initializeLoginInputs(
+        form
+    );
+
+
+    initializePasswordToggle(
+        form
+    );
+
+}
+
+
+/* ==========================================================
+   LOGIN INPUT INITIALIZATION
+========================================================== */
+
+function initializeLoginInputs(
+    form
+) {
+
+    const admissionInput =
+        form.querySelector(
+            '[name="admissionNo"]'
+        ) ||
+        document.querySelector(
+            "#admissionNo"
+        );
+
+
+    const emailInput =
+        form.querySelector(
+            '[name="collegeEmail"]'
+        ) ||
+        document.querySelector(
+            "#collegeEmail"
+        );
+
+
+    /* ------------------------------------------------------
+       ADMISSION NUMBER
+    ------------------------------------------------------ */
+
+    if (admissionInput) {
+
+        admissionInput.addEventListener(
+            "input",
+            function () {
+
+                this.value =
+                    this.value
+                        .toUpperCase()
+                        .replace(
+                            /[^A-Z0-9]/g,
+                            ""
+                        )
+                        .slice(
+                            0,
+                            11
+                        );
+
+            }
+        );
+
+    }
+
+
+    /* ------------------------------------------------------
+       COLLEGE EMAIL
+    ------------------------------------------------------ */
+
+    if (emailInput) {
+
+        emailInput.addEventListener(
+            "input",
+            function () {
+
+                this.value =
+                    this.value
+                        .replace(
+                            /\s/g,
+                            ""
+                        )
+                        .toLowerCase();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* ==========================================================
+   PASSWORD EYE TOGGLE
+========================================================== */
+
+function initializePasswordToggle(
+    form
+) {
+
+    const passwordInput =
+        form.querySelector(
+            '[name="password"]'
+        ) ||
+        document.querySelector(
+            "#password"
+        );
+
+
+    if (!passwordInput) {
+
+        console.warn(
+            "VOTIFY: Password input not found."
+        );
+
+        return;
+
+    }
+
+
+    const toggleButton =
+        form.querySelector(
+            "#togglePassword"
+        ) ||
+        document.querySelector(
+            "#togglePassword"
+        );
+
+
+    if (!toggleButton) {
+
+        console.warn(
+            "VOTIFY: Password toggle button not found."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * Prevent duplicate initialization.
+     */
+    if (
+        toggleButton.dataset.initialized ===
+        "true"
+    ) {
+
+        return;
+
+    }
+
+
+    toggleButton.dataset.initialized =
+        "true";
+
+
+    toggleButton.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+
+            const isPassword =
+                passwordInput.type ===
+                "password";
+
+
+            passwordInput.type =
+                isPassword
+                    ? "text"
+                    : "password";
+
+
+            const icon =
+                document.querySelector(
+                    "#togglePasswordIcon"
+                ) ||
+                toggleButton.querySelector(
+                    "i"
+                );
+
+
+            if (icon) {
+
+                icon.classList.toggle(
+                    "ri-eye-line",
+                    !isPassword
+                );
+
+                icon.classList.toggle(
+                    "ri-eye-off-line",
+                    isPassword
+                );
+
+            }
+
+
+            toggleButton.setAttribute(
+                "aria-label",
+                isPassword
+                    ? "Hide password"
+                    : "Show password"
+            );
+
+
+            passwordInput.focus();
+
+        }
+    );
+
 }
 
 
@@ -94,9 +396,23 @@ function initializeLoginForm() {
    LOGIN
 ========================================================== */
 
-async function handleLogin(event) {
+async function handleLogin(
+    event
+) {
 
     event.preventDefault();
+
+
+    /*
+     * FIRST CLICK LOCK
+     *
+     * Prevents double-click and repeated submit.
+     */
+    if (loginProcessing) {
+
+        return;
+
+    }
 
 
     const form =
@@ -156,12 +472,14 @@ async function handleLogin(event) {
         !passwordInput
     ) {
 
-        showMessage(
-            "Login form fields are missing. Please check student_login.php.",
-            "error"
+        showLoginToast(
+            "error",
+            "Login Error",
+            "Login form fields are missing. Please check student_login.php."
         );
 
         return;
+
     }
 
 
@@ -189,65 +507,131 @@ async function handleLogin(event) {
         passwordInput.value;
 
 
-    /* ------------------------------------------------------
+    /* ======================================================
        VALIDATION
+    ====================================================== */
+
+    /* ------------------------------------------------------
+       ADMISSION NUMBER
     ------------------------------------------------------ */
 
     if (!admissionNo) {
 
-        showMessage(
-            "Please enter your Admission Number.",
-            "error"
+        showLoginToast(
+            "error",
+            "Admission Number Required",
+            "Please enter your Admission Number."
         );
 
         admissionInput.focus();
 
         return;
+
     }
 
 
+    if (
+        !ADMISSION_NUMBER_REGEX.test(
+            admissionNo
+        )
+    ) {
+
+        showLoginToast(
+            "error",
+            "Invalid Admission Number",
+            "Use the format 25CAPMCA080."
+        );
+
+        admissionInput.focus();
+
+        return;
+
+    }
+
+
+    /* ------------------------------------------------------
+       DATE OF BIRTH
+    ------------------------------------------------------ */
+
     if (!dob) {
 
-        showMessage(
-            "Please enter your Date of Birth.",
-            "error"
+        showLoginToast(
+            "error",
+            "Date of Birth Required",
+            "Please enter your Date of Birth."
         );
 
         dobInput.focus();
 
         return;
+
     }
 
 
+    /* ------------------------------------------------------
+       COLLEGE EMAIL
+    ------------------------------------------------------ */
+
     if (!collegeEmail) {
 
-        showMessage(
-            "Please enter your College Email.",
-            "error"
+        showLoginToast(
+            "error",
+            "College Email Required",
+            "Please enter your College Email."
         );
 
         emailInput.focus();
 
         return;
+
     }
 
 
+    if (
+        !COLLEGE_EMAIL_REGEX.test(
+            collegeEmail
+        )
+    ) {
+
+        showLoginToast(
+            "error",
+            "Invalid College Email",
+            "Use only your @sonatech.ac.in college email."
+        );
+
+        emailInput.focus();
+
+        return;
+
+    }
+
+
+    /* ------------------------------------------------------
+       PASSWORD
+    ------------------------------------------------------ */
+
     if (!password) {
 
-        showMessage(
-            "Please enter your Password.",
-            "error"
+        showLoginToast(
+            "error",
+            "Password Required",
+            "Please enter your Password."
         );
 
         passwordInput.focus();
 
         return;
+
     }
 
 
-    /* ------------------------------------------------------
-       BUTTON LOADING
-    ------------------------------------------------------ */
+    /* ======================================================
+       LOCK LOGIN PROCESS
+    ====================================================== */
+
+    loginProcessing =
+        true;
+
 
     setButtonLoading(
         button,
@@ -256,9 +640,9 @@ async function handleLogin(event) {
     );
 
 
-    /* ------------------------------------------------------
+    /* ======================================================
        FORM DATA
-    ------------------------------------------------------ */
+    ====================================================== */
 
     const formData =
         new FormData();
@@ -294,9 +678,9 @@ async function handleLogin(event) {
     );
 
 
-    /* ------------------------------------------------------
-       SEND REQUEST
-    ------------------------------------------------------ */
+    /* ======================================================
+       SEND LOGIN REQUEST
+    ====================================================== */
 
     try {
 
@@ -333,7 +717,9 @@ async function handleLogin(event) {
             data =
                 JSON.parse(text);
 
-        } catch (jsonError) {
+        }
+
+        catch (jsonError) {
 
             console.error(
                 "Invalid JSON response:",
@@ -341,41 +727,56 @@ async function handleLogin(event) {
             );
 
 
-            showMessage(
-                "Server returned an invalid response. Check PHP error log.",
-                "error"
+            showLoginToast(
+                "error",
+                "Server Error",
+                "Server returned an invalid response. Please try again."
             );
 
 
             return;
+
         }
 
 
-        /* --------------------------------------------------
+        /* ==================================================
            LOGIN FAILED
-        -------------------------------------------------- */
+        ================================================== */
 
         if (!data.success) {
 
-            showMessage(
+            showLoginToast(
+                "error",
+                "Login Failed",
                 data.message ||
-                "Login failed.",
-                "error"
+                "Login failed. Please check your details."
             );
 
 
             return;
+
         }
 
 
-        /* --------------------------------------------------
+        /* ==================================================
            OTP REQUIRED
-        -------------------------------------------------- */
+        ================================================== */
 
         if (
             data.otp_required === true ||
             data.requires_otp === true
         ) {
+
+            /*
+             * Keep login button locked while
+             * OTP verification is active.
+             */
+            setButtonLoading(
+                button,
+                true,
+                "OTP Verification Required"
+            );
+
 
             showOtpModal(
                 data.email ||
@@ -386,27 +787,21 @@ async function handleLogin(event) {
 
 
             return;
+
         }
 
 
-        /* --------------------------------------------------
-           DIRECT LOGIN
-           (Fallback)
-        -------------------------------------------------- */
+        /* ==================================================
+           DIRECT LOGIN FALLBACK
+        ================================================== */
 
-        if (data.redirect) {
+        window.location.href =
+            data.redirect ||
+            SECURITY_CHECK_URL;
 
-            window.location.href =
-                data.redirect;
+    }
 
-        } else {
-
-            window.location.href =
-                DASHBOARD_URL;
-        }
-
-
-    } catch (error) {
+    catch (error) {
 
         console.error(
             "LOGIN FETCH ERROR:",
@@ -414,20 +809,168 @@ async function handleLogin(event) {
         );
 
 
-        showMessage(
-            "Unable to connect to login service. Please try again.",
-            "error"
+        showLoginToast(
+            "error",
+            "Connection Error",
+            "Unable to connect to login service. Please try again."
         );
 
-
-    } finally {
-
-        setButtonLoading(
-            button,
-            false,
-            "Login"
-        );
     }
+
+    finally {
+
+        /*
+         * If OTP modal exists, keep the login button locked.
+         *
+         * If request failed before OTP modal was created,
+         * restore the login button.
+         */
+        const otpModal =
+            document.querySelector(
+                "#votifyLoginOtpModal"
+            );
+
+
+        if (!otpModal) {
+
+            loginProcessing =
+                false;
+
+
+            setButtonLoading(
+                button,
+                false,
+                "Login Securely"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* ==========================================================
+   BUTTON LOADING
+========================================================== */
+
+function setButtonLoading(
+    button,
+    loading,
+    text
+) {
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    if (loading) {
+
+        button.disabled =
+            true;
+
+
+        button.setAttribute(
+            "aria-disabled",
+            "true"
+        );
+
+
+        button.classList.add(
+            "cursor-not-allowed"
+        );
+
+
+        button.classList.remove(
+            "hover:scale-[1.02]"
+        );
+
+
+        /*
+         * Save original HTML only once.
+         */
+        if (
+            !button.dataset.originalContent
+        ) {
+
+            button.dataset.originalContent =
+                button.innerHTML;
+
+        }
+
+
+        button.innerHTML = `
+
+            <span
+                class="
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                "
+            >
+
+                <i
+                    class="
+                    ri-loader-4-line
+                    animate-spin
+                    text-xl
+                    "
+                    aria-hidden="true"
+                ></i>
+
+                <span>
+                    ${escapeHtml(text)}
+                </span>
+
+            </span>
+
+        `;
+
+
+        return;
+
+    }
+
+
+    button.disabled =
+        false;
+
+
+    button.removeAttribute(
+        "aria-disabled"
+    );
+
+
+    button.classList.remove(
+        "cursor-not-allowed"
+    );
+
+
+    button.classList.add(
+        "hover:scale-[1.02]"
+    );
+
+
+    if (
+        button.dataset.originalContent
+    ) {
+
+        button.innerHTML =
+            button.dataset.originalContent;
+
+    }
+
+    else {
+
+        button.textContent =
+            text;
+
+    }
+
 }
 
 
@@ -441,6 +984,10 @@ function showOtpModal(
 ) {
 
     removeExistingOtpModal();
+
+
+    otpProcessing =
+        false;
 
 
     const modal =
@@ -457,23 +1004,32 @@ function showOtpModal(
 
         <div class="votify-otp-overlay">
 
-            <div class="votify-otp-box">
+            <div
+                class="votify-otp-box"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="votifyOtpTitle"
+            >
 
                 <button
                     type="button"
                     class="votify-otp-close"
                     id="votifyOtpClose"
+                    aria-label="Close OTP verification"
                 >
                     &times;
                 </button>
 
 
-                <div class="votify-otp-icon">
-                    ✉
+                <div
+                    class="votify-otp-icon"
+                    aria-hidden="true"
+                >
+                    <i class="ri-mail-line"></i>
                 </div>
 
 
-                <h2>
+                <h2 id="votifyOtpTitle">
                     Verify College Email
                 </h2>
 
@@ -497,39 +1053,131 @@ function showOtpModal(
                     autocomplete="off"
                 >
 
-                    <input
-                        type="text"
-                        id="votifyLoginOtp"
-                        name="otp"
-                        maxlength="6"
-                        inputmode="numeric"
-                        pattern="[0-9]{6}"
-                        placeholder="Enter 6-digit OTP"
-                        autocomplete="one-time-code"
-                        class="votify-otp-input"
+                    <!-- ==================================================
+                         SIX OTP BOXES
+                    ================================================== -->
+
+                    <div
+                        id="votifyOtpBoxes"
+                        class="votify-otp-boxes"
+                        role="group"
+                        aria-label="Enter 6-digit OTP"
                     >
 
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="1"
+                            class="votify-otp-digit"
+                            id="votifyOtp1"
+                            autocomplete="one-time-code"
+                            aria-label="OTP digit 1"
+                        >
+
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="1"
+                            class="votify-otp-digit"
+                            id="votifyOtp2"
+                            aria-label="OTP digit 2"
+                        >
+
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="1"
+                            class="votify-otp-digit"
+                            id="votifyOtp3"
+                            aria-label="OTP digit 3"
+                        >
+
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="1"
+                            class="votify-otp-digit"
+                            id="votifyOtp4"
+                            aria-label="OTP digit 4"
+                        >
+
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="1"
+                            class="votify-otp-digit"
+                            id="votifyOtp5"
+                            aria-label="OTP digit 5"
+                        >
+
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="1"
+                            class="votify-otp-digit"
+                            id="votifyOtp6"
+                            aria-label="OTP digit 6"
+                        >
+
+                    </div>
+
+
+                    <!-- ==================================================
+                         OTP MESSAGE
+                    ================================================== -->
 
                     <div
                         id="votifyOtpMessage"
                         class="votify-otp-message"
+                        aria-live="polite"
                     ></div>
 
+
+                    <!-- ==================================================
+                         VERIFY BUTTON
+                    ================================================== -->
 
                     <button
                         type="submit"
                         id="votifyVerifyOtpButton"
                         class="votify-otp-button"
                     >
-                        Verify OTP
+                        <span
+                            class="
+                            inline-flex
+                            items-center
+                            justify-center
+                            gap-2
+                            "
+                        >
+
+                            <i
+                                class="ri-shield-check-line"
+                                aria-hidden="true"
+                            ></i>
+
+                            <span>
+                                Verify OTP
+                            </span>
+
+                        </span>
                     </button>
 
+
+                    <!-- ==================================================
+                         OTP TIMER
+                    ================================================== -->
 
                     <div
                         id="votifyOtpTimer"
                         class="votify-otp-timer"
+                        aria-live="polite"
                     ></div>
 
+
+                    <!-- ==================================================
+                         RESEND OTP
+                    ================================================== -->
 
                     <button
                         type="button"
@@ -544,6 +1192,7 @@ function showOtpModal(
             </div>
 
         </div>
+
     `;
 
 
@@ -555,13 +1204,15 @@ function showOtpModal(
     addOtpStyles();
 
 
-    /* ------------------------------------------------------
-       ELEMENTS
-    ------------------------------------------------------ */
+    /* ======================================================
+       OTP ELEMENTS
+    ====================================================== */
 
-    const otpInput =
-        document.querySelector(
-            "#votifyLoginOtp"
+    const otpInputs =
+        Array.from(
+            document.querySelectorAll(
+                ".votify-otp-digit"
+            )
         );
 
 
@@ -583,85 +1234,528 @@ function showOtpModal(
         );
 
 
-    /* ------------------------------------------------------
-       OTP INPUT
-    ------------------------------------------------------ */
+    /* ======================================================
+       INITIALIZE OTP INPUTS
+    ====================================================== */
 
-    otpInput.addEventListener(
-        "input",
-        function () {
-
-            this.value =
-                this.value
-                    .replace(
-                        /[^0-9]/g,
-                        ""
-                    )
-                    .slice(
-                        0,
-                        6
-                    );
-        }
+    initializeOtpInputs(
+        otpInputs
     );
 
 
-    /* ------------------------------------------------------
+    /* ======================================================
        SUBMIT OTP
-    ------------------------------------------------------ */
+    ====================================================== */
 
-    otpForm.addEventListener(
-        "submit",
-        verifyLoginOtp
-    );
+    if (otpForm) {
 
+        otpForm.addEventListener(
+            "submit",
+            verifyLoginOtp
+        );
 
-    /* ------------------------------------------------------
-       CLOSE
-    ------------------------------------------------------ */
-
-    closeButton.addEventListener(
-        "click",
-        function () {
-
-            clearOtpTimer();
-
-            removeExistingOtpModal();
-
-        }
-    );
+    }
 
 
-    /* ------------------------------------------------------
-       RESEND
-    ------------------------------------------------------ */
+    /* ======================================================
+       CLOSE OTP
+    ====================================================== */
 
-    resendButton.addEventListener(
-        "click",
-        resendLoginOtp
-    );
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            function () {
+
+                clearOtpTimer();
+
+                removeExistingOtpModal();
+
+                /*
+                 * Allow login again only after
+                 * user closes the OTP modal.
+                 */
+                loginProcessing =
+                    false;
 
 
-    /* ------------------------------------------------------
-       START TIMER
-    ------------------------------------------------------ */
+                const form =
+                    document.querySelector(
+                        "#studentLoginForm"
+                    );
+
+
+                if (form) {
+
+                    const button =
+                        form.querySelector(
+                            'button[type="submit"]'
+                        );
+
+
+                    setButtonLoading(
+                        button,
+                        false,
+                        "Login Securely"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* ======================================================
+       RESEND OTP
+    ====================================================== */
+
+    if (resendButton) {
+
+        resendButton.addEventListener(
+            "click",
+            resendLoginOtp
+        );
+
+    }
+
+
+    /* ======================================================
+       TIMER
+    ====================================================== */
 
     startOtpTimer(
         seconds
     );
 
 
-    /* ------------------------------------------------------
-       FOCUS
-    ------------------------------------------------------ */
+    /* ======================================================
+       FOCUS FIRST OTP BOX
+    ====================================================== */
 
     setTimeout(
         function () {
 
-            otpInput.focus();
+            if (otpInputs.length > 0) {
+
+                otpInputs[0].focus();
+
+            }
 
         },
         100
     );
+
+}
+
+
+/* ==========================================================
+   INITIALIZE SIX OTP INPUTS
+========================================================== */
+
+function initializeOtpInputs(
+    inputs
+) {
+
+    if (!inputs.length) {
+
+        return;
+
+    }
+
+
+    inputs.forEach(
+        function (input, index) {
+
+            /* ------------------------------------------------
+               INPUT
+            ------------------------------------------------ */
+
+            input.addEventListener(
+                "input",
+                function () {
+
+                    /*
+                     * Numbers only.
+                     */
+                    this.value =
+                        this.value
+                            .replace(
+                                /[^0-9]/g,
+                                ""
+                            )
+                            .slice(
+                                0,
+                                1
+                            );
+
+
+                    /*
+                     * Remove error/success state
+                     * when user edits OTP.
+                     */
+                    clearOtpInputState();
+
+
+                    /*
+                     * Auto move to next box.
+                     */
+                    if (
+                        this.value &&
+                        index <
+                        inputs.length - 1
+                    ) {
+
+                        inputs[
+                            index + 1
+                        ].focus();
+
+                    }
+
+
+                    /*
+                     * When all six digits are filled,
+                     * keep focus on final box.
+                     */
+                    if (
+                        index ===
+                        inputs.length - 1
+                    ) {
+
+                        this.blur();
+
+                    }
+
+                }
+            );
+
+
+            /* ------------------------------------------------
+               KEYDOWN
+            ------------------------------------------------ */
+
+            input.addEventListener(
+                "keydown",
+                function (event) {
+
+                    /*
+                     * Backspace:
+                     *
+                     * If current box is empty,
+                     * move to previous box.
+                     */
+                    if (
+                        event.key ===
+                        "Backspace"
+                    ) {
+
+                        if (
+                            !this.value &&
+                            index > 0
+                        ) {
+
+                            event.preventDefault();
+
+                            inputs[
+                                index - 1
+                            ].focus();
+
+                            inputs[
+                                index - 1
+                            ].select();
+
+                        }
+
+                    }
+
+
+                    /*
+                     * Left arrow.
+                     */
+                    if (
+                        event.key ===
+                        "ArrowLeft" &&
+                        index > 0
+                    ) {
+
+                        event.preventDefault();
+
+                        inputs[
+                            index - 1
+                        ].focus();
+
+                    }
+
+
+                    /*
+                     * Right arrow.
+                     */
+                    if (
+                        event.key ===
+                        "ArrowRight" &&
+                        index <
+                        inputs.length - 1
+                    ) {
+
+                        event.preventDefault();
+
+                        inputs[
+                            index + 1
+                        ].focus();
+
+                    }
+
+                }
+            );
+
+
+            /* ------------------------------------------------
+               PASTE
+            ------------------------------------------------ */
+
+            input.addEventListener(
+                "paste",
+                function (event) {
+
+                    event.preventDefault();
+
+
+                    const pasted =
+                        (
+                            event.clipboardData ||
+                            window.clipboardData
+                        )
+                        .getData("text")
+                        .replace(
+                            /[^0-9]/g,
+                            ""
+                        )
+                        .slice(
+                            0,
+                            6
+                        );
+
+
+                    if (!pasted) {
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Fill all six boxes.
+                     */
+                    pasted
+                        .split("")
+                        .forEach(
+                            function (
+                                digit,
+                                digitIndex
+                            ) {
+
+                                if (
+                                    inputs[
+                                        digitIndex
+                                    ]
+                                ) {
+
+                                    inputs[
+                                        digitIndex
+                                    ].value =
+                                        digit;
+
+                                }
+
+                            }
+                        );
+
+
+                    /*
+                     * Focus the next empty box,
+                     * otherwise final box.
+                     */
+                    const nextEmpty =
+                        inputs.findIndex(
+                            function (
+                                otpInput
+                            ) {
+
+                                return !otpInput.value;
+
+                            }
+                        );
+
+
+                    if (
+                        nextEmpty !== -1
+                    ) {
+
+                        inputs[
+                            nextEmpty
+                        ].focus();
+
+                    }
+
+                    else {
+
+                        inputs[
+                            inputs.length - 1
+                        ].focus();
+
+                    }
+
+                }
+            );
+
+
+            /* ------------------------------------------------
+               FOCUS
+            ------------------------------------------------ */
+
+            input.addEventListener(
+                "focus",
+                function () {
+
+                    this.classList.add(
+                        "active"
+                    );
+
+                }
+            );
+
+
+            /* ------------------------------------------------
+               BLUR
+            ------------------------------------------------ */
+
+            input.addEventListener(
+                "blur",
+                function () {
+
+                    this.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   GET COMBINED OTP
+========================================================== */
+
+function getLoginOtp() {
+
+    const inputs =
+        Array.from(
+            document.querySelectorAll(
+                ".votify-otp-digit"
+            )
+        );
+
+
+    if (
+        inputs.length !== 6
+    ) {
+
+        return "";
+
+    }
+
+
+    return inputs
+        .map(
+            function (input) {
+
+                return input.value;
+
+            }
+        )
+        .join("");
+
+}
+
+
+/* ==========================================================
+   CLEAR OTP INPUT STATE
+========================================================== */
+
+function clearOtpInputState() {
+
+    const inputs =
+        document.querySelectorAll(
+            ".votify-otp-digit"
+        );
+
+
+    inputs.forEach(
+        function (input) {
+
+            input.classList.remove(
+                "otp-error",
+                "otp-success"
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   SHOW OTP ERROR STATE
+========================================================== */
+
+function showOtpErrorState() {
+
+    const inputs =
+        document.querySelectorAll(
+            ".votify-otp-digit"
+        );
+
+
+    inputs.forEach(
+        function (input) {
+
+            input.classList.add(
+                "otp-error"
+            );
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
+   SHOW OTP SUCCESS STATE
+========================================================== */
+
+function showOtpSuccessState() {
+
+    const inputs =
+        document.querySelectorAll(
+            ".votify-otp-digit"
+        );
+
+
+    inputs.forEach(
+        function (input) {
+
+            input.classList.add(
+                "otp-success"
+            );
+
+        }
+    );
+
 }
 
 
@@ -669,37 +1763,25 @@ function showOtpModal(
    VERIFY OTP
 ========================================================== */
 
-async function verifyLoginOtp(event) {
+async function verifyLoginOtp(
+    event
+) {
 
     event.preventDefault();
 
 
-    const otpInput =
-        document.querySelector(
-            "#votifyLoginOtp"
-        );
-
-
-    const button =
-        document.querySelector(
-            "#votifyVerifyOtpButton"
-        );
-
-
-    const message =
-        document.querySelector(
-            "#votifyOtpMessage"
-        );
-
-
-    if (!otpInput) {
+    /*
+     * Prevent duplicate OTP requests.
+     */
+    if (otpProcessing) {
 
         return;
+
     }
 
 
     const otp =
-        otpInput.value.trim();
+        getLoginOtp();
 
 
     /* ------------------------------------------------------
@@ -712,35 +1794,129 @@ async function verifyLoginOtp(event) {
         )
     ) {
 
+        showLoginToast(
+            "error",
+            "Invalid OTP",
+            "Please enter the complete 6-digit OTP."
+        );
+
+
         showOtpMessage(
-            "Please enter the 6-digit OTP.",
+            "Please enter the complete 6-digit OTP.",
             "error"
         );
 
 
-        otpInput.focus();
+        showOtpErrorState();
+
+
+        const firstEmpty =
+            Array.from(
+                document.querySelectorAll(
+                    ".votify-otp-digit"
+                )
+            ).find(
+                function (input) {
+
+                    return !input.value;
+
+                }
+            );
+
+
+        if (firstEmpty) {
+
+            firstEmpty.focus();
+
+        }
+
 
         return;
+
     }
 
 
-    /* ------------------------------------------------------
-       LOADING
-    ------------------------------------------------------ */
+    /* ======================================================
+       LOCK OTP VERIFICATION
+    ====================================================== */
 
-    button.disabled = true;
-
-    button.textContent =
-        "Verifying...";
+    otpProcessing =
+        true;
 
 
-    message.textContent =
-        "";
+    const button =
+        document.querySelector(
+            "#votifyVerifyOtpButton"
+        );
 
 
-    /* ------------------------------------------------------
+    const inputs =
+        document.querySelectorAll(
+            ".votify-otp-digit"
+        );
+
+
+    inputs.forEach(
+        function (input) {
+
+            input.disabled =
+                true;
+
+        }
+    );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+
+        button.classList.add(
+            "cursor-not-allowed"
+        );
+
+
+        button.innerHTML = `
+
+            <span
+                class="
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                "
+            >
+
+                <i
+                    class="
+                    ri-loader-4-line
+                    animate-spin
+                    text-xl
+                    "
+                    aria-hidden="true"
+                ></i>
+
+                <span>
+                    Verifying...
+                </span>
+
+            </span>
+
+        `;
+
+    }
+
+
+    showOtpMessage(
+        "",
+        ""
+    );
+
+
+    /* ======================================================
        REQUEST
-    ------------------------------------------------------ */
+    ====================================================== */
 
     const formData =
         new FormData();
@@ -752,6 +1928,12 @@ async function verifyLoginOtp(event) {
     );
 
 
+    /*
+     * Backend still receives ONE combined OTP.
+     *
+     * Example:
+     * 123456
+     */
     formData.append(
         "otp",
         otp
@@ -793,7 +1975,16 @@ async function verifyLoginOtp(event) {
             data =
                 JSON.parse(text);
 
-        } catch (error) {
+        }
+
+        catch (error) {
+
+            showLoginToast(
+                "error",
+                "Server Error",
+                "Invalid server response."
+            );
+
 
             showOtpMessage(
                 "Invalid server response.",
@@ -801,15 +1992,31 @@ async function verifyLoginOtp(event) {
             );
 
 
+            showOtpErrorState();
+
+
             return;
+
         }
 
 
-        /* --------------------------------------------------
+        /* ==================================================
            OTP FAILED
-        -------------------------------------------------- */
+        ================================================== */
 
         if (!data.success) {
+
+            otpProcessing =
+                false;
+
+
+            showLoginToast(
+                "error",
+                "OTP Verification Failed",
+                data.message ||
+                "OTP verification failed."
+            );
+
 
             showOtpMessage(
                 data.message ||
@@ -818,6 +2025,61 @@ async function verifyLoginOtp(event) {
             );
 
 
+            showOtpErrorState();
+
+
+            /*
+             * Re-enable OTP boxes.
+             */
+            inputs.forEach(
+                function (input) {
+
+                    input.disabled =
+                        false;
+
+                }
+            );
+
+
+            if (button) {
+
+                button.disabled =
+                    false;
+
+                button.classList.remove(
+                    "cursor-not-allowed"
+                );
+
+                button.innerHTML = `
+
+                    <span
+                        class="
+                        inline-flex
+                        items-center
+                        justify-center
+                        gap-2
+                        "
+                    >
+
+                        <i
+                            class="ri-shield-check-line"
+                            aria-hidden="true"
+                        ></i>
+
+                        <span>
+                            Verify OTP
+                        </span>
+
+                    </span>
+
+                `;
+
+            }
+
+
+            /*
+             * If OTP expired, allow resend.
+             */
             if (
                 data.otp_expired === true
             ) {
@@ -831,18 +2093,31 @@ async function verifyLoginOtp(event) {
                 if (resend) {
 
                     resend.style.display =
-                        "block";
+                        "inline-block";
+
                 }
+
             }
 
 
             return;
+
         }
 
 
-        /* --------------------------------------------------
+        /* ==================================================
            OTP SUCCESS
-        -------------------------------------------------- */
+        ================================================== */
+
+        showOtpSuccessState();
+
+
+        showLoginToast(
+            "success",
+            "Login Successful",
+            "OTP verified successfully. Logging you in..."
+        );
+
 
         showOtpMessage(
             "OTP verified successfully. Logging you in...",
@@ -850,31 +2125,83 @@ async function verifyLoginOtp(event) {
         );
 
 
-        button.textContent =
-            "Verified ✓";
+        if (button) {
+
+            button.innerHTML = `
+
+                <span
+                    class="
+                    inline-flex
+                    items-center
+                    justify-center
+                    gap-2
+                    "
+                >
+
+                    <i
+                        class="
+                        ri-checkbox-circle-line
+                        text-xl
+                        "
+                        aria-hidden="true"
+                    ></i>
+
+                    <span>
+                        Verified
+                    </span>
+
+                </span>
+
+            `;
+
+        }
 
 
-        /* --------------------------------------------------
+        /*
+         * Keep login permanently locked
+         * until redirect.
+         */
+        loginProcessing =
+            true;
+
+
+        otpProcessing =
+            true;
+
+
+        /* ==================================================
            REDIRECT
-        -------------------------------------------------- */
+        ================================================== */
 
         setTimeout(
             function () {
 
                 window.location.href =
                     data.redirect ||
-                    DASHBOARD_URL;
+                    SECURITY_CHECK_URL;
 
             },
-            500
+            800
         );
 
+    }
 
-    } catch (error) {
+    catch (error) {
 
         console.error(
             "OTP VERIFY ERROR:",
             error
+        );
+
+
+        otpProcessing =
+            false;
+
+
+        showLoginToast(
+            "error",
+            "Verification Error",
+            "Unable to verify OTP. Please try again."
         );
 
 
@@ -884,19 +2211,58 @@ async function verifyLoginOtp(event) {
         );
 
 
-    } finally {
+        showOtpErrorState();
 
-        button.disabled = false;
 
-        if (
-            button.textContent ===
-            "Verifying..."
-        ) {
+        inputs.forEach(
+            function (input) {
 
-            button.textContent =
-                "Verify OTP";
+                input.disabled =
+                    false;
+
+            }
+        );
+
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+
+            button.classList.remove(
+                "cursor-not-allowed"
+            );
+
+
+            button.innerHTML = `
+
+                <span
+                    class="
+                    inline-flex
+                    items-center
+                    justify-center
+                    gap-2
+                    "
+                >
+
+                    <i
+                        class="ri-shield-check-line"
+                        aria-hidden="true"
+                    ></i>
+
+                    <span>
+                        Verify OTP
+                    </span>
+
+                </span>
+
+            `;
+
         }
+
     }
+
 }
 
 
@@ -907,58 +2273,50 @@ async function verifyLoginOtp(event) {
 async function resendLoginOtp() {
 
     /*
-     * Resend uses the same login details
-     * from the original form.
+     * Do not allow resend while OTP verification
+     * is currently processing.
      */
+    if (otpProcessing) {
+
+        return;
+
+    }
+
 
     const form =
         document.querySelector(
             "#studentLoginForm"
-        ) ||
-        document.querySelector(
-            "form"
         );
 
 
     if (!form) {
 
         return;
+
     }
 
 
     const admissionInput =
         form.querySelector(
             '[name="admissionNo"]'
-        ) ||
-        document.querySelector(
-            "#admissionNo"
         );
 
 
     const dobInput =
         form.querySelector(
             '[name="dob"]'
-        ) ||
-        document.querySelector(
-            "#dob"
         );
 
 
     const emailInput =
         form.querySelector(
             '[name="collegeEmail"]'
-        ) ||
-        document.querySelector(
-            "#collegeEmail"
         );
 
 
     const passwordInput =
         form.querySelector(
             '[name="password"]'
-        ) ||
-        document.querySelector(
-            "#password"
         );
 
 
@@ -969,12 +2327,67 @@ async function resendLoginOtp() {
         !passwordInput
     ) {
 
+        showLoginToast(
+            "error",
+            "Login Details Missing",
+            "Login details are missing."
+        );
+
+
         showOtpMessage(
             "Login details are missing.",
             "error"
         );
 
+
         return;
+
+    }
+
+
+    const admissionNo =
+        admissionInput.value
+            .trim()
+            .toUpperCase();
+
+
+    const collegeEmail =
+        emailInput.value
+            .trim()
+            .toLowerCase();
+
+
+    if (
+        !ADMISSION_NUMBER_REGEX.test(
+            admissionNo
+        )
+    ) {
+
+        showLoginToast(
+            "error",
+            "Invalid Admission Number",
+            "Use the format 25CAPMCA080."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !COLLEGE_EMAIL_REGEX.test(
+            collegeEmail
+        )
+    ) {
+
+        showLoginToast(
+            "error",
+            "Invalid College Email",
+            "Use only your @sonatech.ac.in college email."
+        );
+
+        return;
+
     }
 
 
@@ -984,10 +2397,48 @@ async function resendLoginOtp() {
         );
 
 
-    button.disabled = true;
+    if (!button) {
 
-    button.textContent =
-        "Sending...";
+        return;
+
+    }
+
+
+    button.disabled =
+        true;
+
+
+    button.classList.add(
+        "cursor-not-allowed"
+    );
+
+
+    button.innerHTML = `
+
+        <span
+            class="
+            inline-flex
+            items-center
+            justify-center
+            gap-2
+            "
+        >
+
+            <i
+                class="
+                ri-loader-4-line
+                animate-spin
+                "
+                aria-hidden="true"
+            ></i>
+
+            <span>
+                Sending...
+            </span>
+
+        </span>
+
+    `;
 
 
     const formData =
@@ -1002,9 +2453,7 @@ async function resendLoginOtp() {
 
     formData.append(
         "admissionNo",
-        admissionInput.value
-            .trim()
-            .toUpperCase()
+        admissionNo
     );
 
 
@@ -1016,9 +2465,7 @@ async function resendLoginOtp() {
 
     formData.append(
         "collegeEmail",
-        emailInput.value
-            .trim()
-            .toLowerCase()
+        collegeEmail
     );
 
 
@@ -1057,18 +2504,37 @@ async function resendLoginOtp() {
             data =
                 JSON.parse(text);
 
-        } catch (error) {
+        }
+
+        catch (error) {
+
+            showLoginToast(
+                "error",
+                "Server Error",
+                "Invalid server response."
+            );
+
 
             showOtpMessage(
                 "Invalid server response.",
                 "error"
             );
 
+
             return;
+
         }
 
 
         if (!data.success) {
+
+            showLoginToast(
+                "error",
+                "OTP Resend Failed",
+                data.message ||
+                "Unable to resend OTP."
+            );
+
 
             showOtpMessage(
                 data.message ||
@@ -1078,12 +2544,45 @@ async function resendLoginOtp() {
 
 
             return;
+
         }
+
+
+        showLoginToast(
+            "success",
+            "OTP Sent",
+            "New OTP sent to your college email."
+        );
 
 
         showOtpMessage(
             "New OTP sent to your college email.",
             "success"
+        );
+
+
+        clearOtpInputState();
+
+
+        /*
+         * Clear all OTP boxes.
+         */
+        const inputs =
+            document.querySelectorAll(
+                ".votify-otp-digit"
+            );
+
+
+        inputs.forEach(
+            function (input) {
+
+                input.value =
+                    "";
+
+                input.disabled =
+                    false;
+
+            }
         );
 
 
@@ -1093,26 +2592,26 @@ async function resendLoginOtp() {
         );
 
 
-        const otpInput =
-            document.querySelector(
-                "#votifyLoginOtp"
-            );
+        if (inputs.length > 0) {
 
+            inputs[0].focus();
 
-        if (otpInput) {
-
-            otpInput.value =
-                "";
-
-            otpInput.focus();
         }
 
+    }
 
-    } catch (error) {
+    catch (error) {
 
         console.error(
             "RESEND OTP ERROR:",
             error
+        );
+
+
+        showLoginToast(
+            "error",
+            "Connection Error",
+            "Unable to send OTP. Please try again."
         );
 
 
@@ -1121,14 +2620,29 @@ async function resendLoginOtp() {
             "error"
         );
 
-
-    } finally {
-
-        button.disabled = false;
-
-        button.textContent =
-            "Resend OTP";
     }
+
+    finally {
+
+        button.disabled =
+            false;
+
+
+        button.classList.remove(
+            "cursor-not-allowed"
+        );
+
+
+        button.innerHTML = `
+
+            <span>
+                Resend OTP
+            </span>
+
+        `;
+
+    }
+
 }
 
 
@@ -1150,6 +2664,19 @@ function startOtpTimer(
         );
 
 
+    if (
+        !Number.isFinite(
+            remaining
+        ) ||
+        remaining <= 0
+    ) {
+
+        remaining =
+            300;
+
+    }
+
+
     const timer =
         document.querySelector(
             "#votifyOtpTimer"
@@ -1159,7 +2686,13 @@ function startOtpTimer(
     if (!timer) {
 
         return;
+
     }
+
+
+    timer.classList.remove(
+        "expired"
+    );
 
 
     otpTimer =
@@ -1183,6 +2716,7 @@ function startOtpTimer(
 
 
                     return;
+
                 }
 
 
@@ -1212,11 +2746,12 @@ function startOtpTimer(
             },
             1000
         );
+
 }
 
 
 /* ==========================================================
-   CLEAR TIMER
+   CLEAR OTP TIMER
 ========================================================== */
 
 function clearOtpTimer() {
@@ -1227,8 +2762,11 @@ function clearOtpTimer() {
             otpTimer
         );
 
-        otpTimer = null;
+        otpTimer =
+            null;
+
     }
+
 }
 
 
@@ -1250,6 +2788,7 @@ function showOtpMessage(
     if (!element) {
 
         return;
+
     }
 
 
@@ -1260,109 +2799,7 @@ function showOtpMessage(
     element.className =
         "votify-otp-message " +
         (type || "");
-}
 
-
-/* ==========================================================
-   NORMAL PAGE MESSAGE
-========================================================== */
-
-function showMessage(
-    message,
-    type
-) {
-
-    let element =
-        document.querySelector(
-            "#loginMessage"
-        );
-
-
-    if (!element) {
-
-        element =
-            document.createElement(
-                "div"
-            );
-
-
-        element.id =
-            "loginMessage";
-
-
-        const form =
-            document.querySelector(
-                "#studentLoginForm"
-            ) ||
-            document.querySelector(
-                "form"
-            );
-
-
-        if (form) {
-
-            form.prepend(
-                element
-            );
-
-        } else {
-
-            document.body.prepend(
-                element
-            );
-        }
-    }
-
-
-    element.textContent =
-        message;
-
-
-    element.className =
-        "login-message " +
-        (type || "");
-}
-
-
-/* ==========================================================
-   BUTTON LOADING
-========================================================== */
-
-function setButtonLoading(
-    button,
-    loading,
-    text
-) {
-
-    if (!button) {
-
-        return;
-    }
-
-
-    if (loading) {
-
-        button.disabled =
-            true;
-
-
-        button.dataset.originalText =
-            button.textContent;
-
-
-        button.textContent =
-            text;
-
-    } else {
-
-        button.disabled =
-            false;
-
-
-        button.textContent =
-            button.dataset.originalText ||
-            text;
-    }
 }
 
 
@@ -1381,7 +2818,9 @@ function removeExistingOtpModal() {
     if (existing) {
 
         existing.remove();
+
     }
+
 }
 
 
@@ -1414,6 +2853,7 @@ function escapeHtml(
             /'/g,
             "&#039;"
         );
+
 }
 
 
@@ -1430,6 +2870,7 @@ function addOtpStyles() {
     ) {
 
         return;
+
     }
 
 
@@ -1444,6 +2885,10 @@ function addOtpStyles() {
 
 
     style.textContent = `
+
+        /* ==================================================
+           OTP OVERLAY
+        ================================================== */
 
         .votify-otp-overlay {
 
@@ -1460,14 +2905,21 @@ function addOtpStyles() {
             justify-content: center;
 
             background:
-                rgba(0, 0, 0, 0.75);
+                rgba(0, 0, 0, 0.78);
 
             backdrop-filter:
                 blur(8px);
 
             padding: 20px;
+
+            overflow-y: auto;
+
         }
 
+
+        /* ==================================================
+           OTP BOX
+        ================================================== */
 
         .votify-otp-box {
 
@@ -1475,7 +2927,7 @@ function addOtpStyles() {
 
             width: 100%;
 
-            max-width: 470px;
+            max-width: 500px;
 
             padding: 35px;
 
@@ -1495,8 +2947,13 @@ function addOtpStyles() {
             text-align: center;
 
             color: white;
+
         }
 
+
+        /* ==================================================
+           CLOSE BUTTON
+        ================================================== */
 
         .votify-otp-close {
 
@@ -1512,15 +2969,31 @@ function addOtpStyles() {
 
             border: none;
 
-            background: transparent;
+            background:
+                transparent;
 
             color: #aaa;
 
             font-size: 28px;
 
             cursor: pointer;
+
+            transition:
+                color 0.2s ease;
+
         }
 
+
+        .votify-otp-close:hover {
+
+            color: white;
+
+        }
+
+
+        /* ==================================================
+           OTP ICON
+        ================================================== */
 
         .votify-otp-icon {
 
@@ -1528,7 +3001,8 @@ function addOtpStyles() {
 
             height: 70px;
 
-            margin: 0 auto 20px;
+            margin:
+                0 auto 20px;
 
             display: flex;
 
@@ -1545,89 +3019,255 @@ function addOtpStyles() {
                 1px solid
                 rgba(59,130,246,0.4);
 
+            color:
+                #ffffff;
+
             font-size: 32px;
+
         }
 
+
+        /* ==================================================
+           OTP HEADING
+        ================================================== */
 
         .votify-otp-box h2 {
 
-            margin: 0 0 12px;
+            margin:
+                0 0 12px;
 
-            font-size: 27px;
+            font-size:
+                27px;
+
+            font-weight:
+                700;
+
         }
 
+
+        /* ==================================================
+           DESCRIPTION
+        ================================================== */
 
         .votify-otp-description {
 
-            margin: 0 0 8px;
+            margin:
+                0 0 8px;
 
-            color: #aab4c8;
+            color:
+                #aab4c8;
 
         }
 
+
+        /* ==================================================
+           EMAIL
+        ================================================== */
 
         .votify-otp-email {
 
-            margin-bottom: 22px;
+            margin-bottom:
+                24px;
 
-            color: #60a5fa;
+            color:
+                #60a5fa;
 
-            font-weight: 600;
+            font-weight:
+                600;
 
-            word-break: break-all;
+            word-break:
+                break-all;
+
         }
 
 
-        .votify-otp-input {
+        /* ==================================================
+           SIX OTP BOX CONTAINER
+        ================================================== */
 
-            width: 100%;
+        .votify-otp-boxes {
 
-            box-sizing: border-box;
+            display:
+                flex;
 
-            padding: 16px;
+            align-items:
+                center;
 
-            border-radius: 12px;
+            justify-content:
+                center;
+
+            gap:
+                10px;
+
+            width:
+                100%;
+
+            margin:
+                0 auto;
+
+        }
+
+
+        /* ==================================================
+           INDIVIDUAL OTP BOX
+        ================================================== */
+
+        .votify-otp-digit {
+
+            width:
+                58px;
+
+            height:
+                62px;
+
+            box-sizing:
+                border-box;
 
             border:
-                1px solid #334155;
+                1px solid
+                #334155;
+
+            border-radius:
+                12px;
 
             background:
                 #1e293b;
 
-            color: white;
+            color:
+                white;
 
-            font-size: 24px;
+            font-size:
+                26px;
 
-            letter-spacing: 8px;
+            font-weight:
+                700;
 
-            text-align: center;
+            text-align:
+                center;
 
-            outline: none;
+            outline:
+                none;
+
+            transition:
+                all 0.2s ease;
+
+            caret-color:
+                #60a5fa;
+
         }
 
 
-        .votify-otp-input:focus {
+        /* ==================================================
+           OTP ACTIVE BOX
+        ================================================== */
+
+        .votify-otp-digit.active {
 
             border-color:
                 #3b82f6;
 
             box-shadow:
                 0 0 0 3px
-                rgba(59,130,246,0.2);
+                rgba(59,130,246,0.20),
+                0 0 20px
+                rgba(59,130,246,0.25);
+
+            transform:
+                translateY(-1px);
+
         }
 
 
+        /* ==================================================
+           OTP ERROR
+        ================================================== */
+
+        .votify-otp-digit.otp-error {
+
+            border-color:
+                #ef4444;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(239,68,68,0.15),
+                0 0 18px
+                rgba(239,68,68,0.20);
+
+        }
+
+
+        /* ==================================================
+           OTP SUCCESS
+        ================================================== */
+
+        .votify-otp-digit.otp-success {
+
+            border-color:
+                #22c55e;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(34,197,94,0.15),
+                0 0 18px
+                rgba(34,197,94,0.20);
+
+        }
+
+
+        /* ==================================================
+           OTP MESSAGE
+        ================================================== */
+
+        .votify-otp-message {
+
+            min-height:
+                22px;
+
+            margin-top:
+                12px;
+
+            font-size:
+                14px;
+
+        }
+
+
+        .votify-otp-message.error {
+
+            color:
+                #f87171;
+
+        }
+
+
+        .votify-otp-message.success {
+
+            color:
+                #4ade80;
+
+        }
+
+
+        /* ==================================================
+           VERIFY BUTTON
+        ================================================== */
+
         .votify-otp-button {
 
-            width: 100%;
+            width:
+                100%;
 
-            margin-top: 16px;
+            margin-top:
+                16px;
 
-            padding: 14px;
+            padding:
+                14px;
 
-            border: none;
+            border:
+                none;
 
-            border-radius: 10px;
+            border-radius:
+                10px;
 
             background:
                 linear-gradient(
@@ -1636,112 +3276,185 @@ function addOtpStyles() {
                     #d946ef
                 );
 
-            color: white;
+            color:
+                white;
 
-            font-size: 16px;
+            font-size:
+                16px;
 
-            font-weight: 700;
+            font-weight:
+                700;
 
-            cursor: pointer;
+            cursor:
+                pointer;
+
+            transition:
+                opacity 0.2s ease;
+
         }
 
 
         .votify-otp-button:disabled {
 
-            opacity: 0.65;
+            opacity:
+                0.65;
 
-            cursor: not-allowed;
+            cursor:
+                not-allowed;
+
         }
 
 
+        /* ==================================================
+           TIMER
+        ================================================== */
+
         .votify-otp-timer {
 
-            margin-top: 15px;
+            margin-top:
+                15px;
 
-            color: #94a3b8;
+            color:
+                #94a3b8;
 
-            font-size: 14px;
+            font-size:
+                14px;
+
         }
 
 
         .votify-otp-timer.expired {
 
-            color: #f87171;
+            color:
+                #f87171;
+
         }
 
 
+        /* ==================================================
+           RESEND
+        ================================================== */
+
         .votify-resend-button {
 
-            margin-top: 12px;
+            margin-top:
+                12px;
 
-            padding: 8px 15px;
+            padding:
+                8px 15px;
 
-            border: none;
+            border:
+                none;
 
-            background: transparent;
+            background:
+                transparent;
 
-            color: #60a5fa;
+            color:
+                #60a5fa;
 
-            cursor: pointer;
+            cursor:
+                pointer;
 
-            font-size: 14px;
+            font-size:
+                14px;
+
         }
 
 
         .votify-resend-button:disabled {
 
-            opacity: 0.5;
+            opacity:
+                0.5;
 
-            cursor: not-allowed;
-        }
-
-
-        .votify-otp-message {
-
-            min-height: 22px;
-
-            margin-top: 12px;
-
-            font-size: 14px;
+            cursor:
+                not-allowed;
 
         }
 
 
-        .votify-otp-message.error {
+        /* ==================================================
+           MOBILE RESPONSIVE
+        ================================================== */
 
-            color: #f87171;
+        @media (
+            max-width: 520px
+        ) {
+
+            .votify-otp-box {
+
+                max-width:
+                    100%;
+
+                padding:
+                    30px 18px;
+
+            }
+
+
+            .votify-otp-box h2 {
+
+                font-size:
+                    24px;
+
+            }
+
+
+            .votify-otp-boxes {
+
+                gap:
+                    7px;
+
+            }
+
+
+            .votify-otp-digit {
+
+                width:
+                    46px;
+
+                height:
+                    54px;
+
+                font-size:
+                    23px;
+
+                border-radius:
+                    10px;
+
+            }
+
         }
 
 
-        .votify-otp-message.success {
+        /* ==================================================
+           SMALL MOBILE
+        ================================================== */
 
-            color: #4ade80;
-        }
+        @media (
+            max-width: 360px
+        ) {
 
+            .votify-otp-boxes {
 
-        .login-message {
+                gap:
+                    5px;
 
-            margin-bottom: 15px;
-
-            padding: 12px;
-
-            border-radius: 8px;
-
-            font-size: 14px;
-
-        }
+            }
 
 
-        .login-message.error {
+            .votify-otp-digit {
 
-            color: #fecaca;
+                width:
+                    40px;
 
-            background:
-                rgba(239,68,68,0.12);
+                height:
+                    50px;
 
-            border:
-                1px solid
-                rgba(239,68,68,0.25);
+                font-size:
+                    21px;
+
+            }
+
         }
 
     `;
@@ -1750,4 +3463,10 @@ function addOtpStyles() {
     document.head.appendChild(
         style
     );
+
 }
+
+
+/* ==========================================================
+   END OF LOGIN.JS
+========================================================== */

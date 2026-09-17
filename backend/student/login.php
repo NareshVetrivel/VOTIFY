@@ -24,16 +24,23 @@
    4. Check attempts
    5. Verify OTP
    6. Create login session
-   7. Return dashboard URL
+   7. Return security check URL
+========================================================== */
+
+
+/* ==========================================================
+   SESSION
 ========================================================== */
 
 if (session_status() === PHP_SESSION_NONE) {
+
     session_start();
+
 }
 
 
 /* ==========================================================
-   RESPONSE
+   RESPONSE HEADER
 ========================================================== */
 
 header(
@@ -42,15 +49,10 @@ header(
 
 
 /* ==========================================================
-   DATABASE
+   REQUIRED FILES
 ========================================================== */
 
 require_once __DIR__ . "/../../config/database.php";
-
-
-/* ==========================================================
-   MAILER
-========================================================== */
 
 require_once __DIR__ . "/../../lib/mailer.php";
 
@@ -72,20 +74,24 @@ function response(
                 "message" => $message
             ],
             $extra
-        )
+        ),
+        JSON_UNESCAPED_UNICODE
     );
 
     exit();
+
 }
 
 
 /* ==========================================================
-   POST ONLY
+   POST REQUEST ONLY
 ========================================================== */
 
 if (
     ($_SERVER["REQUEST_METHOD"] ?? "") !== "POST"
 ) {
+
+    http_response_code(405);
 
     response(
         false,
@@ -101,16 +107,19 @@ if (
 
 $action =
     trim(
-        $_POST["action"] ?? "login"
+        (string)(
+            $_POST["action"] ?? "login"
+        )
     );
 
 
 /* ==========================================================
-   CLEAN INPUT
+   INPUT CLEANING
 ========================================================== */
 
-function cleanInput($value): string
-{
+function cleanInput(
+    $value
+): string {
 
     return trim(
         htmlspecialchars(
@@ -124,12 +133,95 @@ function cleanInput($value): string
 
 
 /* ==========================================================
+   ADMISSION NUMBER VALIDATION
+========================================================== */
+
+/*
+ * Official VOTIFY Admission Number format:
+ *
+ * Example:
+ * 25CAPMCA080
+ *
+ * Format:
+ * 2 digits + CAPMCA + 3 digits
+ */
+
+function isValidAdmissionNumber(
+    string $admissionNo
+): bool {
+
+    return preg_match(
+        '/^[0-9]{2}CAPMCA[0-9]{3}$/',
+        $admissionNo
+    ) === 1;
+
+}
+
+
+/* ==========================================================
+   COLLEGE EMAIL VALIDATION
+========================================================== */
+
+/*
+ * Only official Sona College email domain.
+ *
+ * Allowed:
+ * student@sonatech.ac.in
+ * student.25@sonatech.ac.in
+ *
+ * Not allowed:
+ * student@gmail.com
+ * student@yahoo.com
+ * student@outlook.com
+ */
+
+function isValidCollegeEmail(
+    string $email
+): bool {
+
+    return preg_match(
+        '/^[a-zA-Z0-9._%+-]+@sonatech\.ac\.in$/i',
+        $email
+    ) === 1;
+
+}
+
+
+/* ==========================================================
+   CLEAR LOGIN OTP SESSION
+========================================================== */
+
+function clearLoginOtpSession()
+{
+
+    unset(
+        $_SESSION["student_login_otp_hash"],
+        $_SESSION["student_login_otp_expires"],
+        $_SESSION["student_login_id"],
+        $_SESSION["student_login_name"],
+        $_SESSION["student_login_email"],
+        $_SESSION["student_login_admission_no"],
+        $_SESSION["student_login_department"],
+        $_SESSION["student_login_year"],
+        $_SESSION["student_login_attempts"],
+        $_SESSION["student_login_otp_pending"]
+    );
+
+}
+
+
+/* ==========================================================
    ==========================================================
-   VERIFY OTP
+   VERIFY LOGIN OTP
    ==========================================================
 ========================================================== */
 
 if ($action === "verify_otp") {
+
+
+    /* ======================================================
+       GET OTP
+    ====================================================== */
 
     $otp =
         cleanInput(
@@ -143,7 +235,7 @@ if ($action === "verify_otp") {
 
     if (
         !preg_match(
-            "/^[0-9]{6}$/",
+            '/^[0-9]{6}$/',
             $otp
         )
     ) {
@@ -186,7 +278,9 @@ if ($action === "verify_otp") {
         );
 
 
-    if ($expires <= time()) {
+    if (
+        $expires <= time()
+    ) {
 
         clearLoginOtpSession();
 
@@ -214,7 +308,9 @@ if ($action === "verify_otp") {
         );
 
 
-    if ($attempts >= 5) {
+    if (
+        $attempts >= 5
+    ) {
 
         clearLoginOtpSession();
 
@@ -228,7 +324,7 @@ if ($action === "verify_otp") {
 
 
     /* ======================================================
-       GET HASH
+       GET OTP HASH
     ====================================================== */
 
     $otpHash =
@@ -238,7 +334,7 @@ if ($action === "verify_otp") {
 
 
     /* ======================================================
-       VERIFY
+       VERIFY OTP
     ====================================================== */
 
     if (
@@ -289,7 +385,9 @@ if ($action === "verify_otp") {
         );
 
 
-    if ($studentId <= 0) {
+    if (
+        $studentId <= 0
+    ) {
 
         clearLoginOtpSession();
 
@@ -306,7 +404,9 @@ if ($action === "verify_otp") {
        REGENERATE SESSION ID
     ====================================================== */
 
-    session_regenerate_id(true);
+    session_regenerate_id(
+        true
+    );
 
 
     /* ======================================================
@@ -363,7 +463,7 @@ if ($action === "verify_otp") {
 
 
     /* ======================================================
-       SUCCESS
+       LOGIN SUCCESS
     ====================================================== */
 
     response(
@@ -372,8 +472,7 @@ if ($action === "verify_otp") {
         [
             "otp_verified" => true,
             "logged_in" => true,
-            "redirect" =>
-                "security_check.php"
+            "redirect" => "security_check.php"
         ]
     );
 
@@ -414,14 +513,18 @@ $collegeEmail =
 
 
 $password =
-    $_POST["password"] ?? "";
+    (string)(
+        $_POST["password"] ?? ""
+    );
 
 
 /* ==========================================================
    EMPTY VALIDATION
 ========================================================== */
 
-if ($admissionNo === "") {
+if (
+    $admissionNo === ""
+) {
 
     response(
         false,
@@ -431,7 +534,9 @@ if ($admissionNo === "") {
 }
 
 
-if ($dob === "") {
+if (
+    $dob === ""
+) {
 
     response(
         false,
@@ -441,7 +546,9 @@ if ($dob === "") {
 }
 
 
-if ($collegeEmail === "") {
+if (
+    $collegeEmail === ""
+) {
 
     response(
         false,
@@ -451,7 +558,9 @@ if ($collegeEmail === "") {
 }
 
 
-if ($password === "") {
+if (
+    $password === ""
+) {
 
     response(
         false,
@@ -462,26 +571,25 @@ if ($password === "") {
 
 
 /* ==========================================================
-   ADMISSION NUMBER
+   ADMISSION NUMBER FORMAT
 ========================================================== */
 
 if (
-    !preg_match(
-        "/^[A-Z0-9]{10,15}$/",
+    !isValidAdmissionNumber(
         $admissionNo
     )
 ) {
 
     response(
         false,
-        "Invalid Admission Number format."
+        "Invalid Admission Number format. Use the format 25CAPMCA080."
     );
 
 }
 
 
 /* ==========================================================
-   EMAIL
+   COLLEGE EMAIL FORMAT
 ========================================================== */
 
 if (
@@ -500,19 +608,18 @@ if (
 
 
 /* ==========================================================
-   EMAIL DOMAIN
+   COLLEGE EMAIL DOMAIN
 ========================================================== */
 
 if (
-    !preg_match(
-        "/@sonatech\.ac\.in$/i",
+    !isValidCollegeEmail(
         $collegeEmail
     )
 ) {
 
     response(
         false,
-        "Please use your official College Email ID."
+        "Please use only your official @sonatech.ac.in College Email ID."
     );
 
 }
@@ -556,7 +663,13 @@ $stmt =
     );
 
 
-if (!$stmt) {
+/* ==========================================================
+   PREPARE CHECK
+========================================================== */
+
+if (
+    !$stmt
+) {
 
     error_log(
         "VOTIFY LOGIN PREPARE ERROR: " .
@@ -573,7 +686,7 @@ if (!$stmt) {
 
 
 /* ==========================================================
-   BIND
+   BIND PARAMETERS
 ========================================================== */
 
 mysqli_stmt_bind_param(
@@ -586,11 +699,13 @@ mysqli_stmt_bind_param(
 
 
 /* ==========================================================
-   EXECUTE
+   EXECUTE QUERY
 ========================================================== */
 
 if (
-    !mysqli_stmt_execute($stmt)
+    !mysqli_stmt_execute(
+        $stmt
+    )
 ) {
 
     error_log(
@@ -599,7 +714,9 @@ if (
     );
 
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -611,7 +728,7 @@ if (
 
 
 /* ==========================================================
-   RESULT
+   GET RESULT
 ========================================================== */
 
 $result =
@@ -629,7 +746,9 @@ if (
     mysqli_num_rows($result) === 0
 ) {
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -641,7 +760,7 @@ if (
 
 
 /* ==========================================================
-   STUDENT
+   GET STUDENT
 ========================================================== */
 
 $student =
@@ -660,9 +779,13 @@ $emailVerified =
     );
 
 
-if ($emailVerified !== 1) {
+if (
+    $emailVerified !== 1
+) {
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -674,7 +797,7 @@ if ($emailVerified !== 1) {
 
 
 /* ==========================================================
-   STATUS
+   ACCOUNT STATUS
 ========================================================== */
 
 $status =
@@ -684,7 +807,7 @@ $status =
 
 
 /* ==========================================================
-   APPROVED
+   APPROVED STATUS REQUIRED
 ========================================================== */
 
 if (
@@ -701,7 +824,9 @@ if (
         ) === 0
     ) {
 
-        mysqli_stmt_close($stmt);
+        mysqli_stmt_close(
+            $stmt
+        );
 
 
         response(
@@ -712,6 +837,13 @@ if (
     }
 
 
+    /*
+     * Legacy rejected records are handled here
+     * for backward compatibility.
+     *
+     * New rejection flow deletes rejected records.
+     */
+
     if (
         strcasecmp(
             $status,
@@ -719,7 +851,9 @@ if (
         ) === 0
     ) {
 
-        mysqli_stmt_close($stmt);
+        mysqli_stmt_close(
+            $stmt
+        );
 
 
         response(
@@ -730,7 +864,9 @@ if (
     }
 
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -751,6 +887,10 @@ $voteStatus =
     );
 
 
+/* ==========================================================
+   UNVOTED REQUIRED
+========================================================== */
+
 if (
     strcasecmp(
         $voteStatus,
@@ -765,7 +905,9 @@ if (
         ) === 0
     ) {
 
-        mysqli_stmt_close($stmt);
+        mysqli_stmt_close(
+            $stmt
+        );
 
 
         response(
@@ -779,7 +921,9 @@ if (
     }
 
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -791,7 +935,7 @@ if (
 
 
 /* ==========================================================
-   PASSWORD
+   PASSWORD VERIFICATION
 ========================================================== */
 
 $storedPassword =
@@ -805,7 +949,9 @@ if (
     )
 ) {
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -817,7 +963,7 @@ if (
 
 
 /* ==========================================================
-   GENERATE OTP
+   GENERATE SECURE OTP
 ========================================================== */
 
 try {
@@ -829,7 +975,9 @@ try {
             999999
         );
 
-} catch (Throwable $e) {
+} catch (
+    Throwable $e
+) {
 
     error_log(
         "VOTIFY OTP GENERATION ERROR: " .
@@ -837,7 +985,9 @@ try {
     );
 
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
 
     response(
@@ -858,7 +1008,7 @@ $otpExpires =
 
 
 /* ==========================================================
-   CLEAR OLD OTP
+   CLEAR PREVIOUS LOGIN OTP
 ========================================================== */
 
 clearLoginOtpSession();
@@ -884,7 +1034,7 @@ $_SESSION[
 
 
 /* ==========================================================
-   STORE STUDENT
+   STORE STUDENT LOGIN INFORMATION
 ========================================================== */
 
 $_SESSION[
@@ -936,14 +1086,16 @@ $_SESSION[
 
 
 /* ==========================================================
-   CLOSE DB
+   CLOSE DATABASE STATEMENT
 ========================================================== */
 
-mysqli_stmt_close($stmt);
+mysqli_stmt_close(
+    $stmt
+);
 
 
 /* ==========================================================
-   SEND OTP
+   SEND LOGIN OTP
 ========================================================== */
 
 $mailResult =
@@ -956,7 +1108,7 @@ $mailResult =
 
 
 /* ==========================================================
-   EMAIL FAILED
+   EMAIL SEND FAILURE
 ========================================================== */
 
 if (
@@ -979,7 +1131,7 @@ if (
 
 
 /* ==========================================================
-   MASK EMAIL
+   MASK COLLEGE EMAIL
 ========================================================== */
 
 function maskCollegeEmail(
@@ -1006,15 +1158,20 @@ function maskCollegeEmail(
     $local =
         $parts[0];
 
+
     $domain =
         $parts[1];
 
 
     $length =
-        strlen($local);
+        strlen(
+            $local
+        );
 
 
-    if ($length <= 2) {
+    if (
+        $length <= 2
+    ) {
 
         $maskedLocal =
             substr(
@@ -1062,7 +1219,7 @@ $maskedEmail =
 
 
 /* ==========================================================
-   OTP SENT
+   OTP SENT RESPONSE
 ========================================================== */
 
 response(
@@ -1075,28 +1232,5 @@ response(
         "email" => $maskedEmail
     ]
 );
-
-
-/* ==========================================================
-   CLEAR LOGIN OTP SESSION
-========================================================== */
-
-function clearLoginOtpSession()
-{
-
-    unset(
-        $_SESSION["student_login_otp_hash"],
-        $_SESSION["student_login_otp_expires"],
-        $_SESSION["student_login_id"],
-        $_SESSION["student_login_name"],
-        $_SESSION["student_login_email"],
-        $_SESSION["student_login_admission_no"],
-        $_SESSION["student_login_department"],
-        $_SESSION["student_login_year"],
-        $_SESSION["student_login_attempts"],
-        $_SESSION["student_login_otp_pending"]
-    );
-
-}
 
 ?>
