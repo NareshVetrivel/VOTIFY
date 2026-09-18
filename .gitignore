@@ -25,3 +25,6 @@ project_tree.txt
 # Test files
 test.html
 test.php
+
+# Local email credentials
+config/email.local.php
