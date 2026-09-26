@@ -3,43 +3,67 @@
    VOTIFY
    Database Configuration
    File : config/database.php
-   Environment : Aiven Cloud MySQL
+   Environment : ByetHost MySQL
 ========================================================== */
 
 date_default_timezone_set("Asia/Kolkata");
 
 
 /* ==========================================================
-   DATABASE SETTINGS
+   LOAD LOCAL / PRODUCTION DATABASE CONFIGURATION
 ========================================================== */
 
-$host = "votify-mysql-votify.g.aivencloud.com";
-$port = 19516;
-$username = "avnadmin";
-$database = "votify";
-
-
 /*
- * Aiven password
- *
  * IMPORTANT:
- * Do NOT hard-code the password here.
+ * database.local.php contains sensitive database credentials.
  *
- * Windows PowerShell:
+ * This file is excluded from Git using .gitignore.
  *
- * $env:VOTIFY_DB_PASSWORD="YOUR_AIVEN_PASSWORD"
- *
- * Then restart Apache from XAMPP.
+ * Do NOT put database credentials directly inside this file.
  */
 
-$password = getenv("VOTIFY_DB_PASSWORD");
+$localConfig = __DIR__ . "/database.local.php";
+
+if (!file_exists($localConfig)) {
+
+    error_log(
+        "VOTIFY Database Error: database.local.php is missing."
+    );
+
+    http_response_code(500);
+
+    die(
+        "Database configuration is missing. " .
+        "Please contact the administrator."
+    );
+}
+
+require_once $localConfig;
 
 
 /* ==========================================================
-   AIVEN CA CERTIFICATE
+   DATABASE SETTINGS VALIDATION
 ========================================================== */
 
-$caFile = __DIR__ . DIRECTORY_SEPARATOR . "ca.pem";
+if (
+    !isset($host) ||
+    !isset($port) ||
+    !isset($username) ||
+    !isset($password) ||
+    !isset($database)
+) {
+
+    error_log(
+        "VOTIFY Database Error: incomplete database configuration."
+    );
+
+    http_response_code(500);
+
+    die(
+        "Database configuration is incomplete. " .
+        "Please contact the administrator."
+    );
+}
 
 
 /* ==========================================================
@@ -50,11 +74,8 @@ function votifyDatabaseUnavailable(
     string $message = "Database service is currently unavailable."
 ): void {
 
-    $requestUri =
-        $_SERVER["REQUEST_URI"] ?? "";
-
-    $scriptName =
-        $_SERVER["SCRIPT_NAME"] ?? "";
+    $requestUri = $_SERVER["REQUEST_URI"] ?? "";
+    $scriptName = $_SERVER["SCRIPT_NAME"] ?? "";
 
     $isBackendRequest =
         strpos($requestUri, "/backend/") !== false ||
@@ -73,14 +94,12 @@ function votifyDatabaseUnavailable(
             "Content-Type: application/json; charset=UTF-8"
         );
 
-        echo json_encode(
-            [
-                "success" => false,
-                "status" => "database_unavailable",
-                "message" =>
-                    "VOTIFY database service is currently unavailable. Please try again later."
-            ]
-        );
+        echo json_encode([
+            "success" => false,
+            "status" => "database_unavailable",
+            "message" =>
+                "VOTIFY database service is currently unavailable. Please try again later."
+        ]);
 
         exit;
     }
@@ -92,22 +111,16 @@ function votifyDatabaseUnavailable(
 
     http_response_code(503);
 
-    $currentScript =
-        basename(
-            $_SERVER["SCRIPT_FILENAME"] ?? ""
-        );
+    $currentScript = basename(
+        $_SERVER["SCRIPT_FILENAME"] ?? ""
+    );
 
-
-    if (
-        $currentScript ===
-        "database-unavailable.php"
-    ) {
+    if ($currentScript === "database-unavailable.php") {
         exit;
     }
 
-
     header(
-        "Location: /VOTIFY/pages/database-unavailable.php"
+        "Location: /pages/database-unavailable.php"
     );
 
     exit;
@@ -115,48 +128,10 @@ function votifyDatabaseUnavailable(
 
 
 /* ==========================================================
-   CHECK PASSWORD
-========================================================== */
-
-if (
-    $password === false ||
-    trim($password) === ""
-) {
-
-    error_log(
-        "VOTIFY Database Error: VOTIFY_DB_PASSWORD is not configured."
-    );
-
-    votifyDatabaseUnavailable(
-        "Database password is not configured."
-    );
-}
-
-
-/* ==========================================================
-   CHECK CA CERTIFICATE
-========================================================== */
-
-if (!is_file($caFile)) {
-
-    error_log(
-        "VOTIFY Database Error: Aiven CA certificate not found: " .
-        $caFile
-    );
-
-    votifyDatabaseUnavailable(
-        "Aiven CA certificate is missing."
-    );
-}
-
-
-/* ==========================================================
    MYSQLI
 ========================================================== */
 
-mysqli_report(
-    MYSQLI_REPORT_OFF
-);
+mysqli_report(MYSQLI_REPORT_OFF);
 
 
 /* ==========================================================
@@ -164,7 +139,6 @@ mysqli_report(
 ========================================================== */
 
 $conn = mysqli_init();
-
 
 if (!$conn) {
 
@@ -182,47 +156,14 @@ if (!$conn) {
    CONNECTION TIMEOUT
 ========================================================== */
 
-if (
-    !$conn->options(
-        MYSQLI_OPT_CONNECT_TIMEOUT,
-        15
-    )
-) {
-
-    error_log(
-        "VOTIFY Database Error: Unable to set connection timeout."
-    );
-}
+$conn->options(
+    MYSQLI_OPT_CONNECT_TIMEOUT,
+    15
+);
 
 
 /* ==========================================================
-   AIVEN SSL/TLS
-========================================================== */
-
-if (
-    !$conn->ssl_set(
-        null,
-        null,
-        $caFile,
-        null,
-        null
-    )
-) {
-
-    error_log(
-        "VOTIFY Database Error: Aiven SSL configuration failed."
-    );
-
-    @$conn->close();
-
-    votifyDatabaseUnavailable(
-        "Unable to configure secure database connection."
-    );
-}
-
-
-/* ==========================================================
-   CONNECT TO AIVEN
+   CONNECT TO BYETHOST MYSQL
 ========================================================== */
 
 $connected = @$conn->real_connect(
@@ -230,9 +171,7 @@ $connected = @$conn->real_connect(
     $username,
     $password,
     $database,
-    $port,
-    null,
-    MYSQLI_CLIENT_SSL
+    $port
 );
 
 
@@ -249,18 +188,15 @@ if (
         $conn->connect_error ??
         "Unknown database connection error.";
 
-
     error_log(
-        "VOTIFY Aiven MySQL Connection Failed: " .
+        "VOTIFY MySQL Connection Failed: " .
         $errorMessage
     );
 
-
     @$conn->close();
 
-
     votifyDatabaseUnavailable(
-        $errorMessage
+        "Database connection failed."
     );
 }
 
@@ -269,18 +205,14 @@ if (
    CHARACTER SET
 ========================================================== */
 
-if (
-    !$conn->set_charset("utf8mb4")
-) {
+if (!$conn->set_charset("utf8mb4")) {
 
     error_log(
         "VOTIFY Database Character Set Error: " .
         $conn->error
     );
 
-
     @$conn->close();
-
 
     http_response_code(500);
 
@@ -288,14 +220,12 @@ if (
         "Content-Type: application/json; charset=UTF-8"
     );
 
-    echo json_encode(
-        [
-            "success" => false,
-            "status" => "database_error",
-            "message" =>
-                "Unable to set database character encoding."
-        ]
-    );
+    echo json_encode([
+        "success" => false,
+        "status" => "database_error",
+        "message" =>
+            "Unable to set database character encoding."
+    ]);
 
     exit;
 }
@@ -306,17 +236,12 @@ if (
 ========================================================== */
 
 /*
- * A valid Aiven MySQL connection is now available:
+ * Active database connection:
  *
  * $conn
  *
- * Example:
- *
- * mysqli_query($conn, "SELECT 1");
- * mysqli_prepare($conn, $query);
- * mysqli_begin_transaction($conn);
- * mysqli_commit($conn);
- * mysqli_rollback($conn);
+ * PHP timezone:
+ * Asia/Kolkata
  */
 
 

@@ -2129,58 +2129,33 @@ endif;
 ================================================= -->
 
 <td
-
-class="
-
-px-6
-
-py-5
-
-text-center"
-
+    class="
+    px-6
+    py-5
+    text-center"
 >
 
-<img
-
-src="../../uploads/candidates/<?php
-
-echo htmlspecialchars(
-
-    $candidate["photo"]
-
-);
-
-?>"
-
-alt="<?php
-
-echo htmlspecialchars(
-
-    $candidate["full_name"]
-
-);
-
-?>"
-
-class="
-
-w-14
-
-h-14
-
-rounded-xl
-
-object-cover
-
-mx-auto
-
-border
-
-border-white/10
-
-"
-
->
+    <img
+        src="../../backend/candidate-photo.php?id=<?php
+            echo urlencode(
+                $candidate["id"]
+            );
+        ?>"
+        alt="<?php
+            echo htmlspecialchars(
+                $candidate["full_name"]
+            );
+        ?>"
+        class="
+        w-14
+        h-14
+        rounded-xl
+        object-cover
+        mx-auto
+        border
+        border-white/10
+        "
+    >
 
 </td>
 
@@ -2780,6 +2755,17 @@ Try changing your search or year filter.
 
 
 <!-- =====================================================
+     TOAST
+===================================================== -->
+
+<?php
+
+include "../../components/toast.php";
+
+?>
+
+
+<!-- =====================================================
      FOOTER
 ===================================================== -->
 
@@ -2791,6 +2777,8 @@ Try changing your search or year filter.
 ===================================================== -->
 
 <script src="../../assets/js/app.js"></script>
+
+<script src="../../assets/js/toast.js"></script>
 
 <script src="../../assets/js/canvassing.js"></script>
 

@@ -80,10 +80,10 @@
                 absolute
                 top-0
                 left-0
-                w-96
-                h-96
-                bg-blue-600/20
-                blur-[140px]
+                w-80
+                h-80
+                bg-blue-600/15
+                blur-[130px]
                 rounded-full
             ">
         </div>
@@ -94,10 +94,10 @@
                 absolute
                 bottom-0
                 right-0
-                w-96
-                h-96
-                bg-pink-600/20
-                blur-[150px]
+                w-80
+                h-80
+                bg-pink-600/15
+                blur-[140px]
                 rounded-full
             ">
         </div>
@@ -108,10 +108,10 @@
                 absolute
                 top-1/2
                 left-1/2
-                w-80
-                h-80
-                bg-purple-600/20
-                blur-[120px]
+                w-72
+                h-72
+                bg-purple-600/15
+                blur-[110px]
                 rounded-full
                 -translate-x-1/2
                 -translate-y-1/2
@@ -138,8 +138,10 @@
             flex
             items-center
             justify-center
-            py-14
-            px-6
+            py-6
+            sm:py-8
+            px-4
+            sm:px-6
         ">
 
 
@@ -157,21 +159,18 @@
             <div
                 class="
                     text-center
-                    mb-10
+                    mb-6
                 ">
 
                 <h1
                     class="
-                        mt-6
-                        text-4xl
-                        md:text-5xl
+                        text-3xl
+                        sm:text-4xl
                         font-bold
                     ">
 
                     <span class="gradient-text">
-
                         Admin Login
-
                     </span>
 
                 </h1>
@@ -179,7 +178,9 @@
 
                 <p
                     class="
-                        mt-4
+                        mt-2
+                        text-sm
+                        sm:text-base
                         text-slate-400
                     ">
 
@@ -198,9 +199,11 @@
                 class="
                     glass
                     rounded-3xl
-                    p-8
-                    md:p-10
-                    shadow-2xl
+                    p-6
+                    sm:p-7
+                    border
+                    border-white/10
+                    shadow-[0_20px_60px_rgba(0,0,0,.25)]
                 ">
 
 
@@ -210,7 +213,7 @@
 
                 <form
                     id="adminLoginForm"
-                    class="space-y-7">
+                    class="space-y-5">
 
 
                     <!-- ==========================================
@@ -224,6 +227,8 @@
                             class="
                                 block
                                 mb-2
+                                text-sm
+                                sm:text-base
                                 font-medium
                                 text-slate-300
                             ">
@@ -248,7 +253,7 @@
                                 autocomplete="off"
                                 class="
                                     w-full
-                                    h-14
+                                    h-[52px]
                                     pl-12
                                     pr-5
                                     rounded-xl
@@ -306,6 +311,8 @@
                             class="
                                 block
                                 mb-2
+                                text-sm
+                                sm:text-base
                                 font-medium
                                 text-slate-300
                             ">
@@ -328,7 +335,7 @@
                                 placeholder="Enter Password"
                                 class="
                                     w-full
-                                    h-14
+                                    h-[52px]
                                     pl-12
                                     pr-14
                                     rounded-xl
@@ -367,7 +374,7 @@
                                 aria-label="Show or hide password"
                                 class="
                                     absolute
-                                    right-5
+                                    right-4
                                     top-1/2
                                     -translate-y-1/2
                                     text-slate-400
@@ -411,9 +418,10 @@
                         class="
                             btn-primary
                             w-full
-                            py-4
+                            py-3.5
                             rounded-xl
-                            text-lg
+                            text-base
+                            sm:text-lg
                             font-semibold
                             flex
                             items-center
@@ -455,15 +463,19 @@
         id="successToast"
         class="
             fixed
-            top-6
-            right-6
+            top-4
+            right-4
+            sm:top-6
+            sm:right-6
             translate-x-[120%]
             transition-all
             duration-500
             bg-green-600
             text-white
-            px-6
-            py-4
+            px-5
+            py-3
+            sm:px-6
+            sm:py-4
             rounded-xl
             shadow-2xl
             z-[9999]
@@ -487,9 +499,7 @@
             <div>
 
                 <p class="font-semibold">
-
                     Login Successful
-
                 </p>
 
 
@@ -518,15 +528,19 @@
         id="errorToast"
         class="
             fixed
-            top-6
-            right-6
+            top-4
+            right-4
+            sm:top-6
+            sm:right-6
             translate-x-[120%]
             transition-all
             duration-500
             bg-red-600
             text-white
-            px-6
-            py-4
+            px-5
+            py-3
+            sm:px-6
+            sm:py-4
             rounded-xl
             shadow-2xl
             z-[9999]
@@ -550,9 +564,7 @@
             <div>
 
                 <p class="font-semibold">
-
                     Login Failed
-
                 </p>
 
 

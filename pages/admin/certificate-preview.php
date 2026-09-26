@@ -39,6 +39,806 @@ require_once "../../config/database.php";
 
 /** @var mysqli $conn */
 
+
+/* ==========================================================
+   CERTIFICATE ACCESS CONTROL
+========================================================== */
+
+/*
+ * Certificate results are available ONLY after the election
+ * has been stopped.
+ *
+ * This is a SERVER-SIDE security check.
+ *
+ * Frontend button locking alone is not sufficient because
+ * an admin could directly open:
+ *
+ * pages/admin/certificate-preview.php
+ *
+ * Therefore:
+ *
+ * Ready   -> BLOCK
+ * Started -> BLOCK
+ * Stopped -> ALLOW
+ *
+ * If the database/status check fails, access is denied
+ * (fail-closed security behaviour).
+ */
+
+$certificateElectionStatus = null;
+
+
+/* ==========================================================
+   FETCH CURRENT ELECTION STATUS
+========================================================== */
+
+$statusStmt = mysqli_prepare(
+    $conn,
+    "
+        SELECT election_status
+        FROM election_settings
+        WHERE id = 1
+        LIMIT 1
+    "
+);
+
+
+if (!$statusStmt) {
+
+    http_response_code(500);
+
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+        <title>VOTIFY | Certificate Unavailable</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background: #080d1c;
+                color: #ffffff;
+                font-family:
+                    Inter,
+                    Arial,
+                    Helvetica,
+                    sans-serif;
+            }
+
+            .access-card {
+                width: 100%;
+                max-width: 520px;
+                padding: 36px 30px;
+                text-align: center;
+                border: 1px solid rgba(255,255,255,0.10);
+                border-radius: 22px;
+                background:
+                    linear-gradient(
+                        145deg,
+                        #11182b,
+                        #0b1223
+                    );
+                box-shadow:
+                    0 25px 70px rgba(0,0,0,0.45);
+            }
+
+            .icon {
+                width: 68px;
+                height: 68px;
+                margin: 0 auto 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(239,68,68,0.12);
+                border: 1px solid rgba(239,68,68,0.28);
+                color: #f87171;
+                font-size: 30px;
+            }
+
+            h1 {
+                margin: 0 0 10px;
+                font-size: 25px;
+            }
+
+            p {
+                margin: 0;
+                color: #94a3b8;
+                line-height: 1.7;
+                font-size: 15px;
+            }
+
+            .back-btn {
+                display: inline-flex;
+                margin-top: 24px;
+                padding: 12px 20px;
+                border-radius: 12px;
+                text-decoration: none;
+                color: #ffffff;
+                font-weight: 700;
+                background:
+                    linear-gradient(
+                        100deg,
+                        #2563eb,
+                        #9333ea,
+                        #ec4899
+                    );
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="access-card">
+
+            <div class="icon">!</div>
+
+            <h1>Certificate Unavailable</h1>
+
+            <p>
+                VOTIFY could not verify the current election status.
+                Please return to the Canvassing Reports page and try again.
+            </p>
+
+            <a
+                class="back-btn"
+                href="canvassing.php"
+            >
+                Back to Canvassing Reports
+            </a>
+
+        </div>
+
+    </body>
+    </html>
+    <?php
+
+    exit();
+
+}
+
+
+mysqli_stmt_bind_result(
+    $statusStmt,
+    $certificateElectionStatus
+);
+
+
+if (
+    !mysqli_stmt_execute($statusStmt)
+    ||
+    !mysqli_stmt_fetch($statusStmt)
+) {
+
+    mysqli_stmt_close($statusStmt);
+
+    http_response_code(500);
+
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+        <title>VOTIFY | Certificate Unavailable</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background: #080d1c;
+                color: #ffffff;
+                font-family:
+                    Inter,
+                    Arial,
+                    Helvetica,
+                    sans-serif;
+            }
+
+            .access-card {
+                width: 100%;
+                max-width: 520px;
+                padding: 36px 30px;
+                text-align: center;
+                border: 1px solid rgba(255,255,255,0.10);
+                border-radius: 22px;
+                background:
+                    linear-gradient(
+                        145deg,
+                        #11182b,
+                        #0b1223
+                    );
+                box-shadow:
+                    0 25px 70px rgba(0,0,0,0.45);
+            }
+
+            .icon {
+                width: 68px;
+                height: 68px;
+                margin: 0 auto 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(239,68,68,0.12);
+                border: 1px solid rgba(239,68,68,0.28);
+                color: #f87171;
+                font-size: 30px;
+            }
+
+            h1 {
+                margin: 0 0 10px;
+                font-size: 25px;
+            }
+
+            p {
+                margin: 0;
+                color: #94a3b8;
+                line-height: 1.7;
+                font-size: 15px;
+            }
+
+            .back-btn {
+                display: inline-flex;
+                margin-top: 24px;
+                padding: 12px 20px;
+                border-radius: 12px;
+                text-decoration: none;
+                color: #ffffff;
+                font-weight: 700;
+                background:
+                    linear-gradient(
+                        100deg,
+                        #2563eb,
+                        #9333ea,
+                        #ec4899
+                    );
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="access-card">
+
+            <div class="icon">!</div>
+
+            <h1>Certificate Unavailable</h1>
+
+            <p>
+                VOTIFY could not verify the current election status.
+                Certificate access has been blocked for security.
+            </p>
+
+            <a
+                class="back-btn"
+                href="canvassing.php"
+            >
+                Back to Canvassing Reports
+            </a>
+
+        </div>
+
+    </body>
+    </html>
+    <?php
+
+    exit();
+
+}
+
+
+mysqli_stmt_close($statusStmt);
+
+
+/* ==========================================================
+   NORMALIZE STATUS
+========================================================== */
+
+$certificateElectionStatus =
+    trim(
+        (string) $certificateElectionStatus
+    );
+
+
+/* ==========================================================
+   ONLY STOPPED ELECTION MAY VIEW CERTIFICATE
+========================================================== */
+
+if (
+    $certificateElectionStatus !== "Stopped"
+) {
+
+    http_response_code(403);
+
+    $isRunning =
+        $certificateElectionStatus === "Started";
+
+    $accessTitle =
+        $isRunning
+            ? "Certificate Export Disabled"
+            : "Certificate Not Available Yet";
+
+    $accessMessage =
+        $isRunning
+            ? "Certificate viewing and downloading are disabled while the election is running. Results and certificates will be available after the election is stopped."
+            : "The election has not been stopped yet. The official certificate will be available only after the election is stopped.";
+
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+
+        <meta charset="UTF-8">
+
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+
+        <title>
+            VOTIFY | <?= htmlspecialchars(
+                $accessTitle,
+                ENT_QUOTES,
+                "UTF-8"
+            ); ?>
+        </title>
+
+        <style>
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                margin: 0;
+                min-height: 100%;
+            }
+
+            body {
+
+                min-height: 100vh;
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                padding: 24px;
+
+                background:
+
+                    radial-gradient(
+                        circle at top,
+                        rgba(37,99,235,0.16),
+                        transparent 40%
+                    ),
+
+                    #080d1c;
+
+                color: #ffffff;
+
+                font-family:
+                    Inter,
+                    Arial,
+                    Helvetica,
+                    sans-serif;
+
+            }
+
+
+            .access-wrapper {
+
+                width: 100%;
+
+                max-width: 560px;
+
+            }
+
+
+            .access-card {
+
+                position: relative;
+
+                overflow: hidden;
+
+                padding: 42px 32px 34px;
+
+                text-align: center;
+
+                border:
+
+                    1px solid
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.10
+                    );
+
+                border-radius: 24px;
+
+                background:
+
+                    linear-gradient(
+                        145deg,
+                        rgba(17,24,43,0.98),
+                        rgba(8,15,31,0.98)
+                    );
+
+                box-shadow:
+
+                    0 30px 90px
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0.48
+                    );
+
+            }
+
+
+            .access-card::before {
+
+                content: "";
+
+                position: absolute;
+
+                left: 0;
+
+                right: 0;
+
+                top: 0;
+
+                height: 4px;
+
+                background:
+
+                    linear-gradient(
+                        90deg,
+                        #2563eb,
+                        #9333ea,
+                        #ec4899
+                    );
+
+            }
+
+
+            .access-icon {
+
+                width: 76px;
+
+                height: 76px;
+
+                margin: 0 auto 22px;
+
+                display: flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                border-radius: 50%;
+
+                background:
+
+                    rgba(
+                        245,
+                        158,
+                        11,
+                        0.10
+                    );
+
+                border:
+
+                    1px solid
+                    rgba(
+                        245,
+                        158,
+                        11,
+                        0.30
+                    );
+
+                color: #fbbf24;
+
+                font-size: 34px;
+
+                font-weight: 800;
+
+            }
+
+
+            .access-label {
+
+                margin: 0 0 9px;
+
+                color: #64748b;
+
+                font-size: 11px;
+
+                font-weight: 800;
+
+                letter-spacing: 2px;
+
+                text-transform: uppercase;
+
+            }
+
+
+            h1 {
+
+                margin: 0 0 14px;
+
+                color: #ffffff;
+
+                font-size: 27px;
+
+                line-height: 1.2;
+
+                font-weight: 800;
+
+            }
+
+
+            .access-message {
+
+                margin: 0 auto;
+
+                max-width: 470px;
+
+                color: #94a3b8;
+
+                font-size: 15px;
+
+                line-height: 1.75;
+
+            }
+
+
+            .status-pill {
+
+                display: inline-flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                margin-top: 22px;
+
+                padding: 8px 13px;
+
+                border-radius: 999px;
+
+                background:
+                    rgba(
+                        245,
+                        158,
+                        11,
+                        0.10
+                    );
+
+                border:
+                    1px solid
+                    rgba(
+                        245,
+                        158,
+                        11,
+                        0.24
+                    );
+
+                color: #fbbf24;
+
+                font-size: 11px;
+
+                font-weight: 800;
+
+                letter-spacing: 0.8px;
+
+                text-transform: uppercase;
+
+            }
+
+
+            .back-btn {
+
+                display: inline-flex;
+
+                align-items: center;
+
+                justify-content: center;
+
+                margin-top: 28px;
+
+                min-height: 48px;
+
+                padding:
+                    0 22px;
+
+                border-radius: 13px;
+
+                text-decoration: none;
+
+                color: #ffffff;
+
+                font-size: 14px;
+
+                font-weight: 800;
+
+                background:
+
+                    linear-gradient(
+                        100deg,
+                        #2563eb 0%,
+                        #4f46e5 30%,
+                        #9333ea 65%,
+                        #ec4899 100%
+                    );
+
+                box-shadow:
+
+                    0 10px 28px
+                    rgba(
+                        37,
+                        99,
+                        235,
+                        0.20
+                    );
+
+            }
+
+
+            .back-btn:hover {
+
+                filter: brightness(1.06);
+
+            }
+
+
+            @media (max-width: 600px) {
+
+                body {
+
+                    padding: 16px;
+
+                }
+
+
+                .access-card {
+
+                    padding:
+                        36px 22px 28px;
+
+                    border-radius: 20px;
+
+                }
+
+
+                h1 {
+
+                    font-size: 23px;
+
+                }
+
+
+                .access-message {
+
+                    font-size: 14px;
+
+                }
+
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <main class="access-wrapper">
+
+            <section
+                class="access-card"
+                role="alert"
+                aria-live="polite"
+            >
+
+                <div
+                    class="access-icon"
+                    aria-hidden="true"
+                >
+                    !
+                </div>
+
+
+                <p class="access-label">
+
+                    VOTIFY Election System
+
+                </p>
+
+
+                <h1>
+
+                    <?= htmlspecialchars(
+                        $accessTitle,
+                        ENT_QUOTES,
+                        "UTF-8"
+                    ); ?>
+
+                </h1>
+
+
+                <p class="access-message">
+
+                    <?= htmlspecialchars(
+                        $accessMessage,
+                        ENT_QUOTES,
+                        "UTF-8"
+                    ); ?>
+
+                </p>
+
+
+                <div class="status-pill">
+
+                    Election Status:
+                    <?= htmlspecialchars(
+                        $certificateElectionStatus,
+                        ENT_QUOTES,
+                        "UTF-8"
+                    ); ?>
+
+                </div>
+
+
+                <a
+                    href="canvassing.php"
+                    class="back-btn"
+                >
+                    Back to Canvassing Reports
+                </a>
+
+            </section>
+
+        </main>
+
+    </body>
+    </html>
+    <?php
+
+    exit();
+
+}
+
+
 /* ==========================================================
    BASIC ELECTION INFORMATION
 ========================================================== */
@@ -168,38 +968,378 @@ $jointSecretary =
 
 
 /* ==========================================================
-   RESULT ID
+   OFFICIAL RESULT PUBLICATION / VERIFICATION TOKEN
 ========================================================== */
 
-$resultId =
+/*
+ * The certificate is generated only after the election is
+ * Stopped. At that point we create/reuse the current official
+ * result snapshot in election_results.
+ *
+ * Single-current-election model:
+ *
+ * - Only one result is kept as Published.
+ * - When a new election starts, its previous Published result
+ *   is no longer considered current.
+ * - When the new election is stopped and the certificate is
+ *   opened, a fresh snapshot/token is created.
+ *
+ * The QR code therefore contains a real public verification URL
+ * instead of plain text.
+ */
 
-    "VOTIFY-" .
+$resultId = "";
+$resultVerificationUrl = "";
+$resultPublishedAt = null;
+$resultPublicationError = null;
 
-    date("Y") .
 
-    "-" .
+/* ----------------------------------------------------------
+   FIND THE LATEST ELECTION START EVENT
+---------------------------------------------------------- */
 
-    strtoupper(
+$latestElectionStart = null;
 
-        substr(
+$startStmt = mysqli_prepare(
+    $conn,
+    "
+        SELECT created_at
+        FROM admin_logs
+        WHERE action = 'Election Started'
+        ORDER BY created_at DESC
+        LIMIT 1
+    "
+);
 
-            hash(
+if ($startStmt) {
 
-                "sha256",
-
-                uniqid(
-                    "",
-                    true
-                )
-
-            ),
-
-            0,
-            8
-
-        )
-
+    mysqli_stmt_bind_result(
+        $startStmt,
+        $latestElectionStart
     );
+
+    if (!mysqli_stmt_execute($startStmt)) {
+        $latestElectionStart = null;
+    } else {
+        mysqli_stmt_fetch($startStmt);
+    }
+
+    mysqli_stmt_close($startStmt);
+}
+
+
+/* ----------------------------------------------------------
+   BUILD OFFICIAL RESULT SNAPSHOT
+---------------------------------------------------------- */
+
+$resultSnapshotCandidates = [];
+
+foreach ($candidates as $index => $candidate) {
+
+    $rank = $index + 1;
+
+    if ($rank === 1) {
+        $position = "Chairman";
+    } elseif ($rank === 2) {
+        $position = "Vice-Chairman";
+    } elseif ($rank === 3) {
+        $position = "Joint Secretary";
+    } else {
+        $position = "Candidate";
+    }
+
+    $resultSnapshotCandidates[] = [
+        "rank" => $rank,
+        "position" => $position,
+        "candidate" => (string) $candidate["full_name"],
+        "year" => (string) $candidate["year"],
+        "votes" => (int) $candidate["votes"],
+        "percentage" => round(
+            (float) $candidate["percentage"],
+            2
+        )
+    ];
+}
+
+$resultSnapshot = [
+    "positions" => $resultSnapshotCandidates,
+    "total_votes" => (int) $totalVotes
+];
+
+$resultSnapshotJson = json_encode(
+    $resultSnapshot,
+    JSON_UNESCAPED_UNICODE |
+    JSON_UNESCAPED_SLASHES |
+    JSON_THROW_ON_ERROR
+);
+
+
+/* ----------------------------------------------------------
+   LOOK FOR CURRENTLY PUBLISHED RESULT
+---------------------------------------------------------- */
+
+$currentPublishedId = null;
+$currentPublishedToken = null;
+$currentPublishedAt = null;
+$currentPublishedData = null;
+
+$currentResultStmt = mysqli_prepare(
+    $conn,
+    "
+        SELECT
+            id,
+            result_token,
+            published_at,
+            result_data
+        FROM election_results
+        WHERE status = 'Published'
+        ORDER BY id DESC
+        LIMIT 1
+    "
+);
+
+if ($currentResultStmt) {
+
+    mysqli_stmt_bind_result(
+        $currentResultStmt,
+        $currentPublishedId,
+        $currentPublishedToken,
+        $currentPublishedAt,
+        $currentPublishedData
+    );
+
+    if (!mysqli_stmt_execute($currentResultStmt)) {
+        $currentPublishedId = null;
+        $currentPublishedToken = null;
+        $currentPublishedAt = null;
+        $currentPublishedData = null;
+    } else {
+        mysqli_stmt_fetch($currentResultStmt);
+    }
+
+    mysqli_stmt_close($currentResultStmt);
+}
+
+
+/* ----------------------------------------------------------
+   DECIDE WHETHER CURRENT RESULT CAN BE REUSED
+---------------------------------------------------------- */
+
+$reusePublishedResult = false;
+
+if (
+    $currentPublishedId !== null &&
+    $currentPublishedToken !== null &&
+    $currentPublishedAt !== null
+) {
+
+    /*
+     * If an election start event exists, a Published result is
+     * current only when it was published after that start.
+     */
+    if ($latestElectionStart !== null) {
+
+        $startTimestamp =
+            strtotime((string) $latestElectionStart);
+
+        $publishedTimestamp =
+            strtotime((string) $currentPublishedAt);
+
+        if (
+            $startTimestamp !== false &&
+            $publishedTimestamp !== false &&
+            $publishedTimestamp >= $startTimestamp
+        ) {
+            $reusePublishedResult = true;
+        }
+
+    } else {
+
+        /*
+         * If the start log cannot be found, do not rotate an
+         * already-published result unnecessarily.
+         */
+        $reusePublishedResult = true;
+    }
+}
+
+
+/* ----------------------------------------------------------
+   CREATE NEW CURRENT RESULT WHEN REQUIRED
+---------------------------------------------------------- */
+
+if ($reusePublishedResult) {
+
+    $resultId =
+        (string) $currentPublishedToken;
+
+    $resultPublishedAt =
+        (string) $currentPublishedAt;
+
+} else {
+
+    try {
+
+        /*
+         * Cryptographically secure 64-character token.
+         * This is the public verification identifier.
+         */
+        $newResultToken =
+            bin2hex(
+                random_bytes(32)
+            );
+
+        /*
+         * Keep only the current election result.
+         * This matches the VOTIFY single-election maintenance
+         * model requested for the project.
+         */
+        $deleteStmt = mysqli_prepare(
+            $conn,
+            "
+                DELETE FROM election_results
+                WHERE status = 'Published'
+            "
+        );
+
+        if (!$deleteStmt) {
+            throw new RuntimeException(
+                "Unable to prepare result cleanup."
+            );
+        }
+
+        if (!mysqli_stmt_execute($deleteStmt)) {
+
+            mysqli_stmt_close($deleteStmt);
+
+            throw new RuntimeException(
+                "Unable to replace current published result."
+            );
+        }
+
+        mysqli_stmt_close($deleteStmt);
+
+
+        /*
+         * Publish the immutable snapshot for this stopped
+         * election.
+         */
+        $insertStmt = mysqli_prepare(
+            $conn,
+            "
+                INSERT INTO election_results
+                (
+                    result_token,
+                    election_title,
+                    college_name,
+                    department_name,
+                    published_at,
+                    result_data,
+                    status
+                )
+                VALUES
+                (
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    NOW(),
+                    ?,
+                    'Published'
+                )
+            "
+        );
+
+        if (!$insertStmt) {
+
+            throw new RuntimeException(
+                "Unable to prepare result publication."
+            );
+        }
+
+
+        mysqli_stmt_bind_param(
+            $insertStmt,
+            "sssss",
+            $newResultToken,
+            $electionTitle,
+            $collegeName,
+            $departmentName,
+            $resultSnapshotJson
+        );
+
+
+        if (!mysqli_stmt_execute($insertStmt)) {
+
+            mysqli_stmt_close($insertStmt);
+
+            throw new RuntimeException(
+                "Unable to publish the official result."
+            );
+        }
+
+
+        mysqli_stmt_close($insertStmt);
+
+
+        $resultId =
+            $newResultToken;
+
+        $resultPublishedAt =
+            date("Y-m-d H:i:s");
+
+    } catch (Throwable $publicationError) {
+
+        error_log(
+            "VOTIFY result publication failed: " .
+            $publicationError->getMessage()
+        );
+
+        $resultPublicationError =
+            "The official result could not be published. " .
+            "Please refresh the page and try again.";
+
+    }
+}
+
+
+/* ----------------------------------------------------------
+   BUILD PUBLIC VERIFICATION URL
+---------------------------------------------------------- */
+
+if (
+    $resultPublicationError === null &&
+    $resultId !== ''
+) {
+
+    $https =
+        (
+            (!empty($_SERVER["HTTPS"]) &&
+                $_SERVER["HTTPS"] !== "off")
+            ||
+            (
+                isset($_SERVER["SERVER_PORT"]) &&
+                (int) $_SERVER["SERVER_PORT"] === 443
+            )
+        );
+
+    $scheme =
+        $https
+            ? "https"
+            : "http";
+
+    $host =
+        $_SERVER["HTTP_HOST"]
+        ?? "votify.byethost16.com";
+
+    $resultVerificationUrl =
+        $scheme .
+        "://" .
+        $host .
+        "/pages/public/result.php?token=" .
+        rawurlencode($resultId);
+
+}
 
 
 /* ==========================================================
@@ -254,6 +1394,169 @@ function safeText($value)
         "UTF-8"
 
     );
+
+}
+
+
+/* ==========================================================
+   FAIL-CLOSED PUBLIC RESULT REQUIREMENT
+========================================================== */
+
+if ($resultPublicationError !== null) {
+
+    http_response_code(500);
+
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        >
+        <title>VOTIFY | Result Publication Error</title>
+
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                margin: 0;
+                min-height: 100%;
+            }
+
+            body {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background:
+                    radial-gradient(
+                        circle at top,
+                        rgba(37,99,235,0.16),
+                        transparent 40%
+                    ),
+                    #080d1c;
+                color: #ffffff;
+                font-family:
+                    Inter,
+                    Arial,
+                    Helvetica,
+                    sans-serif;
+            }
+
+            .error-card {
+                width: 100%;
+                max-width: 560px;
+                padding: 42px 32px 34px;
+                text-align: center;
+                border: 1px solid rgba(255,255,255,0.10);
+                border-radius: 24px;
+                background:
+                    linear-gradient(
+                        145deg,
+                        rgba(17,24,43,0.98),
+                        rgba(8,15,31,0.98)
+                    );
+                box-shadow:
+                    0 30px 90px rgba(0,0,0,0.48);
+            }
+
+            .error-icon {
+                width: 76px;
+                height: 76px;
+                margin: 0 auto 22px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(239,68,68,0.10);
+                border: 1px solid rgba(239,68,68,0.28);
+                color: #f87171;
+                font-size: 34px;
+                font-weight: 800;
+            }
+
+            .error-label {
+                margin: 0 0 9px;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+            }
+
+            h1 {
+                margin: 0 0 14px;
+                color: #ffffff;
+                font-size: 27px;
+                line-height: 1.2;
+            }
+
+            p {
+                margin: 0 auto;
+                max-width: 470px;
+                color: #94a3b8;
+                font-size: 15px;
+                line-height: 1.75;
+            }
+
+            .back-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                margin-top: 28px;
+                min-height: 48px;
+                padding: 0 22px;
+                border-radius: 13px;
+                text-decoration: none;
+                color: #ffffff;
+                font-size: 14px;
+                font-weight: 800;
+                background:
+                    linear-gradient(
+                        100deg,
+                        #2563eb,
+                        #4f46e5,
+                        #9333ea,
+                        #ec4899
+                    );
+            }
+        </style>
+    </head>
+
+    <body>
+        <main class="error-card" role="alert">
+            <div class="error-icon" aria-hidden="true">!</div>
+
+            <p class="error-label">
+                VOTIFY Election System
+            </p>
+
+            <h1>
+                Official Result Unavailable
+            </h1>
+
+            <p>
+                <?= safeText($resultPublicationError); ?>
+            </p>
+
+            <a
+                href="canvassing.php"
+                class="back-btn"
+            >
+                Back to Canvassing Reports
+            </a>
+        </main>
+    </body>
+    </html>
+    <?php
+
+    exit();
 
 }
 
@@ -315,10 +1618,6 @@ function safeText($value)
      REMIX ICONS
 ====================================================== -->
 
-<link
-    href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css"
-    rel="stylesheet"
->
 
 
 <style>
@@ -1338,9 +2637,21 @@ body {
 }
 
 
-.section-badge i {
+.certificate-svg-icon {
 
-    font-size: 16px;
+    display: block;
+
+    flex-shrink: 0;
+
+    color: currentColor;
+
+}
+
+.section-svg-icon {
+
+    width: 16px;
+
+    height: 16px;
 
     color: #f5d36b;
 
@@ -2595,161 +3906,104 @@ body {
 
 
 /* ========================================================
-   SIMPLE QR VERIFICATION
+   THANK YOU MESSAGE IMAGE
+   IMAGE ONLY — NO CARD BORDER / BACKGROUND / SHADOW
 ======================================================== */
 
-.qr-verification-card {
+.thankyou-card {
 
     min-height: 100%;
 
-    padding:
-        14px;
+    padding: 0;
 
     display: flex;
 
-    flex-direction: column;
+    align-items: stretch;
 
-    align-items: center;
+    justify-content: stretch;
 
-    justify-content: center;
+    /*
+       IMPORTANT:
+       No border here.
+       The artwork itself is the complete visual.
+    */
 
-    text-align: center;
+    border: none;
 
-    border:
-        1px solid
-        #dbe3f3;
+    border-radius: 0;
 
-    border-radius: 10px;
+    background: transparent;
 
-    background:
-        #ffffff;
+    overflow: hidden;
+
+    position: relative;
+
+    box-shadow: none;
 
 }
 
 
 /* ========================================================
-   QR TITLE
+   APPROVED THANK-YOU ARTWORK
 ======================================================== */
 
-.qr-title {
+.thankyou-card-image {
 
-    margin:
-        0 0 10px;
+    width: 100%;
 
-    color:
-        #101a63;
+    height: 100%;
 
-    font-size: 10px;
-
-    font-weight: 800;
-
-    letter-spacing: 1px;
-
-    text-transform: uppercase;
-
-}
-
-
-/* ========================================================
-   QR BOX
-======================================================== */
-
-.qr-code-box {
-
-    width: 100px;
-
-    height: 100px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 4px;
-
-    background:
-        #ffffff;
-
-    border:
-        1px solid
-        #d4af37;
-
-    border-radius: 6px;
-
-}
-
-
-#resultQRCode {
-
-    width: 90px;
-
-    height: 90px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-}
-
-
-#resultQRCode img,
-#resultQRCode canvas {
-
-    width: 90px !important;
-
-    height: 90px !important;
+    min-height: 178px;
 
     display: block;
 
-}
+    object-fit: cover;
 
+    object-position: center;
 
-/* ========================================================
-   QR RESULT ID
-======================================================== */
+    border: none;
 
-.qr-result-id {
+    outline: none;
 
-    margin-top:
-        9px;
-
-    padding:
-        5px
-        8px;
-
-    color:
-        #172554;
-
-    background:
-        #f8fafc;
-
-    border:
-        1px solid
-        #e2e8f0;
-
-    border-radius: 5px;
-
-    font-size: 7px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.3px;
+    box-shadow: none;
 
 }
 
 
 /* ========================================================
-   QR PRINT
+   THANK-YOU IMAGE PRINT SAFETY
 ======================================================== */
 
 @media print {
 
-    .qr-verification-card {
+    .thankyou-card {
+
+        border: none;
+
+        border-radius: 0;
 
         box-shadow: none;
+
+        background: transparent;
+
+        break-inside: avoid;
+
+        page-break-inside: avoid;
+
+    }
+
+
+    .thankyou-card-image {
+
+        border: none;
+
+        outline: none;
+
+        box-shadow: none;
+
+        print-color-adjust: exact;
+
+        -webkit-print-color-adjust: exact;
 
     }
 
@@ -2757,14 +4011,23 @@ body {
 
 
 /* ========================================================
-   QR RESPONSIVE
+   THANK-YOU IMAGE RESPONSIVE
 ======================================================== */
 
 @media (max-width: 800px) {
 
-    .qr-verification-card {
+    .thankyou-card {
 
         min-height: 180px;
+
+    }
+
+
+    .thankyou-card-image {
+
+        min-height: 180px;
+
+        object-fit: cover;
 
     }
 
@@ -2861,6 +4124,16 @@ body {
 
 }
 
+.footer-svg-icon {
+
+    width: 16px;
+
+    height: 16px;
+
+    color: #4f46e5;
+
+}
+
 
 /* ========================================================
    VERIFIED PNG ICON
@@ -2940,7 +4213,13 @@ body {
 }
 
 
-.security-note i {
+.security-svg-icon {
+
+    width: 14px;
+
+    height: 14px;
+
+    vertical-align: -2px;
 
     color: #f5c84c;
 
@@ -3356,10 +4635,6 @@ body {
 
 </style>
 
-<link
-    href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css"
-    rel="stylesheet"
->
 
 <!-- ======================================================
      PDF GENERATION LIBRARIES
@@ -3371,10 +4646,6 @@ body {
 
 <script
     src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-></script>
-
-<script
-    src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"
 ></script>
 
 </head>
@@ -3585,7 +4856,43 @@ body {
 
     <div class="section-badge">
 
-        <i class="ri-award-line"></i>
+        <svg
+                class="certificate-svg-icon section-svg-icon"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path
+                    d="M8 3h8v2a4 4 0 0 1-8 0V3Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M8 5H5a4 4 0 0 0 4 4M16 5h3a4 4 0 0 1-4 4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                />
+                <path
+                    d="M12 9v4m-3 0h6m-4 0-1.5 5h5L13 13"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M8.5 20h7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                />
+            </svg>
 
         OFFICIAL WINNERS
 
@@ -4246,7 +5553,24 @@ body {
 
         <div class="section-badge">
 
-            <i class="ri-bar-chart-box-line"></i>
+            <svg
+                class="certificate-svg-icon section-svg-icon"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <rect x="4" y="11" width="3.5" height="8" rx="1" fill="currentColor"/>
+                <rect x="10.25" y="7" width="3.5" height="12" rx="1" fill="currentColor"/>
+                <rect x="16.5" y="4" width="3.5" height="15" rx="1" fill="currentColor"/>
+                <path
+                    d="M3.5 20h17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                />
+            </svg>
 
             ALL CANDIDATES RESULTS
 
@@ -4476,37 +5800,22 @@ body {
 
 
 <!-- ==============================================
-     RIGHT — SIMPLE QR VERIFICATION
+     RIGHT — THANK YOU MESSAGE IMAGE
+     NO CARD BORDER
 =============================================== -->
 
-<aside class="qr-verification-card">
+<div
+    class="thankyou-card"
+    aria-label="Thank You, Voters"
+>
 
+    <img
+        src="../../assets/images/thankyou-voters.png"
+        alt="Thank You, Voters. Your participation made this election a success. Students Today, Leaders Tomorrow."
+        class="thankyou-card-image"
+    >
 
-    <h3 class="qr-title">
-
-        Scan to Verify
-
-    </h3>
-
-
-    <div class="qr-code-box">
-
-        <div
-            id="resultQRCode"
-            aria-label="Election result QR code"
-        ></div>
-
-    </div>
-
-
-    <div class="qr-result-id">
-
-        <?= safeText($resultId); ?>
-
-    </div>
-
-
-</aside>
+</div>
 
 
     </div>
@@ -4532,7 +5841,38 @@ body {
 
                         <div class="footer-icon">
 
-                            <i class="ri-calendar-line"></i>
+                            <svg
+                            class="certificate-svg-icon footer-svg-icon"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                            focusable="false"
+                        >
+                            <rect
+                                x="3.5"
+                                y="5"
+                                width="17"
+                                height="15"
+                                rx="2"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            />
+                            <path
+                                d="M7.5 3.5v3M16.5 3.5v3M3.5 9h17"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                            />
+                            <path
+                                d="M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01M16 16.5h.01"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2.2"
+                                stroke-linecap="round"
+                            />
+                        </svg>
 
                         </div>
 
@@ -4567,7 +5907,49 @@ body {
 
                         <div class="footer-icon">
 
-                            <i class="ri-fingerprint-line"></i>
+                            <svg
+                            class="certificate-svg-icon footer-svg-icon"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                            focusable="false"
+                        >
+                            <path
+                                d="M12 4a7 7 0 0 1 7 7v1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.7"
+                                stroke-linecap="round"
+                            />
+                            <path
+                                d="M12 7a4 4 0 0 1 4 4v3"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.7"
+                                stroke-linecap="round"
+                            />
+                            <path
+                                d="M12 10a1 1 0 0 1 1 1v5.5c0 1.8.5 2.9 1.2 4"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.7"
+                                stroke-linecap="round"
+                            />
+                            <path
+                                d="M8.5 20.5c-1.2-1.7-1.5-3.3-1.5-5.5V11a5 5 0 0 1 10 0v1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.7"
+                                stroke-linecap="round"
+                            />
+                            <path
+                                d="M5 18c-.8-1.6-1-3.1-1-5.5V11a8 8 0 0 1 16 0v1"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.7"
+                                stroke-linecap="round"
+                            />
+                        </svg>
 
                         </div>
 
@@ -4641,7 +6023,30 @@ body {
 
                         <div class="footer-icon">
 
-                            <i class="ri-time-line"></i>
+                            <svg
+                            class="certificate-svg-icon footer-svg-icon"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                            focusable="false"
+                        >
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="8.5"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            />
+                            <path
+                                d="M12 7v5l3.5 2"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
 
                         </div>
 
@@ -4676,7 +6081,39 @@ body {
 
                 <div class="security-note">
 
-                    <i class="ri-lock-2-line"></i>
+                    <svg
+                    class="certificate-svg-icon security-svg-icon"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                    focusable="false"
+                >
+                    <rect
+                        x="5"
+                        y="10"
+                        width="14"
+                        height="10"
+                        rx="2"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    />
+                    <path
+                        d="M8 10V7a4 4 0 0 1 8 0v3"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                    />
+                    <circle cx="12" cy="15" r="1.2" fill="currentColor"/>
+                    <path
+                        d="M12 16.2v1.7"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                    />
+                </svg>
 
                     &nbsp;
 
@@ -4704,83 +6141,142 @@ body {
 ======================================================== */
 
 /* ========================================================
-   VOTIFY
-   SIMPLE RESULT QR
+   CERTIFICATE ACCESS TOAST
 ======================================================== */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+function showCertificateAccessToast(
+    type,
+    title,
+    message
+){
+
+    /*
+     * Use the existing VOTIFY toast system when available.
+     */
+
+    if (
+        typeof showToast === "function"
+    ) {
+
+        showToast(
+            type,
+            title,
+            message
+        );
+
+        return;
+
+    }
 
 
-        const qrContainer =
-            document.getElementById(
-                "resultQRCode"
+    /*
+     * Fallback for the standalone certificate page.
+     * This keeps the security check functional even if
+     * toast.js is not loaded on this page.
+     */
+
+    console.warn(
+        title + ": " + message
+    );
+
+}
+
+
+/* ========================================================
+   DOWNLOAD CERTIFICATE
+======================================================== */
+
+async function downloadCertificate() {
+
+    /*
+     * IMPORTANT:
+     *
+     * The certificate page itself is protected server-side.
+     * This additional status check protects an already-open
+     * certificate tab if the election is started elsewhere.
+     *
+     * Example:
+     *
+     * 1. Admin opens certificate while election is Stopped.
+     * 2. Another tab starts the election.
+     * 3. Admin returns to this certificate tab.
+     * 4. Download must be blocked.
+     */
+
+    try {
+
+        const statusResponse =
+            await fetch(
+                "../../backend/admin/dashboard-status.php",
+                {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
             );
+
+
+        if (!statusResponse.ok) {
+
+            throw new Error(
+                "Unable to verify election status."
+            );
+
+        }
+
+
+        const statusResult =
+            await statusResponse.json();
 
 
         if (
-            !qrContainer
-            ||
-            typeof QRCode === "undefined"
+            !statusResult ||
+            statusResult.success !== true ||
+            statusResult.status !== "Stopped"
         ) {
 
-            console.error(
-                "VOTIFY QR generator is not available."
+            const isRunning =
+                statusResult &&
+                statusResult.status === "Started";
+
+
+            showCertificateAccessToast(
+                "warning",
+                "Download Disabled",
+                isRunning
+                    ? "Certificate download is disabled while the election is running."
+                    : "Certificate download is available only after the election is stopped."
             );
+
 
             return;
 
         }
 
+    }
 
-        /* ------------------------------------------------
-           SIMPLE QR CONTENT
-           
-           Only Result ID is encoded.
-        ------------------------------------------------ */
+    catch (statusError) {
 
-        const resultQRData =
-            "VOTIFY RESULT ID: <?= safeText($resultId); ?>";
-
-
-        /* ------------------------------------------------
-           GENERATE QR
-        ------------------------------------------------ */
-
-        new QRCode(
-
-            qrContainer,
-
-            {
-
-                text:
-                    resultQRData,
-
-                width:
-                    90,
-
-                height:
-                    90,
-
-                colorDark:
-                    "#101a63",
-
-                colorLight:
-                    "#ffffff",
-
-                correctLevel:
-                    QRCode.CorrectLevel.M
-
-            }
-
+        console.error(
+            "VOTIFY certificate status check failed:",
+            statusError
         );
+
+
+        showCertificateAccessToast(
+            "error",
+            "Download Blocked",
+            "Election status could not be verified. Please refresh the page and try again."
+        );
+
+
+        return;
 
     }
 
-);
-
-async function downloadCertificate() {
 
     const button =
         document.querySelector(

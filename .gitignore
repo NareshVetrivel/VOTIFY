@@ -28,3 +28,7 @@ test.php
 
 # Local email credentials
 config/email.local.php
+config/database.local.php
+# Database test scripts
+test-db.php
+db-test.php

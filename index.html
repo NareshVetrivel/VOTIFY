@@ -11,7 +11,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Remix Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+    <link
+        href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css"
+        rel="stylesheet">
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/custom.css">
@@ -19,16 +21,20 @@
 
 </head>
 
+
 <body class="bg-[#0B1020] text-white overflow-x-hidden min-h-screen flex flex-col">
+
 
     <!-- =========================================================
          SCROLL PROGRESS
     ========================================================== -->
 
-    <div id="scrollProgress"
+    <div
+        id="scrollProgress"
         class="fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 z-[9999]"
         style="width:0%">
     </div>
+
 
 
     <!-- =========================================================
@@ -37,17 +43,28 @@
 
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
 
-        <div class="absolute w-96 h-96 bg-blue-600/20 blur-[130px] rounded-full top-0 left-0"></div>
+        <div
+            class="absolute w-96 h-96 bg-blue-600/20 blur-[130px] rounded-full top-0 left-0">
+        </div>
 
-        <div class="absolute w-96 h-96 bg-pink-600/20 blur-[150px] rounded-full bottom-0 right-0"></div>
+        <div
+            class="absolute w-96 h-96 bg-pink-600/20 blur-[150px] rounded-full bottom-0 right-0">
+        </div>
 
-        <div class="absolute w-80 h-80 bg-purple-600/20 blur-[120px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+        <div
+            class="absolute w-80 h-80 bg-purple-600/20 blur-[120px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        </div>
 
-        <div class="absolute left-1/4 top-1/4 w-[500px] h-[500px] bg-cyan-500/10 blur-[200px] rounded-full"></div>
+        <div
+            class="absolute left-1/4 top-1/4 w-[500px] h-[500px] bg-cyan-500/10 blur-[200px] rounded-full">
+        </div>
 
-        <div class="absolute right-1/4 bottom-1/4 w-[500px] h-[500px] bg-violet-500/10 blur-[200px] rounded-full"></div>
+        <div
+            class="absolute right-1/4 bottom-1/4 w-[500px] h-[500px] bg-violet-500/10 blur-[200px] rounded-full">
+        </div>
 
     </div>
+
 
 
     <!-- =========================================================
@@ -59,14 +76,21 @@
     <div id="header"></div>
 
 
+
     <!-- =========================================================
          HERO SECTION
     ========================================================== -->
 
-    <section class="hero flex-1">
+    <!--
+        flex-1 removed intentionally.
+        This prevents the hero from stretching to fill the viewport
+        and creating a large empty space before Election Guidelines.
+    -->
+
+    <section class="hero">
 
         <div
-            class="max-w-7xl mx-auto px-6 py-16 max-md:px-4 max-md:py-8">
+            class="max-w-7xl mx-auto px-6 py-8 max-md:px-4 max-md:py-5">
 
             <div
                 class="grid lg:grid-cols-5 gap-8 items-center max-md:gap-5">
@@ -79,7 +103,7 @@
                 <div class="lg:col-span-3">
 
                     <div
-                        class="glass hover-card fade-up rounded-3xl p-10 shadow-2xl
+                        class="glass hover-card fade-up rounded-3xl p-8 shadow-2xl
                         max-md:rounded-2xl max-md:p-5">
 
 
@@ -96,16 +120,15 @@
                         </div>
 
 
+
                         <!-- Heading -->
 
                         <h1
-                            class="mt-8 text-5xl lg:text-7xl font-extrabold leading-tight
+                            class="mt-6 text-5xl lg:text-7xl font-extrabold leading-tight
                             max-md:mt-5 max-md:text-4xl max-md:leading-[1.08]">
 
                             <span class="gradient-text">
-
                                 VOTIFY
-
                             </span>
 
                             <br>
@@ -129,10 +152,11 @@
                         </h1>
 
 
+
                         <!-- Description -->
 
                         <p
-                            class="mt-8 text-slate-300 text-lg leading-9
+                            class="mt-6 text-slate-300 text-lg leading-8
                             max-md:mt-5 max-md:text-[14px] max-md:leading-6">
 
                             Conduct secure, transparent and efficient department elections digitally.
@@ -140,9 +164,7 @@
                             Designed exclusively for
 
                             <b class="text-white">
-
                                 Sona College of Technology
-
                             </b>
 
                             with modern authentication, secure voting and real-time election management.
@@ -150,17 +172,20 @@
                         </p>
 
 
+
                         <!-- =================================================
                              HERO BUTTONS
                         ================================================== -->
 
                         <div
-                            class="mt-10 flex flex-wrap gap-5
+                            class="mt-8 flex flex-wrap gap-5
                             max-md:mt-5 max-md:gap-2.5">
+
 
                             <!-- Student Registration -->
 
-                            <a href="pages/student/student_register.php"
+                            <a
+                                href="pages/student/student_register.php"
                                 class="btn-primary w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl bg-gradient-to-r from-blue-600 to-pink-500 font-semibold
                                 max-md:!w-full max-md:!h-[52px] max-md:px-4 max-md:text-[13px]">
 
@@ -171,9 +196,11 @@
                             </a>
 
 
+
                             <!-- Student Login -->
 
-                            <a href="pages/student/student_login.php"
+                            <a
+                                href="pages/student/student_login.php"
                                 class="w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(59,130,246,.35)] transition-all duration-300
                                 max-md:!w-full max-md:!h-[52px] max-md:px-4 max-md:text-[13px]">
 
@@ -183,24 +210,12 @@
 
                             </a>
 
-
-                            <!-- Admin Login -->
-
-                            <a href="pages/admin/login.html"
-                                class="w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(236,72,153,.35)] transition-all duration-300
-                                max-md:!w-full max-md:!h-[52px] max-md:px-4 max-md:text-[13px]">
-
-                                <i class="ri-admin-line"></i>
-
-                                Admin Login
-
-                            </a>
-
                         </div>
 
                     </div>
 
                 </div>
+
 
 
                 <!-- =================================================
@@ -220,7 +235,8 @@
                             class="glass hover-card rounded-3xl p-6
                             max-md:rounded-2xl max-md:p-5">
 
-                            <div class="text-blue-400 text-4xl max-md:text-3xl">
+                            <div
+                                class="text-blue-400 text-4xl max-md:text-3xl">
 
                                 <i class="ri-graduation-cap-line card-icon"></i>
 
@@ -245,15 +261,26 @@
                         </div>
 
 
-                        <!-- Admin Portal -->
+
+                        <!-- =================================================
+                             ADMIN PORTAL
+                             Secret Admin Login:
+                             Desktop  -> Double Click Icon
+                             Mobile   -> Double Tap Icon
+                        ================================================== -->
 
                         <div
                             class="glass hover-card rounded-3xl p-6
                             max-md:rounded-2xl max-md:p-5">
 
-                            <div class="text-pink-400 text-4xl max-md:text-3xl">
+                            <div
+                                id="adminPortalSecret"
+                                class="text-pink-400 text-4xl max-md:text-3xl cursor-default select-none">
 
-                                <i class="ri-shield-user-line card-icon"></i>
+                                <i
+                                    class="ri-shield-user-line card-icon"
+                                    aria-hidden="true">
+                                </i>
 
                             </div>
 
@@ -274,6 +301,7 @@
                             </p>
 
                         </div>
+
 
 
                         <!-- =================================================
@@ -316,6 +344,7 @@
                                 </p>
 
                             </div>
+
 
 
                             <!-- System Access -->
@@ -364,11 +393,17 @@
     </section>
 
 
+
     <!-- =========================================================
          ELECTION RULES
     ========================================================== -->
 
-    <section class="py-20 max-md:py-10">
+    <!--
+        Reduced top spacing so Election Guidelines sits closer
+        to the Hero section.
+    -->
+
+    <section class="pt-4 pb-10 max-md:pt-3 max-md:pb-7">
 
         <div
             class="max-w-7xl mx-auto px-6 max-md:px-4">
@@ -387,7 +422,7 @@
                 </span>
 
                 <h2
-                    class="mt-6 text-4xl lg:text-5xl font-bold
+                    class="mt-5 text-4xl lg:text-5xl font-bold
                     max-md:mt-5 max-md:text-3xl max-md:leading-tight">
 
                     Election Rules &
@@ -402,7 +437,7 @@
                 </h2>
 
                 <p
-                    class="mt-5 text-slate-400 max-w-3xl mx-auto
+                    class="mt-4 text-slate-400 max-w-3xl mx-auto
                     max-md:mt-4 max-md:text-sm max-md:leading-6">
 
                     Every student must follow the election rules to ensure
@@ -413,11 +448,12 @@
             </div>
 
 
+
             <!-- Rules Cards -->
 
             <div
-                class="grid md:grid-cols-2 lg:grid-cols-3 gap-7 mt-14
-                max-md:gap-4 max-md:mt-8">
+                class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-9
+                max-md:gap-4 max-md:mt-7">
 
 
                 <!-- Rule 1 -->
@@ -450,6 +486,7 @@
                     </p>
 
                 </div>
+
 
 
                 <!-- Rule 2 -->
@@ -485,6 +522,7 @@
                 </div>
 
 
+
                 <!-- Rule 3 -->
 
                 <div
@@ -515,6 +553,7 @@
                     </p>
 
                 </div>
+
 
 
                 <!-- Rule 4 -->
@@ -549,6 +588,7 @@
                 </div>
 
 
+
                 <!-- Rule 5 -->
 
                 <div
@@ -579,6 +619,7 @@
                     </p>
 
                 </div>
+
 
 
                 <!-- Rule 6 -->
@@ -619,17 +660,23 @@
     </section>
 
 
+
     <!-- =========================================================
          ABOUT
     ========================================================== -->
 
-    <section class="py-24 max-md:py-10">
+    <!--
+        Reduced top padding so About VOTIFY starts closer
+        to the Election Rules cards.
+    -->
+
+    <section class="pt-4 pb-12 max-md:pt-3 max-md:pb-7">
 
         <div
             class="max-w-7xl mx-auto px-6 max-md:px-4">
 
             <div
-                class="grid lg:grid-cols-2 gap-14 items-center
+                class="grid lg:grid-cols-2 gap-10 items-center
                 max-md:gap-7">
 
 
@@ -655,7 +702,7 @@
                     </h2>
 
                     <p
-                        class="mt-8 text-slate-400 leading-8
+                        class="mt-6 text-slate-400 leading-8
                         max-md:mt-5 max-md:text-sm max-md:leading-7">
 
                         VOTIFY is a secure online voting platform developed
@@ -674,6 +721,7 @@
                 </div>
 
 
+
                 <!-- About Statistics -->
 
                 <div
@@ -683,6 +731,9 @@
                     <div
                         class="grid grid-cols-2 gap-8
                         max-md:gap-5">
+
+
+                        <!-- 100% -->
 
                         <div>
 
@@ -705,6 +756,9 @@
                         </div>
 
 
+
+                        <!-- 24/7 -->
+
                         <div>
 
                             <h2
@@ -726,6 +780,9 @@
                         </div>
 
 
+
+                        <!-- Easy -->
+
                         <div>
 
                             <h2
@@ -746,6 +803,9 @@
 
                         </div>
 
+
+
+                        <!-- Live -->
 
                         <div>
 
@@ -778,11 +838,12 @@
     </section>
 
 
+
     <!-- =========================================================
          CTA
     ========================================================== -->
 
-    <section class="pb-24 max-md:pb-10">
+    <section class="pb-12 max-md:pb-7">
 
         <div
             class="max-w-7xl mx-auto px-6 max-md:px-4">
@@ -792,8 +853,8 @@
                 max-md:rounded-3xl">
 
                 <div
-                    class="bg-[#111827] rounded-[35px] px-10 py-16 text-center
-                    max-md:rounded-3xl max-md:px-5 max-md:py-9">
+                    class="bg-[#111827] rounded-[35px] px-10 py-12 text-center
+                    max-md:rounded-3xl max-md:px-5 max-md:py-8">
 
                     <h2
                         class="text-4xl font-bold
@@ -804,7 +865,7 @@
                     </h2>
 
                     <p
-                        class="mt-6 text-slate-300 max-w-2xl mx-auto
+                        class="mt-5 text-slate-300 max-w-2xl mx-auto
                         max-md:mt-4 max-md:text-sm max-md:leading-6">
 
                         Register now and become a part of the secure,
@@ -813,14 +874,16 @@
                     </p>
 
 
+
                     <div
-                        class="mt-10 flex flex-wrap justify-center gap-5
+                        class="mt-8 flex flex-wrap justify-center gap-5
                         max-md:mt-6 max-md:gap-3">
 
 
                         <!-- Student Registration -->
 
-                        <a href="pages/student/student_register.php"
+                        <a
+                            href="pages/student/student_register.php"
                             class="btn-primary w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl bg-gradient-to-r from-blue-600 to-pink-500 font-semibold
                             max-md:!w-full max-md:!h-[56px] max-md:text-sm">
 
@@ -829,9 +892,11 @@
                         </a>
 
 
+
                         <!-- Student Login -->
 
-                        <a href="pages/student/student_login.php"
+                        <a
+                            href="pages/student/student_login.php"
                             class="w-full sm:!w-[285px] !h-[62px] inline-flex items-center justify-center gap-3 px-7 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 hover:shadow-[0_15px_40px_rgba(59,130,246,.35)] transition-all duration-300
                             max-md:!w-full max-md:!h-[56px] max-md:text-sm">
 
@@ -850,11 +915,13 @@
     </section>
 
 
+
     <!-- =========================================================
          FOOTER
     ========================================================== -->
 
     <div id="footer"></div>
+
 
 
     <!-- =========================================================
@@ -869,9 +936,13 @@
         class="hidden fixed bottom-6 right-6 w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-pink-500 text-white shadow-lg hover:scale-110 transition-all z-50
         max-md:bottom-4 max-md:right-4 max-md:w-11 max-md:h-11">
 
-        <i class="ri-arrow-up-line" aria-hidden="true"></i>
+        <i
+            class="ri-arrow-up-line"
+            aria-hidden="true">
+        </i>
 
     </button>
+
 
 
     <!-- =========================================================
@@ -879,6 +950,100 @@
     ========================================================== -->
 
     <script src="assets/js/app.js"></script>
+
+
+    <!-- =========================================================
+         SECRET ADMIN ACCESS
+
+         Desktop:
+         Double-click Admin Portal icon
+
+         Mobile:
+         Double-tap Admin Portal icon
+    ========================================================== -->
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const adminPortalSecret =
+                document.getElementById("adminPortalSecret");
+
+            if (!adminPortalSecret) {
+                return;
+            }
+
+
+            /* =====================================================
+               ADMIN LOGIN LOCATION
+            ====================================================== */
+
+            const adminLoginUrl = "pages/admin/login.html";
+
+
+            /* =====================================================
+               DESKTOP
+               DOUBLE CLICK
+            ====================================================== */
+
+            adminPortalSecret.addEventListener("dblclick", (event) => {
+
+                event.preventDefault();
+
+                window.location.href = adminLoginUrl;
+
+            });
+
+
+            /* =====================================================
+               MOBILE
+               DOUBLE TAP
+            ====================================================== */
+
+            let lastTap = 0;
+
+            adminPortalSecret.addEventListener(
+                "touchend",
+                (event) => {
+
+                    const currentTap = Date.now();
+
+                    const tapDifference =
+                        currentTap - lastTap;
+
+
+                    /*
+                     * Two taps within 450ms
+                     * are treated as a double tap.
+                     */
+
+                    if (
+                        tapDifference > 0 &&
+                        tapDifference < 450
+                    ) {
+
+                        event.preventDefault();
+
+                        window.location.href = adminLoginUrl;
+
+                        lastTap = 0;
+
+                        return;
+                    }
+
+
+                    lastTap = currentTap;
+
+                },
+                {
+                    passive: false
+                }
+            );
+
+        });
+
+    </script>
+
 
 </body>
 

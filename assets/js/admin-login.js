@@ -43,16 +43,36 @@ async function loginAdmin(event) {
        GET FORM VALUES
     ====================================================== */
 
+    const usernameElement =
+        document.getElementById("username");
+
+    const passwordElement =
+        document.getElementById("password");
+
+
+    if (
+        !usernameElement ||
+        !passwordElement
+    ) {
+
+        console.error(
+            "VOTIFY Admin Login: Login form fields not found."
+        );
+
+        showErrorToast(
+            "Login form configuration error."
+        );
+
+        return;
+
+    }
+
+
     const username =
-        document
-            .getElementById("username")
-            .value
-            .trim();
+        usernameElement.value.trim();
 
     const password =
-        document
-            .getElementById("password")
-            .value;
+        passwordElement.value;
 
 
     let valid = true;
@@ -139,18 +159,103 @@ async function loginAdmin(event) {
 
                 {
                     method: "POST",
-                    body: formData
+                    body: formData,
+                    credentials: "same-origin",
+                    cache: "no-store"
                 }
 
             );
 
 
         /* ==================================================
-           PARSE RESPONSE
+           READ RAW RESPONSE FIRST
         ================================================== */
 
-        const result =
-            await response.json();
+        const responseText =
+            await response.text();
+
+
+        /*
+         * Keep the raw response available in the browser
+         * console for production debugging.
+         *
+         * Do not expose server-side error details to users.
+         */
+
+        console.log(
+            "VOTIFY Admin Login Response:",
+            {
+                status: response.status,
+                statusText: response.statusText,
+                contentType:
+                    response.headers.get(
+                        "content-type"
+                    ),
+                body: responseText
+            }
+        );
+
+
+        /* ==================================================
+           EMPTY RESPONSE
+        ================================================== */
+
+        if (
+            responseText.trim() === ""
+        ) {
+
+            console.error(
+                "VOTIFY Admin Login: Empty server response."
+            );
+
+            showErrorToast(
+                "Server returned an empty response."
+            );
+
+            setLoginLoading(false);
+
+            return;
+
+        }
+
+
+        /* ==================================================
+           PARSE JSON RESPONSE
+        ================================================== */
+
+        let result;
+
+        try {
+
+            result =
+                JSON.parse(
+                    responseText
+                );
+
+        }
+
+        catch (jsonError) {
+
+            console.error(
+                "VOTIFY Admin Login: Invalid JSON response.",
+                jsonError
+            );
+
+
+            /*
+             * Backend may have returned HTML/PHP error output.
+             * Do not expose the raw server response to users.
+             */
+
+            showErrorToast(
+                "Server returned an invalid response."
+            );
+
+            setLoginLoading(false);
+
+            return;
+
+        }
 
 
         /* ==================================================
@@ -158,6 +263,7 @@ async function loginAdmin(event) {
         ================================================== */
 
         if (
+            result &&
             result.status === "success"
         ) {
 
@@ -170,8 +276,7 @@ async function loginAdmin(event) {
 
 
             /*
-             * Existing redirect timing
-             * preserved.
+             * Existing redirect timing preserved.
              */
 
             setTimeout(() => {
@@ -191,9 +296,18 @@ async function loginAdmin(event) {
            LOGIN FAILED
         ================================================== */
 
+        const errorMessage =
+            (
+                result &&
+                typeof result.message === "string" &&
+                result.message.trim() !== ""
+            )
+                ? result.message
+                : "Invalid Username or Password";
+
+
         showErrorToast(
-            result.message ||
-            "Invalid Username or Password"
+            errorMessage
         );
 
 
@@ -207,19 +321,19 @@ async function loginAdmin(event) {
 
 
     /* ======================================================
-       SERVER / NETWORK ERROR
+       NETWORK / FETCH ERROR
     ====================================================== */
 
     catch (error) {
 
         console.error(
-            "Admin Login Error:",
+            "VOTIFY Admin Login Network Error:",
             error
         );
 
 
         showErrorToast(
-            "Server Connection Failed."
+            "Unable to connect to the login server."
         );
 
 
@@ -283,11 +397,7 @@ function setLoginLoading(isLoading) {
 
 
         /* ----------------------------------------------
-           FORCE NOT-ALLOWED CURSOR
-           
-           Do NOT use pointer-events:none here.
-           Otherwise the button cannot properly display
-           its own cursor state.
+           Force not-allowed cursor
         ---------------------------------------------- */
 
         button.style.setProperty(
@@ -307,10 +417,6 @@ function setLoginLoading(isLoading) {
             "important"
         );
 
-
-        /* ----------------------------------------------
-           Prevent normal hover visual state
-        ---------------------------------------------- */
 
         button.classList.add(
             "opacity-65"

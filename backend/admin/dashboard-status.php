@@ -1,4 +1,5 @@
 <?php
+
 /* ==========================================================
    VOTIFY
    Dashboard Status API
@@ -7,7 +8,7 @@
 
 session_start();
 
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=UTF-8");
 
 
 /* ==========================================================
@@ -42,7 +43,8 @@ $stopTimestamp = null;
 
 $result = mysqli_query(
     $conn,
-    "SELECT COUNT(*) AS total FROM students"
+    "SELECT COUNT(*) AS total
+     FROM students"
 );
 
 if ($result) {
@@ -98,7 +100,7 @@ if ($result) {
    GET CURRENT ELECTION STATUS
 ========================================================== */
 
-$result = mysqli_query(
+$statusStatement = mysqli_prepare(
     $conn,
     "SELECT election_status
      FROM election_settings
@@ -106,14 +108,66 @@ $result = mysqli_query(
      LIMIT 1"
 );
 
+if ($statusStatement) {
+
+    if (mysqli_stmt_execute($statusStatement)) {
+
+        $statusResult =
+            mysqli_stmt_get_result(
+                $statusStatement
+            );
+
+        if (
+            $statusResult &&
+            mysqli_num_rows($statusResult) > 0
+        ) {
+
+            $statusRow =
+                mysqli_fetch_assoc(
+                    $statusResult
+                );
+
+            $status =
+                trim(
+                    (string)
+                    $statusRow["election_status"]
+                );
+
+        }
+
+    }
+
+    mysqli_stmt_close(
+        $statusStatement
+    );
+
+}
+
+
+/* ==========================================================
+   VALIDATE ELECTION STATUS
+========================================================== */
+
+/*
+ * Only these three states are valid for the
+ * VOTIFY election workflow.
+ */
+
+$allowedStatuses = [
+    "Ready",
+    "Started",
+    "Stopped"
+];
+
 if (
-    $result &&
-    mysqli_num_rows($result) > 0
+    !in_array(
+        $status,
+        $allowedStatuses,
+        true
+    )
 ) {
 
-    $row = mysqli_fetch_assoc($result);
-
-    $status = $row["election_status"];
+    $status = "Ready";
 
 }
 
@@ -123,111 +177,266 @@ if (
 ========================================================== */
 
 /*
-   Find the most recent Election Started event.
-
-   This represents the beginning of the
-   current / latest election cycle.
-*/
-
-$startSql = "
-    SELECT
-        UNIX_TIMESTAMP(created_at) AS start_timestamp
-    FROM admin_logs
-    WHERE action = 'Election Started'
-    ORDER BY id DESC
-    LIMIT 1
-";
-
-$startResult = mysqli_query(
-    $conn,
-    $startSql
-);
+ * Every election cycle begins with:
+ *
+ *     Election Started
+ *
+ * The latest start event represents the
+ * current election cycle.
+ *
+ * This is required so that the dashboard
+ * can restore the timer after refresh.
+ */
 
 if (
-    $startResult &&
-    mysqli_num_rows($startResult) > 0
+    $status === "Started" ||
+    $status === "Stopped"
 ) {
 
-    $startRow = mysqli_fetch_assoc(
-        $startResult
-    );
+    $startStatement = mysqli_prepare(
 
-    if (
-        $startRow["start_timestamp"] !== null
-    ) {
-
-        $startTimestamp =
-            (int) $startRow["start_timestamp"];
-
-    }
-
-}
-
-
-/* ==========================================================
-   GET LATEST ELECTION STOP EVENT
-========================================================== */
-
-/*
-   Important:
-
-   We only need a stop timestamp if the
-   current election status is Stopped.
-
-   If the election has been started again
-   after a previous stop event, the previous
-   stop time must NOT be used.
-*/
-
-if ($status === "Stopped") {
-
-    $stopSql = "
-        SELECT
-            UNIX_TIMESTAMP(created_at) AS stop_timestamp
-        FROM admin_logs
-        WHERE action = 'Election Stopped'
-        ORDER BY id DESC
-        LIMIT 1
-    ";
-
-    $stopResult = mysqli_query(
         $conn,
-        $stopSql
+
+        "SELECT
+            UNIX_TIMESTAMP(created_at) AS start_timestamp
+         FROM admin_logs
+         WHERE action = 'Election Started'
+         ORDER BY id DESC
+         LIMIT 1"
+
     );
 
-    if (
-        $stopResult &&
-        mysqli_num_rows($stopResult) > 0
-    ) {
 
-        $stopRow = mysqli_fetch_assoc(
-            $stopResult
-        );
+    if ($startStatement) {
 
         if (
-            $stopRow["stop_timestamp"] !== null
+            mysqli_stmt_execute(
+                $startStatement
+            )
         ) {
 
-            $stopTimestamp =
-                (int) $stopRow["stop_timestamp"];
+            $startResult =
+                mysqli_stmt_get_result(
+                    $startStatement
+                );
+
+
+            if (
+                $startResult &&
+                mysqli_num_rows($startResult) > 0
+            ) {
+
+                $startRow =
+                    mysqli_fetch_assoc(
+                        $startResult
+                    );
+
+
+                if (
+                    isset(
+                        $startRow["start_timestamp"]
+                    )
+                    &&
+                    $startRow["start_timestamp"] !== null
+                ) {
+
+                    $startTimestamp =
+                        (int)
+                        $startRow["start_timestamp"];
+
+                }
+
+            }
 
         }
 
+
+        mysqli_stmt_close(
+            $startStatement
+        );
+
     }
 
 }
 
 
 /* ==========================================================
-   READY STATUS
+   CURRENT ELECTION START VALIDATION
 ========================================================== */
 
 /*
-   When the election is Ready,
-   there should be no active timer.
+ * If there is no valid start event, timing
+ * information must not be exposed.
+ */
 
-   So we explicitly reset both timestamps.
-*/
+if (
+    $startTimestamp !== null &&
+    $startTimestamp <= 0
+) {
+
+    $startTimestamp = null;
+
+}
+
+
+/* ==========================================================
+   GET CURRENT ELECTION STOP EVENT
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * A stop event belongs to the current election
+ * cycle only when:
+ *
+ *     stop.created_at >= current start time
+ *
+ * This prevents an old election's stop event
+ * from being paired with the current election.
+ */
+
+if (
+    $status === "Stopped" &&
+    $startTimestamp !== null
+) {
+
+    $stopStatement = mysqli_prepare(
+
+        $conn,
+
+        "SELECT
+            UNIX_TIMESTAMP(created_at) AS stop_timestamp
+         FROM admin_logs
+         WHERE action = 'Election Stopped'
+           AND created_at >= FROM_UNIXTIME(?)
+         ORDER BY id DESC
+         LIMIT 1"
+
+    );
+
+
+    if ($stopStatement) {
+
+        mysqli_stmt_bind_param(
+
+            $stopStatement,
+
+            "i",
+
+            $startTimestamp
+
+        );
+
+
+        if (
+            mysqli_stmt_execute(
+                $stopStatement
+            )
+        ) {
+
+            $stopResult =
+                mysqli_stmt_get_result(
+                    $stopStatement
+                );
+
+
+            if (
+                $stopResult &&
+                mysqli_num_rows($stopResult) > 0
+            ) {
+
+                $stopRow =
+                    mysqli_fetch_assoc(
+                        $stopResult
+                    );
+
+
+                if (
+                    isset(
+                        $stopRow["stop_timestamp"]
+                    )
+                    &&
+                    $stopRow["stop_timestamp"] !== null
+                ) {
+
+                    $candidateStopTimestamp =
+                        (int)
+                        $stopRow["stop_timestamp"];
+
+
+                    /* --------------------------------------
+                       STOP TIMESTAMP VALIDATION
+                    -------------------------------------- */
+
+                    if (
+                        $candidateStopTimestamp >=
+                        $startTimestamp
+                    ) {
+
+                        $stopTimestamp =
+                            $candidateStopTimestamp;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        mysqli_stmt_close(
+            $stopStatement
+        );
+
+    }
+
+}
+
+
+/* ==========================================================
+   STARTED STATE SAFETY
+========================================================== */
+
+/*
+ * While the election is running, there must
+ * never be a stop timestamp.
+ */
+
+if ($status === "Started") {
+
+    $stopTimestamp = null;
+
+}
+
+
+/* ==========================================================
+   STOPPED STATE SAFETY
+========================================================== */
+
+/*
+ * A stopped election without a valid start event
+ * cannot expose a stop timestamp.
+ */
+
+if (
+    $status === "Stopped" &&
+    $startTimestamp === null
+) {
+
+    $stopTimestamp = null;
+
+}
+
+
+/* ==========================================================
+   READY STATE RESET
+========================================================== */
+
+/*
+ * Ready means there is no active/current
+ * election timing information to expose.
+ */
 
 if ($status === "Ready") {
 
@@ -242,30 +451,45 @@ if ($status === "Ready") {
    RESPONSE
 ========================================================== */
 
-echo json_encode([
+echo json_encode(
 
-    "success" => true,
+    [
 
-    "status" => $status,
+        "success" =>
+            true,
 
-    "startTimestamp" => $startTimestamp,
+        "status" =>
+            $status,
 
-    "stopTimestamp" => $stopTimestamp,
+        "startTimestamp" =>
+            $startTimestamp,
 
-    "total" => $total,
+        "stopTimestamp" =>
+            $stopTimestamp,
 
-    "pending" => $pending,
+        "total" =>
+            $total,
 
-    "approved" => $approved
+        "pending" =>
+            $pending,
 
-]);
+        "approved" =>
+            $approved
+
+    ],
+
+    JSON_UNESCAPED_UNICODE
+
+);
 
 
 /* ==========================================================
    CLOSE CONNECTION
 ========================================================== */
 
-mysqli_close($conn);
+mysqli_close(
+    $conn
+);
 
 exit;
 

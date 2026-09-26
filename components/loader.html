@@ -1,30 +1,54 @@
-<div id="loader"
-class="fixed inset-0 z-[9999] bg-[#0B1020] flex flex-col justify-center items-center">
+<!-- =========================
+     VOTIFY Loading Screen
+     File : components/loader.html
+========================== -->
 
-    <!-- Logo -->
+<div
+    id="loader"
+    class="fixed inset-0 z-[9999] bg-[#0B1020] flex flex-col justify-center items-center px-6"
+    role="status"
+    aria-live="polite"
+    aria-label="Loading VOTIFY">
 
-<img
-    src="/VOTIFY/assets/images/logo.png"
-    alt="VOTIFY"
-    class="w-44 sm:w-52 md:w-60 lg:w-64 xl:w-72 h-auto object-contain float pulse">
+    <!-- VOTIFY Logo -->
+    <div class="flex items-center justify-center">
 
+        <img
+            src="/assets/images/logo.png"
+            alt="VOTIFY Logo"
+            class="w-40 sm:w-48 md:w-56 lg:w-64 xl:w-72 h-auto max-h-72 object-contain select-none float pulse drop-shadow-[0_0_30px_rgba(59,130,246,.35)]"
+            loading="eager"
+            decoding="async"
+            onerror="this.style.display='none'; document.getElementById('loaderLogoFallback').classList.remove('hidden');">
+
+        <!-- Fallback if logo fails to load -->
+        <div
+            id="loaderLogoFallback"
+            class="hidden text-5xl sm:text-6xl md:text-7xl font-black tracking-wide bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            VOTIFY
+        </div>
+
+    </div>
+
+
+    <!-- Loading Text -->
     <h2
-    id="loadingText"
-    class="mt-8 text-xl font-semibold gradient-text">
+        id="loadingText"
+        class="mt-8 text-lg sm:text-xl md:text-2xl font-semibold gradient-text text-center">
 
         Preparing Secure Election...
 
     </h2>
 
-    <!-- Progress -->
 
+    <!-- Progress Container -->
     <div
-    class="w-64 h-2 bg-white/10 rounded-full mt-8 overflow-hidden">
+        class="w-56 sm:w-64 md:w-72 h-2 bg-white/10 rounded-full mt-8 overflow-hidden"
+        aria-hidden="true">
 
         <div
-        id="loadingProgress"
-        class="h-full w-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-300">
-
+            id="loadingProgress"
+            class="h-full w-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-300">
         </div>
 
     </div>

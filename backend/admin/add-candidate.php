@@ -7,18 +7,20 @@ ini_set("display_errors", 1);
    VOTIFY
    Add Candidate
    File : backend/admin/add-candidate.php
-   Storage : Aiven Cloud MySQL
 ========================================================== */
 
 session_start();
 
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=UTF-8");
+
 
 /* ==========================================================
    SESSION PROTECTION
 ========================================================== */
 
 if (!isset($_SESSION["admin_id"])) {
+
+    http_response_code(401);
 
     echo json_encode([
         "success" => false,
@@ -28,6 +30,7 @@ if (!isset($_SESSION["admin_id"])) {
     exit();
 
 }
+
 
 /* ==========================================================
    DATABASE
@@ -44,9 +47,129 @@ require_once "../../config/database.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
+    http_response_code(405);
+
     echo json_encode([
         "success" => false,
-        "message" => "Invalid request."
+        "message" => "Invalid request method."
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   ELECTION STATUS CHECK
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Candidate creation is NOT allowed while the election
+ * is running.
+ *
+ * Frontend locking is only for user experience.
+ * This backend check is the real security protection.
+ */
+
+$electionStatus =
+    "Ready";
+
+
+$statusQuery = "
+
+    SELECT election_status
+
+    FROM election_settings
+
+    WHERE id = 1
+
+    LIMIT 1
+
+";
+
+
+$statusStmt =
+    mysqli_prepare(
+        $conn,
+        $statusQuery
+    );
+
+
+if (!$statusStmt) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to check election status."
+    ]);
+
+    exit();
+
+}
+
+
+if (!mysqli_stmt_execute($statusStmt)) {
+
+    mysqli_stmt_close(
+        $statusStmt
+    );
+
+    http_response_code(500);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to check election status."
+    ]);
+
+    exit();
+
+}
+
+
+mysqli_stmt_bind_result(
+
+    $statusStmt,
+
+    $databaseElectionStatus
+
+);
+
+
+if (
+    mysqli_stmt_fetch(
+        $statusStmt
+    )
+) {
+
+    $electionStatus =
+        trim(
+            $databaseElectionStatus
+        );
+
+}
+
+
+mysqli_stmt_close(
+    $statusStmt
+);
+
+
+/* ==========================================================
+   BLOCK WHILE ELECTION IS RUNNING
+========================================================== */
+
+if (
+    $electionStatus === "Started"
+) {
+
+    http_response_code(403);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Adding candidates is disabled while the election is running."
     ]);
 
     exit();
@@ -58,17 +181,24 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
    RECEIVE FORM DATA
 ========================================================== */
 
-$studentId = trim(
-    $_POST["studentId"] ?? ""
-);
+$studentId =
+    trim(
+        $_POST["studentId"] ?? ""
+    );
 
-$admissionNo = strtoupper(
-    trim($_POST["admissionNo"] ?? "")
-);
 
-$manifesto = trim(
-    $_POST["manifesto"] ?? ""
-);
+$admissionNo =
+    strtoupper(
+        trim(
+            $_POST["admissionNo"] ?? ""
+        )
+    );
+
+
+$manifesto =
+    trim(
+        $_POST["manifesto"] ?? ""
+    );
 
 
 /* ==========================================================
@@ -96,14 +226,120 @@ if (
 
 
 /* ==========================================================
+   ADMISSION NUMBER VALIDATION
+========================================================== */
+
+/*
+ * VOTIFY admission number format:
+ *
+ *     25CAPMCA080
+ *
+ * Required structure:
+ *
+ *     2 digits
+ *     CAPMCA
+ *     3 digits
+ *
+ * Total:
+ *     Exactly 11 characters
+ *
+ * Examples:
+ *
+ *     25CAPMCA080  -> VALID
+ *     25CAPMCA001  -> VALID
+ *     25CAPMCA999  -> VALID
+ *
+ * Invalid:
+ *
+ *     25capmca080  -> converted to uppercase before validation
+ *     25CAPMCA08   -> only 10 characters
+ *     25CAPMCA0801 -> 12 characters
+ *     25CAPMCAO80  -> O is not a digit
+ *     2CAPMCA080   -> incorrect prefix length
+ *     25MCA080     -> missing CAP
+ *
+ * This backend validation is mandatory because frontend
+ * JavaScript validation can be bypassed.
+ */
+
+
+/*
+ * First enforce exact length.
+ */
+
+if (
+    strlen($admissionNo) !== 11
+) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Admission number must be exactly 11 characters."
+    ]);
+
+    exit();
+
+}
+
+
+/*
+ * Then enforce exact format.
+ */
+
+if (
+    !preg_match(
+        "/^[0-9]{2}CAPMCA[0-9]{3}$/",
+        $admissionNo
+    )
+) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid admission number format. Use format 25CAPMCA080."
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   STUDENT ID VALIDATION
+========================================================== */
+
+if (
+    !ctype_digit(
+        (string) $studentId
+    )
+) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Invalid student."
+    ]);
+
+    exit();
+
+}
+
+
+$studentId =
+    (int) $studentId;
+
+
+/* ==========================================================
    PHOTO VALIDATION
 ========================================================== */
 
 if (
 
-    !isset($_FILES["candidatePhoto"]) ||
+    !isset(
+        $_FILES["candidatePhoto"]
+    )
 
-    $_FILES["candidatePhoto"]["error"] !== UPLOAD_ERR_OK
+    ||
+
+    $_FILES["candidatePhoto"]["error"] !==
+        UPLOAD_ERR_OK
 
 ) {
 
@@ -123,44 +359,50 @@ if (
 
 $query = "
 
-SELECT
+    SELECT
 
-    id,
-    full_name,
-    admission_no,
-    department,
-    year,
-    status
+        id,
+        full_name,
+        admission_no,
+        department,
+        year,
+        status
 
-FROM students
+    FROM students
 
-WHERE
+    WHERE
 
-    id = ?
+        id = ?
 
-AND
+    AND
 
-    admission_no = ?
+        admission_no = ?
 
-LIMIT 1
+    LIMIT 1
 
 ";
 
-$stmt = mysqli_prepare(
-    $conn,
-    $query
-);
+
+$stmt =
+    mysqli_prepare(
+        $conn,
+        $query
+    );
+
 
 if (!$stmt) {
 
+    http_response_code(500);
+
     echo json_encode([
         "success" => false,
-        "message" => mysqli_error($conn)
+        "message" => "Unable to verify student."
     ]);
 
     exit();
 
 }
+
 
 mysqli_stmt_bind_param(
 
@@ -174,26 +416,18 @@ mysqli_stmt_bind_param(
 
 );
 
-if (!mysqli_stmt_execute($stmt)) {
 
-    $error = mysqli_stmt_error($stmt);
+if (
+    !mysqli_stmt_execute(
+        $stmt
+    )
+) {
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
-    echo json_encode([
-        "success" => false,
-        "message" => $error
-    ]);
-
-    exit();
-
-}
-
-$result = mysqli_stmt_get_result($stmt);
-
-if (!$result) {
-
-    mysqli_stmt_close($stmt);
+    http_response_code(500);
 
     echo json_encode([
         "success" => false,
@@ -204,9 +438,40 @@ if (!$result) {
 
 }
 
-if (mysqli_num_rows($result) === 0) {
 
-    mysqli_stmt_close($stmt);
+$result =
+    mysqli_stmt_get_result(
+        $stmt
+    );
+
+
+if (!$result) {
+
+    mysqli_stmt_close(
+        $stmt
+    );
+
+    http_response_code(500);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to verify student."
+    ]);
+
+    exit();
+
+}
+
+
+if (
+    mysqli_num_rows(
+        $result
+    ) === 0
+) {
+
+    mysqli_stmt_close(
+        $stmt
+    );
 
     echo json_encode([
         "success" => false,
@@ -217,16 +482,26 @@ if (mysqli_num_rows($result) === 0) {
 
 }
 
-$student = mysqli_fetch_assoc($result);
 
-mysqli_stmt_close($stmt);
+$student =
+    mysqli_fetch_assoc(
+        $result
+    );
+
+
+mysqli_stmt_close(
+    $stmt
+);
 
 
 /* ==========================================================
    APPROVED STUDENT CHECK
 ========================================================== */
 
-if ($student["status"] !== "Approved") {
+if (
+    $student["status"] !==
+    "Approved"
+) {
 
     echo json_encode([
         "success" => false,
@@ -244,31 +519,37 @@ if ($student["status"] !== "Approved") {
 
 $query = "
 
-SELECT id
+    SELECT id
 
-FROM candidates
+    FROM candidates
 
-WHERE student_id = ?
+    WHERE student_id = ?
 
-LIMIT 1
+    LIMIT 1
 
 ";
 
-$stmt = mysqli_prepare(
-    $conn,
-    $query
-);
+
+$stmt =
+    mysqli_prepare(
+        $conn,
+        $query
+    );
+
 
 if (!$stmt) {
 
+    http_response_code(500);
+
     echo json_encode([
         "success" => false,
-        "message" => mysqli_error($conn)
+        "message" => "Unable to check candidate."
     ]);
 
     exit();
 
 }
+
 
 mysqli_stmt_bind_param(
 
@@ -280,26 +561,18 @@ mysqli_stmt_bind_param(
 
 );
 
-if (!mysqli_stmt_execute($stmt)) {
 
-    $error = mysqli_stmt_error($stmt);
+if (
+    !mysqli_stmt_execute(
+        $stmt
+    )
+) {
 
-    mysqli_stmt_close($stmt);
+    mysqli_stmt_close(
+        $stmt
+    );
 
-    echo json_encode([
-        "success" => false,
-        "message" => $error
-    ]);
-
-    exit();
-
-}
-
-$result = mysqli_stmt_get_result($stmt);
-
-if (!$result) {
-
-    mysqli_stmt_close($stmt);
+    http_response_code(500);
 
     echo json_encode([
         "success" => false,
@@ -310,9 +583,40 @@ if (!$result) {
 
 }
 
-if (mysqli_num_rows($result) > 0) {
 
-    mysqli_stmt_close($stmt);
+$result =
+    mysqli_stmt_get_result(
+        $stmt
+    );
+
+
+if (!$result) {
+
+    mysqli_stmt_close(
+        $stmt
+    );
+
+    http_response_code(500);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to check candidate."
+    ]);
+
+    exit();
+
+}
+
+
+if (
+    mysqli_num_rows(
+        $result
+    ) > 0
+) {
+
+    mysqli_stmt_close(
+        $stmt
+    );
 
     echo json_encode([
         "success" => false,
@@ -323,25 +627,35 @@ if (mysqli_num_rows($result) > 0) {
 
 }
 
-mysqli_stmt_close($stmt);
+
+mysqli_stmt_close(
+    $stmt
+);
 
 
 /* ==========================================================
    IMAGE VALIDATION
 ========================================================== */
 
-$photo = $_FILES["candidatePhoto"];
+$photo =
+    $_FILES["candidatePhoto"];
 
-$fileSize = $photo["size"];
 
-$fileTmp = $photo["tmp_name"];
+$fileSize =
+    (int) $photo["size"];
+
+
+$fileTmp =
+    $photo["tmp_name"];
 
 
 /* ==========================================================
    FILE SIZE CHECK
 ========================================================== */
 
-if ($fileSize <= 0) {
+if (
+    $fileSize <= 0
+) {
 
     echo json_encode([
         "success" => false,
@@ -352,7 +666,11 @@ if ($fileSize <= 0) {
 
 }
 
-if ($fileSize > 2 * 1024 * 1024) {
+
+if (
+    $fileSize >
+    2 * 1024 * 1024
+) {
 
     echo json_encode([
         "success" => false,
@@ -365,10 +683,14 @@ if ($fileSize > 2 * 1024 * 1024) {
 
 
 /* ==========================================================
-   REAL IMAGE TYPE CHECK
+   REAL UPLOAD CHECK
 ========================================================== */
 
-if (!is_uploaded_file($fileTmp)) {
+if (
+    !is_uploaded_file(
+        $fileTmp
+    )
+) {
 
     echo json_encode([
         "success" => false,
@@ -379,9 +701,22 @@ if (!is_uploaded_file($fileTmp)) {
 
 }
 
-$finfo = new finfo(FILEINFO_MIME_TYPE);
 
-$photoType = $finfo->file($fileTmp);
+/* ==========================================================
+   MIME TYPE CHECK
+========================================================== */
+
+$finfo =
+    new finfo(
+        FILEINFO_MIME_TYPE
+    );
+
+
+$photoType =
+    $finfo->file(
+        $fileTmp
+    );
+
 
 $allowedTypes = [
 
@@ -390,7 +725,14 @@ $allowedTypes = [
 
 ];
 
-if (!in_array($photoType, $allowedTypes, true)) {
+
+if (
+    !in_array(
+        $photoType,
+        $allowedTypes,
+        true
+    )
+) {
 
     echo json_encode([
         "success" => false,
@@ -403,12 +745,42 @@ if (!in_array($photoType, $allowedTypes, true)) {
 
 
 /* ==========================================================
+   IMAGE CONTENT CHECK
+========================================================== */
+
+$imageInfo =
+    @getimagesize(
+        $fileTmp
+    );
+
+
+if (
+    $imageInfo === false
+) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Uploaded file is not a valid image."
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
    READ IMAGE
 ========================================================== */
 
-$photoData = file_get_contents($fileTmp);
+$photoData =
+    file_get_contents(
+        $fileTmp
+    );
 
-if ($photoData === false) {
+
+if (
+    $photoData === false
+) {
 
     echo json_encode([
         "success" => false,
@@ -426,44 +798,49 @@ if ($photoData === false) {
 
 $query = "
 
-INSERT INTO candidates (
+    INSERT INTO candidates (
 
-    student_id,
-    admission_no,
-    full_name,
-    department,
-    year,
-    manifesto,
-    photo,
-    photo_type
+        student_id,
+        admission_no,
+        full_name,
+        department,
+        year,
+        manifesto,
+        photo,
+        photo_type
 
-)
+    )
 
-VALUES (
+    VALUES (
 
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    ?
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
 
-)
+    )
 
 ";
 
-$stmt = mysqli_prepare(
-    $conn,
-    $query
-);
+
+$stmt =
+    mysqli_prepare(
+        $conn,
+        $query
+    );
+
 
 if (!$stmt) {
 
+    http_response_code(500);
+
     echo json_encode([
         "success" => false,
-        "message" => mysqli_error($conn)
+        "message" => "Unable to prepare candidate registration."
     ]);
 
     exit();
@@ -504,22 +881,49 @@ mysqli_stmt_bind_param(
    EXECUTE INSERT
 ========================================================== */
 
-if (!mysqli_stmt_execute($stmt)) {
+if (
+    !mysqli_stmt_execute(
+        $stmt
+    )
+) {
 
-    $error = mysqli_stmt_error($stmt);
+    $error =
+        mysqli_stmt_error(
+            $stmt
+        );
 
-    mysqli_stmt_close($stmt);
+
+    mysqli_stmt_close(
+        $stmt
+    );
+
+
+    /*
+     * Do not expose raw database errors
+     * to the production user.
+     */
+
+    error_log(
+        "VOTIFY Add Candidate DB Error: " .
+        $error
+    );
+
+
+    http_response_code(500);
 
     echo json_encode([
         "success" => false,
-        "message" => $error
+        "message" => "Unable to add candidate."
     ]);
 
     exit();
 
 }
 
-mysqli_stmt_close($stmt);
+
+mysqli_stmt_close(
+    $stmt
+);
 
 
 /* ==========================================================
@@ -527,20 +931,18 @@ mysqli_stmt_close($stmt);
 ========================================================== */
 
 $admin =
-
     $_SESSION["admin_username"]
-
     ?? "Admin";
 
+
 $ip =
-
     $_SERVER["REMOTE_ADDR"]
-
     ?? "Unknown";
 
-$action =
 
+$action =
     "Candidate Added";
+
 
 $description =
 
@@ -562,8 +964,8 @@ $description =
 
     ")";
 
-$adminId =
 
+$adminId =
     $_SESSION["admin_id"];
 
 
@@ -573,32 +975,35 @@ $adminId =
 
 $logQuery = "
 
-INSERT INTO admin_logs (
+    INSERT INTO admin_logs (
 
-    admin_id,
-    admin_username,
-    action,
-    description,
-    ip_address
+        admin_id,
+        admin_username,
+        action,
+        description,
+        ip_address
 
-)
+    )
 
-VALUES (
+    VALUES (
 
-    ?,
-    ?,
-    ?,
-    ?,
-    ?
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
 
-)
+    )
 
 ";
 
-$logStmt = mysqli_prepare(
-    $conn,
-    $logQuery
-);
+
+$logStmt =
+    mysqli_prepare(
+        $conn,
+        $logQuery
+    );
+
 
 if ($logStmt) {
 
@@ -620,9 +1025,26 @@ if ($logStmt) {
 
     );
 
-    mysqli_stmt_execute($logStmt);
 
-    mysqli_stmt_close($logStmt);
+    if (
+        !mysqli_stmt_execute(
+            $logStmt
+        )
+    ) {
+
+        error_log(
+            "VOTIFY Add Candidate Log Error: " .
+            mysqli_stmt_error(
+                $logStmt
+            )
+        );
+
+    }
+
+
+    mysqli_stmt_close(
+        $logStmt
+    );
 
 }
 
@@ -633,9 +1055,11 @@ if ($logStmt) {
 
 echo json_encode([
 
-    "success" => true,
+    "success" =>
+        true,
 
-    "message" => "Candidate added successfully."
+    "message" =>
+        "Candidate added successfully."
 
 ]);
 

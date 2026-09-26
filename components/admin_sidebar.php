@@ -46,7 +46,7 @@ left-0
 z-50
 
 w-72
-h-screen
+h-[100dvh]
 
 glass
 
@@ -65,378 +65,394 @@ lg:top-0
 lg:translate-x-0
 
 flex
-flex-col">
+flex-col
 
-<!-- ==========================================
-LOGO
-========================================== -->
-
-<div class="relative px-8 py-8 border-b border-white/10">
+overflow-hidden">
 
     <!-- ==========================================
-    MOBILE CLOSE
+    LOGO
     ========================================== -->
 
-    <div
-    class="flex justify-end lg:hidden mb-4">
+    <div class="relative px-8 py-8 border-b border-white/10">
 
-        <button
-        id="closeSidebar"
-        type="button"
-        aria-label="Close Sidebar"
+        <!-- ==========================================
+        MOBILE CLOSE
+        ========================================== -->
 
-        class="
-        absolute
-        top-5
-        right-5
-        z-[9999]
+        <div
+        class="flex justify-end lg:hidden mb-4">
 
-        flex
-        items-center
-        justify-center
+            <button
+            id="closeSidebar"
+            type="button"
+            aria-label="Close Sidebar"
 
-        w-11
-        h-11
+            class="
+            absolute
+            top-5
+            right-5
+            z-[9999]
 
-        rounded-xl
+            flex
+            items-center
+            justify-center
 
-        bg-white/10
+            w-11
+            h-11
 
-        border
-        border-white/20
+            rounded-xl
 
-        text-white
+            bg-white/10
 
-        hover:bg-red-500/30
+            border
+            border-white/20
 
-        transition-all">
+            text-white
 
-            <i class="ri-close-line text-2xl pointer-events-none"></i>
+            hover:bg-red-500/30
 
-        </button>
+            transition-all">
 
-    </div>
+                <i
+                class="
+                ri-close-line
+                text-2xl
+                pointer-events-none">
+                </i>
 
+            </button>
 
-    <!-- ==========================================
-    VOTIFY LOGO
-    ========================================== -->
+        </div>
 
-    <h2
-    class="text-4xl font-bold gradient-text">
 
-        VOTIFY
+        <!-- ==========================================
+        VOTIFY LOGO
+        ========================================== -->
 
-    </h2>
+        <h2
+        class="text-4xl font-bold gradient-text">
 
+            VOTIFY
 
-    <!-- ==========================================
-    ADMINISTRATION PANEL
-    ========================================== -->
+        </h2>
 
-    <p
-    class="text-slate-400 mt-2">
 
-        Administration Panel
-
-    </p>
-
-</div>
-
-
-<!-- ==========================================
-MENU
-========================================== -->
-
-<nav
-
-class="
-flex-1
-
-px-5
-
-py-6
-
-space-y-3
-
-overflow-y-auto">
-
-
-<!-- ==========================================
-DASHBOARD
-========================================== -->
-
-<a
-
-href="dashboard.php"
-
-class="
-sidebar-link
-<?php echo ($currentPage === "dashboard.php") ? "active" : ""; ?>">
-
-    <i class="ri-dashboard-line"></i>
-
-    <span>
-
-        Dashboard
-
-    </span>
-
-</a>
-
-
-<!-- ==========================================
-VOTER REQUESTS
-========================================== -->
-
-<a
-
-href="requests.php"
-
-class="
-sidebar-link
-<?php echo ($currentPage === "requests.php") ? "active" : ""; ?>">
-
-    <i class="ri-user-follow-line"></i>
-
-    <span>
-
-        Voters Requests
-
-    </span>
-
-</a>
-
-
-<!-- ==========================================
-VOTERS MANAGEMENT
-========================================== -->
-
-<a
-
-href="voters.php"
-
-class="
-sidebar-link
-<?php echo ($currentPage === "voters.php") ? "active" : ""; ?>">
-
-    <i class="ri-team-line"></i>
-
-    <span>
-
-        Voters Management
-
-    </span>
-
-</a>
-
-
-<!-- ==========================================
-CANDIDATE MANAGEMENT
-========================================== -->
-
-<a
-
-href="candidates.php"
-
-class="
-sidebar-link
-<?php echo ($currentPage === "candidates.php") ? "active" : ""; ?>">
-
-    <i class="ri-award-line"></i>
-
-    <span>
-
-        Candidate Management
-
-    </span>
-
-</a>
-
-
-<!-- ==========================================
-CANVASSING REPORTS
-========================================== -->
-
-<a
-
-href="canvassing.php"
-
-class="
-sidebar-link
-<?php echo ($currentPage === "canvassing.php") ? "active" : ""; ?>">
-
-    <i class="ri-megaphone-line"></i>
-
-    <span>
-
-        Canvassing Reports
-
-    </span>
-
-</a>
-
-
-<!-- ==========================================
-SUPER ADMIN ONLY
-HISTORY LOG
-========================================== -->
-
-<?php if ($isSuperAdmin): ?>
-
-    <div
-    class="
-    pt-4
-    mt-4
-
-    border-t
-    border-white/10">
+        <!-- ==========================================
+        ADMINISTRATION PANEL
+        ========================================== -->
 
         <p
-        class="
-        px-4
-        mb-3
+        class="text-slate-400 mt-2">
 
-        text-[10px]
-
-        uppercase
-        tracking-[0.2em]
-
-        font-semibold
-
-        text-slate-500">
-
-            System Control
+            Administration Panel
 
         </p>
 
+    </div>
 
-        <!-- HISTORY -->
+
+    <!-- ==========================================
+    MENU + MOBILE LOGOUT
+    ========================================== -->
+
+    <nav
+
+    class="
+    flex-1
+
+    min-h-0
+
+    px-5
+    py-6
+
+    pb-[calc(2.5rem+env(safe-area-inset-bottom))]
+
+    space-y-3
+
+    overflow-y-auto
+    overscroll-contain
+
+    lg:pb-6">
+
+
+        <!-- ==========================================
+        DASHBOARD
+        ========================================== -->
 
         <a
 
-        href="history.php"
+        href="dashboard.php"
 
         class="
         sidebar-link
-        <?php echo ($currentPage === "history.php") ? "active" : ""; ?>">
+        <?php echo ($currentPage === "dashboard.php") ? "active" : ""; ?>">
 
-            <i class="ri-history-line"></i>
+            <i class="ri-dashboard-line"></i>
 
             <span>
 
-                History Log
+                Dashboard
 
             </span>
 
-            <!-- SUPER ADMIN INDICATOR -->
+        </a>
 
-            <i
-            class="
-            ri-shield-star-fill
 
-            ml-auto
+        <!-- ==========================================
+        VOTER REQUESTS
+        ========================================== -->
 
-            text-xs
+        <a
 
-            text-purple-400">
+        href="requests.php"
 
-            </i>
+        class="
+        sidebar-link
+        <?php echo ($currentPage === "requests.php") ? "active" : ""; ?>">
+
+            <i class="ri-user-follow-line"></i>
+
+            <span>
+
+                Voters Requests
+
+            </span>
 
         </a>
 
-    </div>
 
-<?php endif; ?>
+        <!-- ==========================================
+        VOTERS MANAGEMENT
+        ========================================== -->
 
+        <a
 
-<!-- ==========================================
-ABOUT
-========================================== -->
+        href="voters.php"
 
-<div
-class="
-pt-4
-mt-4
+        class="
+        sidebar-link
+        <?php echo ($currentPage === "voters.php") ? "active" : ""; ?>">
 
-border-t
-border-white/10">
+            <i class="ri-team-line"></i>
 
-    <a
+            <span>
 
-    href="about.php"
+                Voters Management
 
-    class="
-    sidebar-link
-    <?php echo ($currentPage === "about.php") ? "active" : ""; ?>">
+            </span>
 
-        <i class="ri-information-line"></i>
-
-        <span>
-
-            About Us
-
-        </span>
-
-    </a>
-
-</div>
+        </a>
 
 
-</nav>
+        <!-- ==========================================
+        CANDIDATE MANAGEMENT
+        ========================================== -->
+
+        <a
+
+        href="candidates.php"
+
+        class="
+        sidebar-link
+        <?php echo ($currentPage === "candidates.php") ? "active" : ""; ?>">
+
+            <i class="ri-award-line"></i>
+
+            <span>
+
+                Candidate Management
+
+            </span>
+
+        </a>
 
 
-<!-- ==========================================
-MOBILE LOGOUT
-========================================== -->
+        <!-- ==========================================
+        CANVASSING REPORTS
+        ========================================== -->
 
-<div
-class="
-p-5
+        <a
 
-border-t
-border-white/10">
+        href="canvassing.php"
 
-    <a
+        class="
+        sidebar-link
+        <?php echo ($currentPage === "canvassing.php") ? "active" : ""; ?>">
 
-    href="../../backend/admin/logout.php"
+            <i class="ri-megaphone-line"></i>
 
-    class="
+            <span>
 
-    lg:hidden
+                Canvassing Reports
 
-    flex
+            </span>
 
-    items-center
-    justify-center
-    gap-3
+        </a>
 
-    w-full
 
-    py-4
+        <!-- ==========================================
+        SUPER ADMIN ONLY
+        HISTORY LOG
+        ========================================== -->
 
-    rounded-2xl
+        <?php if ($isSuperAdmin): ?>
 
-    font-semibold
+            <div
+            class="
+            pt-4
+            mt-4
 
-    text-white
+            border-t
+            border-white/10">
 
-    bg-gradient-to-r
+                <p
+                class="
+                px-4
+                mb-3
 
-    from-red-500
-    via-red-600
-    to-pink-600
+                text-[10px]
 
-    hover:scale-105
+                uppercase
+                tracking-[0.2em]
 
-    transition-all">
+                font-semibold
 
-        <i class="ri-logout-box-r-line"></i>
+                text-slate-500">
 
-        Logout
+                    System Control
 
-    </a>
+                </p>
 
-</div>
+
+                <!-- HISTORY -->
+
+                <a
+
+                href="history.php"
+
+                class="
+                sidebar-link
+                <?php echo ($currentPage === "history.php") ? "active" : ""; ?>">
+
+                    <i class="ri-history-line"></i>
+
+                    <span>
+
+                        History Log
+
+                    </span>
+
+
+                    <!-- SUPER ADMIN INDICATOR -->
+
+                    <i
+                    class="
+                    ri-shield-star-fill
+
+                    ml-auto
+
+                    text-xs
+
+                    text-purple-400">
+
+                    </i>
+
+                </a>
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <!-- ==========================================
+        ABOUT
+        ========================================== -->
+
+        <div
+        class="
+        pt-4
+        mt-4
+
+        border-t
+        border-white/10">
+
+            <a
+
+            href="about.php"
+
+            class="
+            sidebar-link
+            <?php echo ($currentPage === "about.php") ? "active" : ""; ?>">
+
+                <i class="ri-information-line"></i>
+
+                <span>
+
+                    About Us
+
+                </span>
+
+            </a>
+
+        </div>
+
+
+        <!-- ==========================================
+        MOBILE LOGOUT
+        ========================================== -->
+
+        <div
+        class="
+        lg:hidden
+
+        pt-5
+        mt-5
+
+        border-t
+        border-white/10">
+
+            <a
+
+            href="../../backend/admin/logout.php"
+
+            class="
+
+            flex
+
+            items-center
+            justify-center
+            gap-3
+
+            w-full
+
+            py-4
+
+            rounded-2xl
+
+            font-semibold
+
+            text-white
+
+            bg-gradient-to-r
+
+            from-red-500
+            via-red-600
+            to-pink-600
+
+            hover:scale-105
+
+            transition-all">
+
+                <i class="ri-logout-box-r-line"></i>
+
+                Logout
+
+            </a>
+
+        </div>
+
+
+    </nav>
+
 
 </aside>

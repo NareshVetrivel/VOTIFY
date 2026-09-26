@@ -2,6 +2,7 @@
 /* ==========================================================
    VOTIFY
    Reject Student Request
+   Election Running Lock
 ========================================================== */
 
 session_start();
@@ -14,6 +15,8 @@ header("Content-Type: application/json; charset=UTF-8");
 ========================================================== */
 
 if (!isset($_SESSION["admin_id"])) {
+
+    http_response_code(401);
 
     echo json_encode([
         "success" => false,
@@ -58,6 +61,64 @@ if ($id <= 0) {
 
 
 /* ==========================================================
+   ELECTION STATUS CHECK
+   Started = Election Running
+   Rejection is NOT allowed while election is running.
+========================================================== */
+
+$statusResult = mysqli_query(
+
+    $conn,
+
+    "SELECT election_status
+     FROM election_settings
+     WHERE id = 1
+     LIMIT 1"
+
+);
+
+
+if (!$statusResult) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to check election status."
+    ]);
+
+    exit();
+
+}
+
+
+$statusRow = mysqli_fetch_assoc(
+    $statusResult
+);
+
+
+$electionStatus = $statusRow["election_status"] ?? "Ready";
+
+
+/* ==========================================================
+   BLOCK REJECTION DURING RUNNING ELECTION
+========================================================== */
+
+if ($electionStatus === "Started") {
+
+    http_response_code(403);
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Student rejection is disabled while the election is running."
+    ]);
+
+    exit();
+
+}
+
+
+/* ==========================================================
    GET STUDENT DETAILS
 ========================================================== */
 
@@ -88,7 +149,9 @@ if (
 }
 
 
-$student = mysqli_fetch_assoc($result);
+$student = mysqli_fetch_assoc(
+    $result
+);
 
 
 /* ==========================================================
@@ -126,6 +189,8 @@ if (!$delete) {
         "VOTIFY Reject Student Delete Error: " .
         mysqli_error($conn)
     );
+
+    http_response_code(500);
 
     echo json_encode([
         "success" => false,
@@ -166,5 +231,7 @@ echo json_encode([
     "message" => "Student Rejected Successfully."
 
 ]);
+
+exit();
 
 ?>

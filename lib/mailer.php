@@ -25,7 +25,7 @@ use PHPMailer\PHPMailer\Exception;
 
 $emailConfigPath = __DIR__ . '/../config/email.php';
 
-if (!file_exists($emailConfigPath)) {
+if (!is_file($emailConfigPath)) {
 
     throw new Exception(
         'Email configuration file not found.'
@@ -33,6 +33,13 @@ if (!file_exists($emailConfigPath)) {
 }
 
 $emailConfig = require $emailConfigPath;
+
+if (!is_array($emailConfig)) {
+
+    throw new Exception(
+        'Invalid email configuration.'
+    );
+}
 
 
 /* ==========================================================
@@ -59,14 +66,8 @@ if (
 
 
 /* ==========================================================
-   DEFAULT SETTINGS
+   DEFAULT SMTP SETTINGS
    ========================================================== */
-
-if (empty($emailConfig["smtp_host"])) {
-
-    $emailConfig["smtp_host"] =
-        "smtp.gmail.com";
-}
 
 if (empty($emailConfig["smtp_port"])) {
 
@@ -100,7 +101,7 @@ if (
 if (empty($emailConfig["from_name"])) {
 
     $emailConfig["from_name"] =
-        "VOTIFY - Sona College";
+        "VOTIFY";
 }
 
 
@@ -178,7 +179,7 @@ function sendOtpMail(
 
 
     /* ======================================================
-       CHECK CONFIG
+       CHECK EMAIL CONFIGURATION
        ====================================================== */
 
     $requiredConfig = [
@@ -233,7 +234,7 @@ function sendOtpMail(
     try {
 
         /* ==================================================
-           SMTP
+           SMTP CONNECTION
            ================================================== */
 
         $mail->isSMTP();
@@ -255,7 +256,7 @@ function sendOtpMail(
 
 
         /* ==================================================
-           SECURITY
+           SMTP SECURITY
            ================================================== */
 
         $secure =
@@ -272,18 +273,24 @@ function sendOtpMail(
             $mail->SMTPSecure =
                 PHPMailer::ENCRYPTION_STARTTLS;
 
-            $mail->SMTPAutoTLS = true;
+            $mail->SMTPAutoTLS =
+                true;
 
         } elseif ($secure === "ssl") {
 
             $mail->SMTPSecure =
                 PHPMailer::ENCRYPTION_SMTPS;
 
+            $mail->SMTPAutoTLS =
+                false;
+
         } else {
 
-            $mail->SMTPSecure = false;
+            $mail->SMTPSecure =
+                false;
 
-            $mail->SMTPAutoTLS = false;
+            $mail->SMTPAutoTLS =
+                false;
         }
 
 
@@ -294,10 +301,6 @@ function sendOtpMail(
         $mail->CharSet =
             "UTF-8";
 
-        /*
-         * 8bit keeps the mail body simple and readable
-         * for normal UTF-8 transactional emails.
-         */
         $mail->Encoding =
             "8bit";
 
@@ -314,16 +317,17 @@ function sendOtpMail(
 
         $mail->setFrom(
             $emailConfig["from_email"],
-            "VOTIFY"
+            $emailConfig["from_name"]
         );
 
 
-        /*
-         * Reply-To remains the same authenticated address.
-         */
+        /* ==================================================
+           REPLY-TO
+           ================================================== */
+
         $mail->addReplyTo(
             $emailConfig["from_email"],
-            "VOTIFY"
+            $emailConfig["from_name"]
         );
 
 
@@ -769,7 +773,6 @@ HTML;
 
 
     } catch (Exception $e) {
-
 
         /* ==================================================
            ERROR LOG

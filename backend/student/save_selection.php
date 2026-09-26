@@ -3,226 +3,432 @@
    VOTIFY
    Save Selected Candidate
    File : backend/student/save_selection.php
+
+   Purpose:
+   - Validate logged-in student
+   - Validate selected candidate
+   - Read candidate data from database
+   - Save trusted candidate information to session
+   - Return clean JSON response
 ========================================================== */
+
+
+/* ==========================================================
+   OUTPUT BUFFER
+   Prevent accidental PHP warnings/whitespace from corrupting
+   the JSON response expected by voting.js.
+========================================================== */
+
+ob_start();
+
 
 /* ==========================================================
    SESSION
 ========================================================== */
 
-if(session_status() === PHP_SESSION_NONE){
+if (session_status() === PHP_SESSION_NONE) {
 
     session_start();
 
 }
+
 
 /* ==========================================================
    RESPONSE TYPE
 ========================================================== */
 
 header(
-    "Content-Type: application/json"
+    "Content-Type: application/json; charset=UTF-8"
 );
 
-/* ==========================================================
-   LOGIN PROTECTION
-========================================================== */
-
-if(
-
-    !isset($_SESSION["student_logged_in"]) ||
-
-    $_SESSION["student_logged_in"] !== true
-
-){
-
-    echo json_encode([
-
-        "success" => false,
-
-        "message" => "Unauthorized access."
-
-    ]);
-
-    exit();
-
-}
 
 /* ==========================================================
-   REQUEST METHOD VALIDATION
+   JSON RESPONSE HELPER
 ========================================================== */
 
-if(
-
-    $_SERVER["REQUEST_METHOD"] !== "POST"
-
-){
-
-    echo json_encode([
-
-        "success" => false,
-
-        "message" => "Invalid request."
-
-    ]);
-
-    exit();
-
-}
-
-/* ==========================================================
-   DATABASE CONNECTION
-========================================================== */
-
-require_once "../../config/database.php";
-
-$conn = $GLOBALS["conn"];
-
-/* ==========================================================
-   HELPER FUNCTION
-========================================================== */
-
-function response(
-
+function sendResponse(
     bool $success,
+    string $message,
+    array $extra = [],
+    int $statusCode = 200
+) {
 
-    string $message
+    /*
+        Clear anything accidentally written before JSON.
+        This is important because even one PHP warning or
+        whitespace character can break JSON.parse().
+    */
 
-){
+    while (ob_get_level() > 0) {
 
-    echo json_encode([
+        ob_end_clean();
 
-        "success" => $success,
+    }
 
-        "message" => $message
 
-    ]);
+    http_response_code($statusCode);
 
-    exit();
 
-}
+    $response = array_merge(
 
-/* ==========================================================
-   PART 2
-   RECEIVE CANDIDATE
-   VALIDATE CANDIDATE
-========================================================== */
+        [
+            "success" => $success,
+            "message" => $message
+        ],
 
-/* ==========================================================
-   RECEIVE INPUT
-========================================================== */
-
-$candidateId =
-
-    $_POST["candidate_id"] ?? "";
-
-/*
-   Initialize candidate variable.
-
-   This ensures the variable is defined
-   before it is used later in the file.
-*/
-
-$candidate = [];
-
-$candidateName =
-
-    trim(
-
-        $_POST["candidate_name"] ?? ""
+        $extra
 
     );
 
-/* ==========================================================
-   BASIC VALIDATION
-========================================================== */
 
-if(
+    $json = json_encode(
 
-    $candidateId === "" ||
+        $response,
 
-    $candidateName === ""
-
-){
-
-    response(
-
-        false,
-
-        "Candidate information is missing."
+        JSON_UNESCAPED_UNICODE |
+        JSON_UNESCAPED_SLASHES |
+        JSON_INVALID_UTF8_SUBSTITUTE
 
     );
 
-}
 
-/* ==========================================================
-   NOTA VALIDATION
-========================================================== */
+    /*
+        Extra safety in case json_encode itself fails.
+    */
 
-$isNOTA = (
+    if ($json === false) {
 
-    strtoupper(
+        $json = json_encode(
 
-        (string)$candidateId
+            [
+                "success" => false,
+                "message" => "Unable to generate server response."
+            ],
 
-    ) === "NOTA"
-
-);
-
-if($isNOTA){
-
-    $_SESSION["selected_candidate_id"] = "NOTA";
-
-    $_SESSION["selected_candidate_name"] = "NOTA";
-
-}
-
-/* ==========================================================
-   NORMAL CANDIDATE VALIDATION
-========================================================== */
-
-else{
-
-    if(
-
-        !ctype_digit(
-
-            (string)$candidateId
-
-        )
-
-    ){
-
-        response(
-
-            false,
-
-            "Invalid candidate."
+            JSON_UNESCAPED_UNICODE
 
         );
 
     }
 
-    $candidateId = (int)$candidateId;
 
-    $query = "
+    echo $json;
+
+    exit();
+
+}
+
+
+/* ==========================================================
+   LOGIN PROTECTION
+========================================================== */
+
+if (
+
+    !isset($_SESSION["student_logged_in"]) ||
+
+    $_SESSION["student_logged_in"] !== true
+
+) {
+
+    sendResponse(
+
+        false,
+
+        "Unauthorized access.",
+
+        [],
+
+        401
+
+    );
+
+}
+
+
+/* ==========================================================
+   REQUEST METHOD VALIDATION
+========================================================== */
+
+if (
+
+    ($_SERVER["REQUEST_METHOD"] ?? "") !== "POST"
+
+) {
+
+    sendResponse(
+
+        false,
+
+        "Invalid request method.",
+
+        [],
+
+        405
+
+    );
+
+}
+
+
+/* ==========================================================
+   DATABASE
+========================================================== */
+
+try {
+
+    require_once "../../config/database.php";
+
+} catch (Throwable $error) {
+
+    error_log(
+
+        "VOTIFY save_selection.php: Database configuration error - " .
+
+        $error->getMessage()
+
+    );
+
+
+    sendResponse(
+
+        false,
+
+        "Database connection error.",
+
+        [],
+
+        500
+
+    );
+
+}
+
+
+/** @var mysqli $conn */
+
+
+/* ==========================================================
+   DATABASE CONNECTION VALIDATION
+========================================================== */
+
+if (
+
+    !isset($conn) ||
+
+    !($conn instanceof mysqli)
+
+) {
+
+    error_log(
+
+        "VOTIFY save_selection.php: Invalid database connection."
+
+    );
+
+
+    sendResponse(
+
+        false,
+
+        "Database connection error.",
+
+        [],
+
+        500
+
+    );
+
+}
+
+
+/* ==========================================================
+   RECEIVE CANDIDATE ID
+========================================================== */
+
+$candidateId = trim(
+
+    (string) (
+
+        $_POST["candidate_id"] ?? ""
+
+    )
+
+);
+
+
+/* ==========================================================
+   BASIC VALIDATION
+========================================================== */
+
+if ($candidateId === "") {
+
+    sendResponse(
+
+        false,
+
+        "Candidate information is missing.",
+
+        [],
+
+        400
+
+    );
+
+}
+
+
+/* ==========================================================
+   NOTA
+========================================================== */
+
+$isNOTA = (
+
+    strtoupper($candidateId) === "NOTA"
+
+);
+
+
+if ($isNOTA) {
+
+    /* ======================================================
+       SAVE NOTA SELECTION
+    ====================================================== */
+
+    $_SESSION["selected_candidate_id"] =
+        "NOTA";
+
+    $_SESSION["selected_candidate_name"] =
+        "NOTA";
+
+    $_SESSION["selected_candidate_photo"] =
+        "";
+
+    $_SESSION["selected_candidate_department"] =
+        "None Of The Above";
+
+    $_SESSION["selected_candidate_year"] =
+        "Reject All Candidates";
+
+    $_SESSION["selected_candidate_manifesto"] =
+        "Select NOTA if you believe none of the available candidates deserve your vote. Your vote will still be counted as a valid vote.";
+
+
+    /* ======================================================
+       SUCCESS RESPONSE
+    ====================================================== */
+
+    sendResponse(
+
+        true,
+
+        "NOTA selection saved successfully.",
+
+        [
+
+            "candidate" => [
+
+                "id" => "NOTA",
+
+                "name" => "NOTA",
+
+                "department" =>
+                    "None Of The Above",
+
+                "year" =>
+                    "Reject All Candidates",
+
+                "photo" => "",
+
+                "manifesto" =>
+                    $_SESSION[
+                        "selected_candidate_manifesto"
+                    ]
+
+            ]
+
+        ]
+
+    );
+
+}
+
+
+/* ==========================================================
+   NORMAL CANDIDATE ID VALIDATION
+========================================================== */
+
+if (!ctype_digit($candidateId)) {
+
+    sendResponse(
+
+        false,
+
+        "Invalid candidate.",
+
+        [],
+
+        400
+
+    );
+
+}
+
+
+/* ==========================================================
+   CONVERT CANDIDATE ID
+========================================================== */
+
+$candidateId = (int) $candidateId;
+
+
+/* ==========================================================
+   BASIC INTEGER SAFETY
+========================================================== */
+
+if ($candidateId <= 0) {
+
+    sendResponse(
+
+        false,
+
+        "Invalid candidate.",
+
+        [],
+
+        400
+
+    );
+
+}
+
+
+/* ==========================================================
+   FETCH TRUSTED CANDIDATE DATA
+========================================================== */
+
+$query = "
 
     SELECT
 
         id,
-
         full_name,
-
+        department,
+        year,
+        manifesto,
+        photo,
         status
 
     FROM candidates
 
-    WHERE
-
-        id = ?
+    WHERE id = ?
 
     LIMIT 1
 
-    ";
+";
+
+
+try {
 
     $stmt = mysqli_prepare(
 
@@ -232,200 +438,388 @@ else{
 
     );
 
-    if(!$stmt){
+} catch (Throwable $error) {
 
-        response(
+    error_log(
 
-            false,
+        "VOTIFY save_selection.php: Prepare exception - " .
 
-            "Database error."
-
-        );
-
-    }
-
-    mysqli_stmt_bind_param(
-
-        $stmt,
-
-        "i",
-
-        $candidateId
+        $error->getMessage()
 
     );
 
-    if(
 
-        !mysqli_stmt_execute(
+    mysqli_close($conn);
 
-            $stmt
 
-        )
+    sendResponse(
 
-    ){
+        false,
 
-        mysqli_stmt_close(
+        "Database error.",
 
-            $stmt
+        [],
 
-        );
-
-        response(
-
-            false,
-
-            "Database error."
-
-        );
-
-    }
-
-    $result = mysqli_stmt_get_result(
-
-        $stmt
+        500
 
     );
-
-    if(
-
-        mysqli_num_rows(
-
-            $result
-
-        ) !== 1
-
-    ){
-
-        mysqli_stmt_close(
-
-            $stmt
-
-        );
-
-        response(
-
-            false,
-
-            "Candidate not found."
-
-        );
-
-    }
-
-    $candidate = mysqli_fetch_assoc(
-
-        $result
-
-    );
-
-    mysqli_stmt_close(
-
-        $stmt
-
-    );
-
-    /* ==============================================
-       ACTIVE STATUS CHECK
-    ============================================== */
-
-    if(
-
-        strcasecmp(
-
-            trim(
-
-                $candidate["status"]
-
-            ),
-
-            "Active"
-
-        ) !== 0
-
-    ){
-
-        response(
-
-            false,
-
-            "Candidate is inactive."
-
-        );
-
-    }
-
-    /* ==============================================
-       NAME VERIFICATION
-    ============================================== */
-
-    if(
-
-        trim(
-
-            $candidate["full_name"]
-
-        ) !== $candidateName
-
-    ){
-
-        response(
-
-            false,
-
-            "Candidate verification failed."
-
-        );
-
-    }
 
 }
 
-/* ==========================================================
-   PART 3
-   SAVE SESSION
-   RETURN JSON SUCCESS
-========================================================== */
 
-/* ==========================================================
-   SAVE NORMAL CANDIDATE SESSION
-========================================================== */
+if (!$stmt) {
 
-if(!$isNOTA){
+    error_log(
 
-    $_SESSION["selected_candidate_id"] =
+        "VOTIFY save_selection.php: Unable to prepare candidate query. " .
 
-        $candidate["id"];
+        mysqli_error($conn)
 
-    $_SESSION["selected_candidate_name"] =
+    );
 
-        trim(
 
-            $candidate["full_name"]
+    mysqli_close($conn);
 
-        );
+
+    sendResponse(
+
+        false,
+
+        "Database error.",
+
+        [],
+
+        500
+
+    );
 
 }
+
+
+/* ==========================================================
+   BIND CANDIDATE ID
+========================================================== */
+
+if (!mysqli_stmt_bind_param(
+
+    $stmt,
+
+    "i",
+
+    $candidateId
+
+)) {
+
+    error_log(
+
+        "VOTIFY save_selection.php: Unable to bind candidate ID."
+
+    );
+
+
+    mysqli_stmt_close($stmt);
+
+    mysqli_close($conn);
+
+
+    sendResponse(
+
+        false,
+
+        "Database error.",
+
+        [],
+
+        500
+
+    );
+
+}
+
+
+/* ==========================================================
+   EXECUTE QUERY
+========================================================== */
+
+if (!mysqli_stmt_execute($stmt)) {
+
+    error_log(
+
+        "VOTIFY save_selection.php: Candidate query execution failed. " .
+
+        mysqli_stmt_error($stmt)
+
+    );
+
+
+    mysqli_stmt_close($stmt);
+
+    mysqli_close($conn);
+
+
+    sendResponse(
+
+        false,
+
+        "Database error.",
+
+        [],
+
+        500
+
+    );
+
+}
+
+
+/* ==========================================================
+   FETCH RESULT
+   bind_result is retained for shared-host compatibility.
+========================================================== */
+
+if (!mysqli_stmt_bind_result(
+
+    $stmt,
+
+    $dbCandidateId,
+
+    $dbFullName,
+
+    $dbDepartment,
+
+    $dbYear,
+
+    $dbManifesto,
+
+    $dbPhoto,
+
+    $dbStatus
+
+)) {
+
+    error_log(
+
+        "VOTIFY save_selection.php: Unable to bind result."
+
+    );
+
+
+    mysqli_stmt_close($stmt);
+
+    mysqli_close($conn);
+
+
+    sendResponse(
+
+        false,
+
+        "Database error.",
+
+        [],
+
+        500
+
+    );
+
+}
+
+
+/* ==========================================================
+   FETCH CANDIDATE
+========================================================== */
+
+if (!mysqli_stmt_fetch($stmt)) {
+
+    mysqli_stmt_close($stmt);
+
+    mysqli_close($conn);
+
+
+    sendResponse(
+
+        false,
+
+        "Candidate not found.",
+
+        [],
+
+        404
+
+    );
+
+}
+
+
+/* ==========================================================
+   CLOSE STATEMENT
+========================================================== */
+
+mysqli_stmt_close($stmt);
+
+
+/* ==========================================================
+   ACTIVE STATUS CHECK
+========================================================== */
+
+if (
+
+    strcasecmp(
+
+        trim((string) $dbStatus),
+
+        "Active"
+
+    ) !== 0
+
+) {
+
+    mysqli_close($conn);
+
+
+    sendResponse(
+
+        false,
+
+        "Candidate is inactive.",
+
+        [],
+
+        400
+
+    );
+
+}
+
+
+/* ==========================================================
+   NORMALIZE DATABASE VALUES
+========================================================== */
+
+$dbCandidateId = (int) $dbCandidateId;
+
+$dbFullName = trim(
+
+    (string) $dbFullName
+
+);
+
+$dbDepartment = trim(
+
+    (string) $dbDepartment
+
+);
+
+$dbYear = trim(
+
+    (string) $dbYear
+
+);
+
+$dbPhoto = trim(
+
+    (string) $dbPhoto
+
+);
+
+$dbManifesto = (string) $dbManifesto;
+
+
+/* ==========================================================
+   CANDIDATE DATA VALIDATION
+========================================================== */
+
+if ($dbFullName === "") {
+
+    mysqli_close($conn);
+
+
+    sendResponse(
+
+        false,
+
+        "Candidate information is incomplete.",
+
+        [],
+
+        400
+
+    );
+
+}
+
+
+/* ==========================================================
+   SAVE TRUSTED DATA TO SESSION
+========================================================== */
+
+$_SESSION["selected_candidate_id"] =
+    $dbCandidateId;
+
+$_SESSION["selected_candidate_name"] =
+    $dbFullName;
+
+$_SESSION["selected_candidate_photo"] =
+    $dbPhoto;
+
+$_SESSION["selected_candidate_department"] =
+    $dbDepartment;
+
+$_SESSION["selected_candidate_year"] =
+    $dbYear;
+
+$_SESSION["selected_candidate_manifesto"] =
+    $dbManifesto;
+
 
 /* ==========================================================
    CLOSE DATABASE CONNECTION
 ========================================================== */
 
-mysqli_close(
+mysqli_close($conn);
 
-    $conn
-
-);
 
 /* ==========================================================
    SUCCESS RESPONSE
 ========================================================== */
 
-response(
+sendResponse(
 
     true,
 
-    "Candidate selection saved successfully."
+    "Candidate selection saved successfully.",
+
+    [
+
+        "candidate" => [
+
+            "id" =>
+                $dbCandidateId,
+
+            "name" =>
+                $dbFullName,
+
+            "department" =>
+                $dbDepartment,
+
+            "year" =>
+                $dbYear,
+
+            "photo" =>
+                $dbPhoto,
+
+            "manifesto" =>
+                $dbManifesto
+
+        ]
+
+    ],
+
+    200
 
 );
 
+
+/* ==========================================================
+   END OF FILE
+========================================================== */
 ?>

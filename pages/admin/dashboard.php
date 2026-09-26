@@ -76,6 +76,88 @@ $electionStopTimestamp = null;
 
 
 /* ==========================================================
+   CURRENT ELECTION CYCLE START TIME
+========================================================== */
+
+/*
+ * Always fetch the latest Election Started event.
+ *
+ * This is required because the dashboard must restore
+ * the running timer correctly after page refresh.
+ *
+ * The latest start event represents the current election
+ * cycle when the election is Started or Stopped.
+ */
+
+if (
+    $electionStatus === "Started" ||
+    $electionStatus === "Stopped"
+) {
+
+    $startStmt = mysqli_prepare(
+
+        $conn,
+
+        "SELECT
+            UNIX_TIMESTAMP(created_at) AS start_timestamp
+         FROM admin_logs
+         WHERE action = 'Election Started'
+         ORDER BY id DESC
+         LIMIT 1"
+
+    );
+
+
+    if ($startStmt) {
+
+        if (mysqli_stmt_execute($startStmt)) {
+
+            $startResult =
+                mysqli_stmt_get_result(
+                    $startStmt
+                );
+
+
+            if (
+
+                $startResult &&
+                mysqli_num_rows($startResult) > 0
+
+            ) {
+
+                $startRow =
+                    mysqli_fetch_assoc(
+                        $startResult
+                    );
+
+
+                if (
+                    isset(
+                        $startRow["start_timestamp"]
+                    )
+                    &&
+                    $startRow["start_timestamp"] !== null
+                ) {
+
+                    $electionStartTimestamp =
+                        (int)
+                        $startRow["start_timestamp"];
+
+                }
+
+            }
+
+        }
+
+
+        mysqli_stmt_close($startStmt);
+
+    }
+
+}
+
+
+/* ==========================================================
    CURRENT ELECTION CYCLE STOP TIME
 ========================================================== */
 
@@ -95,38 +177,92 @@ if (
 
 ) {
 
-    $stopQuery = mysqli_query(
+    $stopStmt = mysqli_prepare(
 
         $conn,
 
         "SELECT
-            UNIX_TIMESTAMP(created_at) AS event_time
+            UNIX_TIMESTAMP(created_at) AS stop_timestamp
          FROM admin_logs
          WHERE action = 'Election Stopped'
-           AND created_at >= FROM_UNIXTIME(
-               " . (int) $electionStartTimestamp . "
-           )
+           AND created_at >= FROM_UNIXTIME(?)
          ORDER BY id DESC
          LIMIT 1"
 
     );
 
-    if (
 
-        $stopQuery &&
-        mysqli_num_rows($stopQuery)
+    if ($stopStmt) {
 
-    ) {
+        mysqli_stmt_bind_param(
 
-        $stopRow =
-            mysqli_fetch_assoc(
-                $stopQuery
-            );
+            $stopStmt,
 
-        $electionStopTimestamp =
-            !empty($stopRow["event_time"])
-                ? (int) $stopRow["event_time"]
-                : null;
+            "i",
+
+            $electionStartTimestamp
+
+        );
+
+
+        if (mysqli_stmt_execute($stopStmt)) {
+
+            $stopResult =
+                mysqli_stmt_get_result(
+                    $stopStmt
+                );
+
+
+            if (
+
+                $stopResult &&
+                mysqli_num_rows($stopResult) > 0
+
+            ) {
+
+                $stopRow =
+                    mysqli_fetch_assoc(
+                        $stopResult
+                    );
+
+
+                if (
+                    isset(
+                        $stopRow["stop_timestamp"]
+                    )
+                    &&
+                    $stopRow["stop_timestamp"] !== null
+                ) {
+
+                    $candidateStopTimestamp =
+                        (int)
+                        $stopRow["stop_timestamp"];
+
+
+                    /*
+                     * Safety validation:
+                     * Stop time must never be before
+                     * the current election start time.
+                     */
+
+                    if (
+                        $candidateStopTimestamp >=
+                        $electionStartTimestamp
+                    ) {
+
+                        $electionStopTimestamp =
+                            $candidateStopTimestamp;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        mysqli_stmt_close($stopStmt);
 
     }
 
@@ -318,9 +454,7 @@ name="viewport"
 content="width=device-width, initial-scale=1.0">
 
 <title>
-
 Admin Dashboard | VOTIFY
-
 </title>
 
 

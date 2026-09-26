@@ -17,21 +17,35 @@ let canvassingCurrentYear = "all";
 
 
 /* ==========================================================
+   VOTIFY CANVASSING NAMESPACE
+========================================================== */
+
+window.VOTIFY_CANVASSING =
+    window.VOTIFY_CANVASSING || {};
+
+window.VOTIFY_CANVASSING.electionStatus =
+    "Ready";
+
+
+/* ==========================================================
    DOM READY
 ========================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-    initializeCanvassing();
+        initializeCanvassing();
 
-});
+    }
+);
 
 
 /* ==========================================================
    INITIALIZE CANVASSING
 ========================================================== */
 
-function initializeCanvassing(){
+async function initializeCanvassing(){
 
     console.log("1 Search");
 
@@ -53,10 +67,270 @@ function initializeCanvassing(){
     initializeCanvassingExportButton();
 
 
+    /*
+     * Load the current election status from the server.
+     *
+     * This determines whether the certificate/export
+     * button should be available.
+     */
+
+    await loadCanvassingElectionStatus();
+
+
     console.log(
         "%cVOTIFY Canvassing Ready",
         "color:#3B82F6;font-size:14px;font-weight:bold;"
     );
+
+}
+
+
+/* ==========================================================
+   LOAD ELECTION STATUS
+========================================================== */
+
+async function loadCanvassingElectionStatus(){
+
+    try{
+
+        const response =
+            await fetch(
+                "../../backend/admin/dashboard-status.php",
+                {
+                    method:
+                        "GET",
+
+                    credentials:
+                        "same-origin",
+
+                    cache:
+                        "no-store",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        if(!response.ok){
+
+            console.warn(
+                "VOTIFY: Unable to load election status.",
+                response.status
+            );
+
+            return false;
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "VOTIFY Canvassing Election Status:",
+            result
+        );
+
+
+        if(
+            result &&
+            result.success === true &&
+            typeof result.status === "string"
+        ){
+
+            window.VOTIFY_CANVASSING.electionStatus =
+                result.status.trim();
+
+        }
+
+
+        /*
+         * Only these statuses are valid.
+         */
+
+        const allowedStatuses = [
+
+            "Ready",
+
+            "Started",
+
+            "Stopped"
+
+        ];
+
+
+        if(
+            !allowedStatuses.includes(
+                window.VOTIFY_CANVASSING.electionStatus
+            )
+        ){
+
+            window.VOTIFY_CANVASSING.electionStatus =
+                "Ready";
+
+        }
+
+
+        applyCanvassingExportLock();
+
+
+        return true;
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Canvassing Election Status Error:",
+            error
+        );
+
+
+        return false;
+
+    }
+
+}
+
+
+/* ==========================================================
+   REFRESH ELECTION STATUS
+========================================================== */
+
+async function refreshCanvassingElectionStatus(){
+
+    return await loadCanvassingElectionStatus();
+
+}
+
+
+/* ==========================================================
+   CHECK ELECTION RUNNING
+========================================================== */
+
+function isCanvassingElectionRunning(){
+
+    return (
+        window.VOTIFY_CANVASSING.electionStatus ===
+        "Started"
+    );
+
+}
+
+
+/* ==========================================================
+   APPLY EXPORT LOCK
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Do NOT use disabled=true.
+ *
+ * The Export Report element is an <a> tag.
+ * We need the click event to fire so that we can
+ * show the permission toast.
+ *
+ * Therefore:
+ *
+ * Election Started:
+ *
+ *     - visually locked
+ *     - cursor-not-allowed
+ *     - click still works
+ *     - toast appears
+ *     - navigation blocked
+ *
+ * Election Ready / Stopped:
+ *
+ *     - normal button
+ *     - navigation allowed
+ *
+ */
+
+function applyCanvassingExportLock(){
+
+    const exportButton =
+        document.getElementById(
+            "exportCanvassingReport"
+        );
+
+
+    if(!exportButton){
+
+        return;
+
+    }
+
+
+    const isRunning =
+        isCanvassingElectionRunning();
+
+
+    if(isRunning){
+
+        /*
+         * Visual locked state.
+         */
+
+        exportButton.setAttribute(
+            "aria-disabled",
+            "true"
+        );
+
+
+        exportButton.setAttribute(
+            "title",
+            "Certificate export is disabled while the election is running."
+        );
+
+
+        exportButton.classList.add(
+            "opacity-50",
+            "cursor-not-allowed"
+        );
+
+
+        exportButton.classList.remove(
+            "hover:brightness-110",
+            "hover:shadow-[0_0_30px_rgba(139,92,246,0.45)]"
+        );
+
+    }
+
+    else{
+
+        /*
+         * Normal state.
+         */
+
+        exportButton.removeAttribute(
+            "aria-disabled"
+        );
+
+
+        exportButton.setAttribute(
+            "title",
+            "Export Report"
+        );
+
+
+        exportButton.classList.remove(
+            "opacity-50",
+            "cursor-not-allowed"
+        );
+
+
+        exportButton.classList.add(
+            "hover:brightness-110",
+            "hover:shadow-[0_0_30px_rgba(139,92,246,0.45)]"
+        );
+
+    }
 
 }
 
@@ -120,38 +394,40 @@ function initializeCanvassingFilters(){
     }
 
 
-    filterButtons.forEach(button => {
+    filterButtons.forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                const selectedYear =
-                    button.dataset.year;
+                    const selectedYear =
+                        button.dataset.year;
 
 
-                if(!selectedYear){
+                    if(!selectedYear){
 
-                    return;
+                        return;
+
+                    }
+
+
+                    canvassingCurrentYear =
+                        selectedYear;
+
+
+                    updateCanvassingFilterButtons(
+                        button
+                    );
+
+
+                    updateCanvassingTable();
 
                 }
+            );
 
-
-                canvassingCurrentYear =
-                    selectedYear;
-
-
-                updateCanvassingFilterButtons(
-                    button
-                );
-
-
-                updateCanvassingTable();
-
-            }
-        );
-
-    });
+        }
+    );
 
 }
 
@@ -168,49 +444,43 @@ function updateCanvassingFilterButtons(
         .querySelectorAll(
             ".canvassing-year-btn"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            /* ==========================================
-               RESET BUTTON
-            ========================================== */
+                button.classList.remove(
 
-            button.classList.remove(
+                    "bg-gradient-to-r",
 
-                "bg-gradient-to-r",
+                    "from-blue-500",
 
-                "from-blue-500",
+                    "via-purple-500",
 
-                "via-purple-500",
+                    "to-pink-500",
 
-                "to-pink-500",
+                    "text-white",
 
-                "text-white",
+                    "shadow-lg",
 
-                "shadow-lg",
+                    "shadow-purple-500/20"
 
-                "shadow-purple-500/20"
-
-            );
+                );
 
 
-            button.classList.add(
+                button.classList.add(
 
-                "bg-white/5",
+                    "bg-white/5",
 
-                "border",
+                    "border",
 
-                "border-white/10",
+                    "border-white/10",
 
-                "text-slate-300"
+                    "text-slate-300"
 
-            );
+                );
 
-        });
+            }
+        );
 
-
-    /* ==========================================
-       ACTIVE BUTTON
-    ========================================== */
 
     activeButton.classList.remove(
 
@@ -297,10 +567,6 @@ function updateCanvassingTable(){
         getCanvassingRows();
 
 
-    /* ======================================================
-       NO CANDIDATES
-    ====================================================== */
-
     if(!rows.length){
 
         updateCanvassingEmptyState(
@@ -315,102 +581,65 @@ function updateCanvassingTable(){
     let visibleRows = 0;
 
 
-    /* ======================================================
-       CHECK EACH ROW
-    ====================================================== */
+    rows.forEach(
+        row => {
 
-    rows.forEach(row => {
-
-
-        /* ==================================================
-           CANDIDATE NAME
-        ================================================== */
-
-        const candidateName =
-
-            (
-                row.dataset.name || ""
-            )
-            .toLowerCase();
+            const candidateName =
+                (
+                    row.dataset.name || ""
+                )
+                .toLowerCase();
 
 
-        /* ==================================================
-           CANDIDATE YEAR
-        ================================================== */
-
-        const candidateYear =
-
-            (
-                row.dataset.year || ""
-            );
+            const candidateYear =
+                (
+                    row.dataset.year || ""
+                );
 
 
-        /* ==================================================
-           SEARCH MATCH
-        ================================================== */
-
-        const searchMatch =
-
-            candidateName.includes(
-
-                canvassingSearchKeyword
-
-            );
+            const searchMatch =
+                candidateName.includes(
+                    canvassingSearchKeyword
+                );
 
 
-        /* ==================================================
-           YEAR MATCH
-        ================================================== */
+            const yearMatch =
 
-        const yearMatch =
+                canvassingCurrentYear ===
+                    "all"
 
-            canvassingCurrentYear === "all"
+                ||
 
-            ||
-
-            candidateYear ===
-            canvassingCurrentYear;
+                candidateYear ===
+                    canvassingCurrentYear;
 
 
-        /* ==================================================
-           FINAL MATCH
-        ================================================== */
-
-        const shouldShow =
-
-            searchMatch &&
-            yearMatch;
+            const shouldShow =
+                searchMatch &&
+                yearMatch;
 
 
-        /* ==================================================
-           SHOW / HIDE ROW
-        ================================================== */
+            if(shouldShow){
 
-        if(shouldShow){
+                row.style.display = "";
 
-            row.style.display = "";
+                visibleRows++;
 
-            visibleRows++;
+            }
+
+            else{
+
+                row.style.display =
+                    "none";
+
+            }
 
         }
+    );
 
-        else{
-
-            row.style.display = "none";
-
-        }
-
-    });
-
-
-    /* ======================================================
-       EMPTY SEARCH RESULT
-    ====================================================== */
 
     updateCanvassingEmptyState(
-
         visibleRows === 0
-
     );
 
 }
@@ -476,12 +705,16 @@ function initializeCanvassingExportButton(){
 
 
     exportButton.addEventListener(
-
         "click",
-
         handleCanvassingExport
-
     );
+
+
+    /*
+     * Initial visual state.
+     */
+
+    applyCanvassingExportLock();
 
 }
 
@@ -490,41 +723,50 @@ function initializeCanvassingExportButton(){
    HANDLE EXPORT
 ========================================================== */
 
-function handleCanvassingExport(){
+async function handleCanvassingExport(
+    event
+){
 
     /*
-       ======================================================
-       TEMPORARY EXPORT HANDLER
-       ======================================================
+     * ALWAYS prevent the default <a> navigation first.
+     *
+     * We decide whether navigation is allowed after
+     * checking the latest election status.
+     */
 
-       Excel/PDF export is intentionally disabled.
-
-       Final certificate generation will be implemented
-       after the election result workflow is finalized.
-
-       Planned result:
-
-       #1 → Chairman
-       #2 → Vice-Chairman
-       #3 → Joint Secretary
-
-       Remaining candidates will be shown in the
-       final result summary.
-
-       ======================================================
-    */
+    event.preventDefault();
 
 
-    if(typeof showToast === "function"){
+    const exportButton =
+        document.getElementById(
+            "exportCanvassingReport"
+        );
 
-        showToast(
 
-            "warning",
+    if(!exportButton){
 
-            "Result Certificate",
+        return;
 
-            "Certificate generation will be available after the election result is finalized."
+    }
 
+
+    /*
+     * Refresh status immediately before export.
+     *
+     * This prevents a stale page from allowing
+     * certificate access after the election starts.
+     */
+
+    const statusChecked =
+        await refreshCanvassingElectionStatus();
+
+
+    if(!statusChecked){
+
+        showCanvassingToast(
+            "error",
+            "Unable to Check Election",
+            "Please refresh the page and try again."
         );
 
         return;
@@ -532,10 +774,100 @@ function handleCanvassingExport(){
     }
 
 
-    console.log(
+    /* ======================================================
+       ELECTION RUNNING
+    ====================================================== */
 
-        "Canvassing export clicked."
+    if(
+        isCanvassingElectionRunning()
+    ){
 
+        applyCanvassingExportLock();
+
+
+        showCanvassingToast(
+            "warning",
+            "Export Disabled",
+            "Certificate export is disabled while the election is running."
+        );
+
+
+        return;
+
+    }
+
+
+    /* ======================================================
+       ELECTION READY / STOPPED
+    ====================================================== */
+
+    /*
+     * Only after the latest status confirms that the election
+     * is NOT running do we allow navigation.
+     */
+
+    const targetUrl =
+        exportButton.getAttribute(
+            "href"
+        );
+
+
+    if(
+        !targetUrl
+    ){
+
+        showCanvassingToast(
+            "error",
+            "Export Error",
+            "Certificate page is unavailable."
+        );
+
+        return;
+
+    }
+
+
+    window.location.href =
+        targetUrl;
+
+}
+
+
+/* ==========================================================
+   CANVASSING TOAST
+========================================================== */
+
+/*
+ * Use the existing VOTIFY toast system.
+ *
+ * The fallback console message prevents JavaScript
+ * failure if toast.js is unavailable.
+ */
+
+function showCanvassingToast(
+    type,
+    title,
+    message
+){
+
+    if(
+        typeof showToast ===
+        "function"
+    ){
+
+        showToast(
+            type,
+            title,
+            message
+        );
+
+        return;
+
+    }
+
+
+    console.warn(
+        title + ": " + message
     );
 
 }
@@ -558,20 +890,16 @@ function debounceCanvassing(
 
     return (...args) => {
 
-
         clearTimeout(timer);
 
 
         timer = setTimeout(
-
             () => {
 
                 callback(...args);
 
             },
-
             delay
-
         );
 
     };

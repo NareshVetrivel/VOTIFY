@@ -11,14 +11,6 @@
    CURRENT ELECTION SESSION TIMING
 ========================================================== */
 
-/*
- * These variables belong only to the current page session.
- *
- * IMPORTANT:
- * We do NOT depend on the old PHP start timestamp after
- * the administrator starts a new election.
- */
-
 let currentElectionStartTimestamp = null;
 
 let currentElectionStopTimestamp = null;
@@ -82,17 +74,161 @@ function initializeSidebar() {
     }
 
 
-    /* ==========================================
+    /* ======================================================
+       MOBILE PAGE SCROLL LOCK STATE
+    ====================================================== */
+
+    let savedScrollY = 0;
+
+    let isScrollLocked = false;
+
+
+    /* ======================================================
+       LOCK PAGE SCROLL
+    ====================================================== */
+
+    function lockPageScroll() {
+
+        if (isScrollLocked) {
+
+            return;
+
+        }
+
+
+        /*
+         * Save the exact current page scroll position.
+         */
+
+        savedScrollY =
+            window.scrollY ||
+            window.pageYOffset ||
+            0;
+
+
+        /*
+         * Fix the body in its current position.
+         *
+         * This prevents the website/background from
+         * scrolling while the mobile sidebar is open.
+         */
+
+        document.body.style.position =
+            "fixed";
+
+        document.body.style.top =
+            `-${savedScrollY}px`;
+
+        document.body.style.left =
+            "0";
+
+        document.body.style.right =
+            "0";
+
+        document.body.style.width =
+            "100%";
+
+        document.body.style.overflow =
+            "hidden";
+
+
+        /*
+         * Prevent layout shift when a scrollbar exists.
+         */
+
+        const scrollbarWidth =
+            window.innerWidth -
+            document.documentElement.clientWidth;
+
+
+        if (scrollbarWidth > 0) {
+
+            document.body.style.paddingRight =
+                `${scrollbarWidth}px`;
+
+        }
+
+
+        isScrollLocked = true;
+
+    }
+
+
+    /* ======================================================
+       RESTORE PAGE SCROLL
+    ====================================================== */
+
+    function unlockPageScroll() {
+
+        if (!isScrollLocked) {
+
+            return;
+
+        }
+
+
+        /*
+         * Restore the body's original inline state.
+         */
+
+        document.body.style.position =
+            "";
+
+        document.body.style.top =
+            "";
+
+        document.body.style.left =
+            "";
+
+        document.body.style.right =
+            "";
+
+        document.body.style.width =
+            "";
+
+        document.body.style.overflow =
+            "";
+
+        document.body.style.paddingRight =
+            "";
+
+
+        /*
+         * Restore the exact position where the user
+         * was before opening the sidebar.
+         */
+
+        window.scrollTo(
+            0,
+            savedScrollY
+        );
+
+
+        isScrollLocked = false;
+
+    }
+
+
+    /* ======================================================
        OPEN SIDEBAR
-    ========================================== */
+    ====================================================== */
 
     function openSidebar() {
+
+        /*
+         * Sidebar is intended for mobile/tablet only.
+         */
 
         if (window.innerWidth >= 1024) {
 
             return;
 
         }
+
+
+        /*
+         * Move sidebar into the viewport.
+         */
 
         sidebar.classList.remove(
             "-translate-x-full"
@@ -102,14 +238,21 @@ function initializeSidebar() {
             "translate-x-0"
         );
 
+
         /*
          * Force the correct transform.
-         * This avoids Tailwind class conflicts.
+         *
+         * This preserves the existing VOTIFY sidebar
+         * behaviour and avoids Tailwind transform conflicts.
          */
 
         sidebar.style.transform =
             "translateX(0)";
 
+
+        /*
+         * Show mobile overlay if available.
+         */
 
         if (overlay) {
 
@@ -119,20 +262,43 @@ function initializeSidebar() {
 
         }
 
+
+        /*
+         * IMPORTANT:
+         *
+         * Lock ONLY the website/background scroll.
+         *
+         * The sidebar's internal <nav> remains scrollable
+         * through overflow-y-auto + overscroll-contain.
+         */
+
+        lockPageScroll();
+
     }
 
 
-    /* ==========================================
+    /* ======================================================
        CLOSE SIDEBAR
-    ========================================== */
+    ====================================================== */
 
     function closeSidebar() {
 
+        /*
+         * Desktop sidebar must remain visible.
+         */
+
         if (window.innerWidth >= 1024) {
+
+            unlockPageScroll();
 
             return;
 
         }
+
+
+        /*
+         * Move sidebar outside the viewport.
+         */
 
         sidebar.classList.remove(
             "translate-x-0"
@@ -142,6 +308,7 @@ function initializeSidebar() {
             "-translate-x-full"
         );
 
+
         /*
          * Force sidebar outside the screen.
          */
@@ -149,6 +316,10 @@ function initializeSidebar() {
         sidebar.style.transform =
             "translateX(-100%)";
 
+
+        /*
+         * Hide mobile overlay.
+         */
 
         if (overlay) {
 
@@ -158,12 +329,19 @@ function initializeSidebar() {
 
         }
 
+
+        /*
+         * Restore website scrolling.
+         */
+
+        unlockPageScroll();
+
     }
 
 
-    /* ==========================================
+    /* ======================================================
        MENU BUTTON
-    ========================================== */
+    ====================================================== */
 
     if (menuButton) {
 
@@ -181,9 +359,9 @@ function initializeSidebar() {
     }
 
 
-    /* ==========================================
+    /* ======================================================
        CLOSE BUTTON
-    ========================================== */
+    ====================================================== */
 
     if (closeButton) {
 
@@ -203,9 +381,9 @@ function initializeSidebar() {
     }
 
 
-    /* ==========================================
+    /* ======================================================
        OVERLAY CLOSE
-    ========================================== */
+    ====================================================== */
 
     if (overlay) {
 
@@ -221,9 +399,9 @@ function initializeSidebar() {
     }
 
 
-    /* ==========================================
-       CLOSE WHEN MENU LINK IS CLICKED
-    ========================================== */
+    /* ======================================================
+       CLOSE WHEN SIDEBAR LINK IS CLICKED
+    ====================================================== */
 
     sidebar
         .querySelectorAll("a")
@@ -247,9 +425,30 @@ function initializeSidebar() {
         });
 
 
-    /* ==========================================
+    /* ======================================================
+       ESC KEY CLOSE
+    ====================================================== */
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Escape" &&
+                window.innerWidth < 1024
+            ) {
+
+                closeSidebar();
+
+            }
+
+        }
+    );
+
+
+    /* ======================================================
        RESPONSIVE RESET
-    ========================================== */
+    ====================================================== */
 
     window.addEventListener(
         "resize",
@@ -283,31 +482,47 @@ function initializeSidebar() {
 
                 }
 
+
+                /*
+                 * If the user changed from mobile
+                 * to desktop while the sidebar was open,
+                 * restore page scrolling.
+                 */
+
+                unlockPageScroll();
+
             }
 
             else {
 
                 /*
                  * Mobile Sidebar
+                 *
+                 * Do not forcibly close an already-open
+                 * sidebar during normal mobile resizing.
                  */
 
-                sidebar.style.transform =
-                    "translateX(-100%)";
+                if (!isScrollLocked) {
 
-                sidebar.classList.remove(
-                    "translate-x-0"
-                );
+                    sidebar.style.transform =
+                        "translateX(-100%)";
 
-                sidebar.classList.add(
-                    "-translate-x-full"
-                );
-
-
-                if (overlay) {
-
-                    overlay.classList.add(
-                        "hidden"
+                    sidebar.classList.remove(
+                        "translate-x-0"
                     );
+
+                    sidebar.classList.add(
+                        "-translate-x-full"
+                    );
+
+
+                    if (overlay) {
+
+                        overlay.classList.add(
+                            "hidden"
+                        );
+
+                    }
 
                 }
 
@@ -626,20 +841,6 @@ function initializeElectionControls() {
                ACCESS DENIED
             ================================== */
 
-            /*
-             * IMPORTANT:
-             *
-             * Normal Admin users are allowed
-             * to click the buttons.
-             *
-             * Backend returns HTTP 403 because
-             * only Super Admin can change the
-             * election status.
-             *
-             * Instead of showing "Connection Error",
-             * show the actual authorization message.
-             */
-
             if (
                 response.status === 403
             ) {
@@ -745,10 +946,8 @@ function initializeElectionControls() {
 
 
             /*
-             * IMPORTANT:
-             *
-             * update-election.php now returns
-             * the exact server/database timestamp.
+             * update-election.php returns the
+             * exact server/database timestamp.
              */
 
             const serverTimestamp =

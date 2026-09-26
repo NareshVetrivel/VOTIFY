@@ -7,7 +7,25 @@
 
 session_start();
 
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=UTF-8");
+
+
+/* ==========================================================
+   REQUEST METHOD
+========================================================== */
+
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+
+    http_response_code(405);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Invalid request method."
+    ]);
+
+    exit;
+
+}
 
 
 /* ==========================================================
@@ -40,22 +58,31 @@ function getClientIp(): string
 
     $ip = $_SERVER["REMOTE_ADDR"] ?? "UNKNOWN";
 
+
     /*
     ----------------------------------------------------------
-    OPTIONAL PROXY / CLOUDFLARE SUPPORT
-
-    Only trust these headers if your deployment environment
-    uses a trusted reverse proxy.
+    CLOUDFLARE SUPPORT
     ----------------------------------------------------------
+
+    Only use this when the deployment environment
+    actually uses Cloudflare as a trusted proxy.
     */
 
     if (
         !empty($_SERVER["HTTP_CF_CONNECTING_IP"])
     ) {
-        $ip = $_SERVER["HTTP_CF_CONNECTING_IP"];
+
+        $ip =
+            $_SERVER["HTTP_CF_CONNECTING_IP"];
+
     }
 
-    return substr($ip, 0, 45);
+
+    return substr(
+        trim($ip),
+        0,
+        45
+    );
 }
 
 
@@ -63,20 +90,34 @@ function getClientIp(): string
    GET FORM DATA
 ========================================================== */
 
-$username = trim($_POST["username"] ?? "");
+$username =
+    trim(
+        (string) (
+            $_POST["username"] ?? ""
+        )
+    );
 
-$password = $_POST["password"] ?? "";
+$password =
+    (string) (
+        $_POST["password"] ?? ""
+    );
 
 
 /* ==========================================================
    EMPTY VALIDATION
 ========================================================== */
 
-if ($username === "" || $password === "") {
+if (
+    $username === "" ||
+    $password === ""
+) {
+
+    http_response_code(400);
 
     echo json_encode([
         "status" => "error",
-        "message" => "Username and Password are required."
+        "message" =>
+            "Username and Password are required."
     ]);
 
     exit;
@@ -101,18 +142,31 @@ $sql = "
     LIMIT 1
 ";
 
-$stmt = $conn->prepare($sql);
+
+$stmt =
+    mysqli_prepare(
+        $conn,
+        $sql
+    );
 
 
 /* ==========================================================
-   DATABASE ERROR CHECK
+   DATABASE PREPARE ERROR
 ========================================================== */
 
 if (!$stmt) {
 
+    error_log(
+        "VOTIFY Admin Login: "
+        . "Unable to prepare admin lookup."
+    );
+
+    http_response_code(500);
+
     echo json_encode([
         "status" => "error",
-        "message" => "Unable to process login request."
+        "message" =>
+            "Unable to process login request."
     ]);
 
     exit;
@@ -120,25 +174,110 @@ if (!$stmt) {
 }
 
 
-$stmt->bind_param("s", $username);
+/* ==========================================================
+   BIND USERNAME
+========================================================== */
 
-$stmt->execute();
+if (
+    !mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $username
+    )
+) {
 
-$result = $stmt->get_result();
+    mysqli_stmt_close($stmt);
+
+    error_log(
+        "VOTIFY Admin Login: "
+        . "Unable to bind username."
+    );
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" =>
+            "Unable to process login request."
+    ]);
+
+    exit;
+
+}
+
+
+/* ==========================================================
+   EXECUTE ADMIN LOOKUP
+========================================================== */
+
+if (
+    !mysqli_stmt_execute($stmt)
+) {
+
+    mysqli_stmt_close($stmt);
+
+    error_log(
+        "VOTIFY Admin Login: "
+        . "Admin lookup execution failed."
+    );
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" =>
+            "Unable to process login request."
+    ]);
+
+    exit;
+
+}
+
+
+/* ==========================================================
+   FETCH ADMIN DATA
+========================================================== */
+
+/*
+ * bind_result() is used instead of get_result()
+ * for broader shared-host compatibility.
+ */
+
+mysqli_stmt_bind_result(
+
+    $stmt,
+
+    $adminId,
+    $adminUsername,
+    $adminEmail,
+    $adminPassword,
+    $adminRole,
+    $adminIsActive
+
+);
+
+
+$adminFound =
+    mysqli_stmt_fetch($stmt);
+
+
+mysqli_stmt_close($stmt);
 
 
 /* ==========================================================
    ADMIN NOT FOUND
 ========================================================== */
 
-if ($result->num_rows !== 1) {
+if (!$adminFound) {
 
-    $stmt->close();
-    $conn->close();
+    mysqli_close($conn);
+
+    http_response_code(401);
 
     echo json_encode([
         "status" => "error",
-        "message" => "Invalid username or password."
+        "message" =>
+            "Invalid username or password."
     ]);
 
     exit;
@@ -146,21 +285,20 @@ if ($result->num_rows !== 1) {
 }
 
 
-$admin = $result->fetch_assoc();
-
-
 /* ==========================================================
    CHECK ADMIN ACCOUNT STATUS
 ========================================================== */
 
-if ((int)$admin["is_active"] !== 1) {
+if ((int) $adminIsActive !== 1) {
 
-    $stmt->close();
-    $conn->close();
+    mysqli_close($conn);
+
+    http_response_code(403);
 
     echo json_encode([
         "status" => "error",
-        "message" => "This admin account has been disabled."
+        "message" =>
+            "This admin account has been disabled."
     ]);
 
     exit;
@@ -172,14 +310,21 @@ if ((int)$admin["is_active"] !== 1) {
    VERIFY PASSWORD
 ========================================================== */
 
-if (!password_verify($password, $admin["password"])) {
+if (
+    !password_verify(
+        $password,
+        $adminPassword
+    )
+) {
 
-    $stmt->close();
-    $conn->close();
+    mysqli_close($conn);
+
+    http_response_code(401);
 
     echo json_encode([
         "status" => "error",
-        "message" => "Invalid username or password."
+        "message" =>
+            "Invalid username or password."
     ]);
 
     exit;
@@ -198,22 +343,28 @@ session_regenerate_id(true);
    STORE ADMIN SESSION
 ========================================================== */
 
-$_SESSION["admin_id"] = (int)$admin["id"];
+$_SESSION["admin_id"] =
+    (int) $adminId;
 
-$_SESSION["admin_username"] = $admin["username"];
+$_SESSION["admin_username"] =
+    $adminUsername;
 
-$_SESSION["admin_email"] = $admin["email"];
+$_SESSION["admin_email"] =
+    $adminEmail;
 
-$_SESSION["admin_role"] = $admin["role"];
+$_SESSION["admin_role"] =
+    $adminRole;
 
-$_SESSION["admin_logged_in"] = true;
+$_SESSION["admin_logged_in"] =
+    true;
 
 
 /* ==========================================================
    GET LOGIN IP
 ========================================================== */
 
-$loginIp = getClientIp();
+$loginIp =
+    getClientIp();
 
 
 /* ==========================================================
@@ -228,21 +379,57 @@ $updateSql = "
     WHERE id = ?
 ";
 
-$updateStmt = $conn->prepare($updateSql);
+
+$updateStmt =
+    mysqli_prepare(
+        $conn,
+        $updateSql
+    );
+
 
 if ($updateStmt) {
 
-    $adminId = (int)$admin["id"];
+    $adminIdForUpdate =
+        (int) $adminId;
 
-    $updateStmt->bind_param(
+
+    mysqli_stmt_bind_param(
+
+        $updateStmt,
+
         "si",
+
         $loginIp,
-        $adminId
+
+        $adminIdForUpdate
+
     );
 
-    $updateStmt->execute();
 
-    $updateStmt->close();
+    /*
+     * Last-login information is supplementary.
+     * A failure here must not invalidate an otherwise
+     * successful authentication.
+     */
+
+    if (
+        !mysqli_stmt_execute(
+            $updateStmt
+        )
+    ) {
+
+        error_log(
+            "VOTIFY Admin Login: "
+            . "Unable to update last login details."
+        );
+
+    }
+
+
+    mysqli_stmt_close(
+        $updateStmt
+    );
+
 }
 
 
@@ -252,14 +439,14 @@ if ($updateStmt) {
 
 logActivity(
 
-    (int)$admin["id"],
+    (int) $adminId,
 
-    $admin["username"],
+    $adminUsername,
 
     "Admin Login",
 
     "Administrator logged into the system. Role: "
-    . $admin["role"]
+    . $adminRole
     . ". Login IP: "
     . $loginIp
 
@@ -270,9 +457,7 @@ logActivity(
    CLOSE DATABASE
 ========================================================== */
 
-$stmt->close();
-
-$conn->close();
+mysqli_close($conn);
 
 
 /* ==========================================================
@@ -281,21 +466,26 @@ $conn->close();
 
 echo json_encode([
 
-    "status" => "success",
+    "status" =>
+        "success",
 
-    "message" => "Login Successful",
+    "message" =>
+        "Login Successful",
 
     "admin" => [
 
-        "username" => $admin["username"],
+        "username" =>
+            $adminUsername,
 
-        "email" => $admin["email"],
+        "email" =>
+            $adminEmail,
 
-        "role" => $admin["role"]
+        "role" =>
+            $adminRole
 
     ]
 
-]);
+], JSON_UNESCAPED_UNICODE);
 
 exit;
 

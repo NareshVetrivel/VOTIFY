@@ -7,9 +7,58 @@
 "use strict";
 
 
+/* ==========================================================
+   CANDIDATE STATE
+========================================================== */
+
 let editMode = false;
 
 let editingCandidateId = null;
+
+
+/* ==========================================================
+   ADMISSION NUMBER VALIDATION
+========================================================== */
+
+/*
+ * VOTIFY admission number format:
+ *
+ *     25CAPMCA080
+ *
+ * Structure:
+ *     2 digits + CAPMCA + 3 digits
+ *
+ * Total:
+ *     11 characters
+ *
+ * Example:
+ *     25CAPMCA080
+ */
+
+const VOTIFY_ADMISSION_REGEX =
+    /^[0-9]{2}CAPMCA[0-9]{3}$/;
+
+
+function isValidAdmissionNumber(
+    admissionNumber
+){
+
+    return VOTIFY_ADMISSION_REGEX.test(
+        admissionNumber.trim().toUpperCase()
+    );
+
+}
+
+
+/* ==========================================================
+   VOTIFY CANDIDATES NAMESPACE
+========================================================== */
+
+window.VOTIFY_CANDIDATES =
+    window.VOTIFY_CANDIDATES || {};
+
+window.VOTIFY_CANDIDATES.electionStatus =
+    "Ready";
 
 
 /* ==========================================================
@@ -30,7 +79,7 @@ document.addEventListener(
    INITIALIZE
 ========================================================== */
 
-function initializeCandidates(){
+async function initializeCandidates(){
 
     initializeCandidateModal();
 
@@ -49,6 +98,7 @@ function initializeCandidates(){
     initializeCandidateSearch();
 
     initializeEntriesFilter();
+    initializeCandidateEmptyState();
 
     initializeViewCandidate();
 
@@ -57,6 +107,395 @@ function initializeCandidates(){
     initializeDeleteCandidate();
 
     initializeExportExcel();
+
+
+    await loadCandidateElectionStatus();
+
+
+    applyCandidateModificationLock();
+
+}
+
+
+/* ==========================================================
+   LOAD ELECTION STATUS
+========================================================== */
+
+async function loadCandidateElectionStatus(){
+
+    try{
+
+        const response =
+            await fetch(
+                "../../backend/admin/dashboard-status.php",
+                {
+                    method:
+                        "GET",
+
+                    credentials:
+                        "same-origin",
+
+                    cache:
+                        "no-store",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        if(!response.ok){
+
+            console.warn(
+                "VOTIFY: Candidate election status request failed.",
+                response.status
+            );
+
+            return false;
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "VOTIFY Candidate Election Status Response:",
+            result
+        );
+
+
+        if(
+            result &&
+            result.success === true &&
+            typeof result.status === "string"
+        ){
+
+            window.VOTIFY_CANDIDATES.electionStatus =
+                result.status.trim();
+
+        }
+
+
+        const allowedStatuses = [
+            "Ready",
+            "Started",
+            "Stopped"
+        ];
+
+
+        if(
+            !allowedStatuses.includes(
+                window.VOTIFY_CANDIDATES.electionStatus
+            )
+        ){
+
+            window.VOTIFY_CANDIDATES.electionStatus =
+                "Ready";
+
+        }
+
+
+        console.log(
+            "VOTIFY Current Candidate Election Status:",
+            window.VOTIFY_CANDIDATES.electionStatus
+        );
+
+
+        applyCandidateModificationLock();
+
+
+        return true;
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Candidate Election Status Error:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* ==========================================================
+   REFRESH STATUS BEFORE MODIFICATION
+========================================================== */
+
+async function refreshCandidateElectionStatus(){
+
+    const loaded =
+        await loadCandidateElectionStatus();
+
+
+    if(!loaded){
+
+        showToast(
+            "error",
+            "Unable to Check Election",
+            "Please refresh the page and try again."
+        );
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+/* ==========================================================
+   CHECK WHETHER MODIFICATION IS LOCKED
+========================================================== */
+
+function isCandidateModificationLocked(){
+
+    return (
+        window.VOTIFY_CANDIDATES.electionStatus ===
+        "Started"
+    );
+
+}
+
+
+/* ==========================================================
+   APPLY CANDIDATE MODIFICATION LOCK
+========================================================== */
+
+/*
+ * IMPORTANT:
+ *
+ * Do NOT use disabled=true while election is running.
+ *
+ * A disabled button does not fire click events.
+ * Therefore the user cannot receive the permission toast.
+ *
+ * Instead:
+ *
+ *     Add    -> remains clickable
+ *     Edit   -> remains clickable
+ *     Delete -> remains clickable
+ *
+ * The click handlers perform the actual permission check.
+ *
+ * Backend also performs the final security check.
+ *
+ *
+ * Election Started:
+ *
+ *     Add    -> Toast
+ *     Edit   -> Toast
+ *     Delete -> Toast
+ *     View   -> Allowed
+ *
+ * Election Ready / Stopped:
+ *
+ *     Add    -> Allowed
+ *     Edit   -> Allowed
+ *     Delete -> Allowed
+ *     View   -> Allowed
+ */
+
+function applyCandidateModificationLock(){
+
+    const isRunning =
+        isCandidateModificationLocked();
+
+
+    /* ======================================================
+       ADD CANDIDATE
+    ====================================================== */
+
+    const addButton =
+        document.getElementById(
+            "addCandidate"
+        );
+
+
+    if(addButton){
+
+        /*
+         * Keep clickable.
+         *
+         * Disabled buttons cannot trigger
+         * the permission toast.
+         */
+
+        addButton.removeAttribute(
+            "disabled"
+        );
+
+
+        if(isRunning){
+
+            addButton.setAttribute(
+                "aria-disabled",
+                "true"
+            );
+
+            addButton.title =
+                "Adding candidates is disabled while the election is running.";
+
+            addButton.classList.add(
+                "opacity-50",
+                "cursor-not-allowed"
+            );
+
+            addButton.classList.remove(
+                "hover:scale-105"
+            );
+
+        }
+        else{
+
+            addButton.removeAttribute(
+                "aria-disabled"
+            );
+
+            addButton.title =
+                "Add Candidate";
+
+            addButton.classList.remove(
+                "opacity-50",
+                "cursor-not-allowed"
+            );
+
+            addButton.classList.add(
+                "hover:scale-105"
+            );
+
+        }
+
+    }
+
+
+    /* ======================================================
+       EDIT CANDIDATES
+    ====================================================== */
+
+    document
+        .querySelectorAll(
+            ".editCandidate"
+        )
+        .forEach(
+            button => {
+
+                /*
+                 * Keep clickable so the permission
+                 * toast can be displayed.
+                 */
+
+                button.removeAttribute(
+                    "disabled"
+                );
+
+
+                if(isRunning){
+
+                    button.setAttribute(
+                        "aria-disabled",
+                        "true"
+                    );
+
+                    button.title =
+                        "Editing candidates is disabled while the election is running.";
+
+                    button.classList.add(
+                        "opacity-50",
+                        "cursor-not-allowed"
+                    );
+
+                }
+                else{
+
+                    button.removeAttribute(
+                        "aria-disabled"
+                    );
+
+                    button.title =
+                        "Edit";
+
+                    button.classList.remove(
+                        "opacity-50",
+                        "cursor-not-allowed"
+                    );
+
+                }
+
+            }
+        );
+
+
+    /* ======================================================
+       DELETE CANDIDATES
+    ====================================================== */
+
+    document
+        .querySelectorAll(
+            ".deleteCandidate"
+        )
+        .forEach(
+            button => {
+
+                /*
+                 * Keep clickable so the permission
+                 * toast can be displayed.
+                 */
+
+                button.removeAttribute(
+                    "disabled"
+                );
+
+
+                if(isRunning){
+
+                    button.setAttribute(
+                        "aria-disabled",
+                        "true"
+                    );
+
+                    button.title =
+                        "Deleting candidates is disabled while the election is running.";
+
+                    button.classList.add(
+                        "opacity-50",
+                        "cursor-not-allowed"
+                    );
+
+                }
+                else{
+
+                    button.removeAttribute(
+                        "aria-disabled"
+                    );
+
+                    button.title =
+                        "Delete";
+
+                    button.classList.remove(
+                        "opacity-50",
+                        "cursor-not-allowed"
+                    );
+
+                }
+
+            }
+        );
+
+
+    /*
+     * View buttons are NEVER disabled.
+     */
 
 }
 
@@ -73,7 +512,36 @@ function initializeCandidateModal(){
         )
         ?.addEventListener(
             "click",
-            () => {
+            async () => {
+
+                const statusChecked =
+                    await refreshCandidateElectionStatus();
+
+
+                if(!statusChecked){
+
+                    return;
+
+                }
+
+
+                if(
+                    isCandidateModificationLocked()
+                ){
+
+                    showToast(
+                        "error",
+                        "Action Disabled",
+                        "Adding candidates is disabled while the election is running."
+                    );
+
+
+                    applyCandidateModificationLock();
+
+                    return;
+
+                }
+
 
                 resetCandidateForm();
 
@@ -149,7 +617,6 @@ function openCandidateModal(){
         "hidden"
     );
 
-
     modal.classList.add(
         "flex"
     );
@@ -180,7 +647,6 @@ function closeCandidateModal(){
         "flex"
     );
 
-
     modal.classList.add(
         "hidden"
     );
@@ -204,12 +670,11 @@ function resetCandidateForm(){
 
         form.reset();
 
-
         document
             .getElementById(
                 "candidateManifesto"
             )
-            .blur();
+            ?.blur();
 
     }
 
@@ -251,22 +716,28 @@ function resetCandidateForm(){
         );
 
 
-    preview.src = "";
+    if(preview){
+
+        preview.src = "";
+
+        preview.classList.add(
+            "hidden"
+        );
+
+    }
 
 
-    preview.classList.add(
-        "hidden"
-    );
+    editMode =
+        false;
 
-
-    editMode = false;
-
-    editingCandidateId = null;
+    editingCandidateId =
+        null;
 
 
     document.getElementById(
         "admissionNo"
-    ).readOnly = false;
+    ).readOnly =
+        false;
 
 
     document.getElementById(
@@ -284,17 +755,19 @@ function resetCandidateForm(){
 
     document.getElementById(
         "candidateManifesto"
-    ).readOnly = false;
-
-
+    ).readOnly =
+        false;
+    
     document.getElementById(
         "candidatePhoto"
-    ).disabled = false;
+    ).disabled =
+        false;
 
 
     document.getElementById(
         "searchStudent"
-    ).disabled = false;
+    ).disabled =
+        false;
 
 
     document.getElementById(
@@ -407,9 +880,7 @@ function initializeManifestoCounter(){
         () => {
 
             counter.textContent =
-
                 textarea.value.length +
-
                 " / 255";
 
         }
@@ -450,8 +921,65 @@ function initializeStudentSearch(){
         "input",
         () => {
 
+            /*
+             * Keep admission number uppercase.
+             *
+             * maxlength="11" is also present in the
+             * candidate modal, but we enforce the limit
+             * here as a second client-side safeguard.
+             */
+
             admissionInput.value =
-                admissionInput.value.toUpperCase();
+                admissionInput.value
+                    .toUpperCase()
+                    .slice(0, 11);
+
+
+            /*
+             * Remove browser-invalid whitespace.
+             *
+             * The final format is still enforced by the
+             * exact regex below.
+             */
+
+            admissionInput.value =
+                admissionInput.value.replace(
+                    /\\s/g,
+                    ""
+                );
+
+
+            /*
+             * Show native validation state while typing.
+             */
+
+            if(
+                admissionInput.value === ""
+            ){
+
+                admissionInput.setCustomValidity(
+                    ""
+                );
+
+            }
+            else if(
+                !isValidAdmissionNumber(
+                    admissionInput.value
+                )
+            ){
+
+                admissionInput.setCustomValidity(
+                    "Admission number must be exactly 11 characters in the format 25CAPMCA080."
+                );
+
+            }
+            else{
+
+                admissionInput.setCustomValidity(
+                    ""
+                );
+
+            }
 
         }
     );
@@ -505,14 +1033,44 @@ async function searchStudent(){
     ){
 
         showToast(
-
             "warning",
-
             "Admission Number",
-
             "Please enter admission number."
-
         );
+
+        return;
+
+    }
+
+
+    /*
+     * Exact admission-number validation.
+     *
+     * Required format:
+     *     25CAPMCA080
+     *
+     * Exactly 11 characters.
+     */
+
+    if(
+        !isValidAdmissionNumber(
+            admission
+        )
+    ){
+
+        showToast(
+            "warning",
+            "Invalid Admission Number",
+            "Use exactly 11 characters in the format 25CAPMCA080."
+        );
+
+
+        document
+            .getElementById(
+                "admissionNo"
+            )
+            .focus();
+
 
         return;
 
@@ -537,13 +1095,10 @@ async function searchStudent(){
 
         const response =
             await fetch(
-
                 "../../backend/admin/check-student.php?admission_no=" +
-
                 encodeURIComponent(
                     admission
                 )
-
             );
 
 
@@ -551,9 +1106,7 @@ async function searchStudent(){
             await response.json();
 
 
-        if(
-            result.success
-        ){
+        if(result.success){
 
             fillStudentDetails(
                 result.student
@@ -564,15 +1117,10 @@ async function searchStudent(){
 
             clearStudentDetails();
 
-
             showToast(
-
                 "error",
-
                 "Student Not Found",
-
                 result.message
-
             );
 
         }
@@ -588,13 +1136,9 @@ async function searchStudent(){
 
 
         showToast(
-
             "error",
-
             "Server Error",
-
             "Unable to search student."
-
         );
 
     }
@@ -603,7 +1147,6 @@ async function searchStudent(){
 
         searchButton.disabled =
             false;
-
 
         searchButton.innerHTML =
             '<i class="ri-search-line text-xl"></i>';
@@ -758,13 +1301,42 @@ function validateCandidateForm(
     ){
 
         showToast(
-
             "warning",
-
             "Admission Number",
-
             "Please enter Admission Number."
+        );
 
+
+        document
+            .getElementById(
+                "admissionNo"
+            )
+            .focus();
+
+
+        return;
+
+    }
+
+
+    /*
+     * Exact admission-number validation.
+     *
+     * This prevents the form from being submitted with
+     * an invalid admission number even if browser-native
+     * validation is bypassed.
+     */
+
+    if(
+        !isValidAdmissionNumber(
+            admission
+        )
+    ){
+
+        showToast(
+            "warning",
+            "Invalid Admission Number",
+            "Admission number must be exactly 11 characters in the format 25CAPMCA080."
         );
 
 
@@ -786,13 +1358,9 @@ function validateCandidateForm(
     ){
 
         showToast(
-
             "warning",
-
             "Search Student",
-
             "Search and verify the student first."
-
         );
 
 
@@ -814,15 +1382,10 @@ function validateCandidateForm(
     ){
 
         showToast(
-
             "warning",
-
             "Candidate Photo",
-
             "Please upload candidate photo."
-
         );
-
 
         return;
 
@@ -835,13 +1398,9 @@ function validateCandidateForm(
     ){
 
         showToast(
-
             "warning",
-
             "Manifesto",
-
             "Please enter candidate manifesto."
-
         );
 
 
@@ -867,6 +1426,42 @@ function validateCandidateForm(
 ========================================================== */
 
 async function saveCandidate(){
+
+    const statusChecked =
+        await refreshCandidateElectionStatus();
+
+
+    if(
+        !statusChecked
+    ){
+
+        return;
+
+    }
+
+
+    if(
+        isCandidateModificationLocked()
+    ){
+
+        showToast(
+            "error",
+            "Action Disabled",
+
+            editMode
+                ? "Editing candidates is disabled while the election is running."
+                : "Adding candidates is disabled while the election is running."
+        );
+
+
+        closeCandidateModal();
+
+        applyCandidateModificationLock();
+
+        return;
+
+    }
+
 
     const form =
         document.getElementById(
@@ -910,29 +1505,30 @@ async function saveCandidate(){
         }
 
 
-        const url =
-            editMode
-
+    const url =
+        editMode
             ? "../../backend/admin/update-candidate.php"
-
             : "../../backend/admin/add-candidate.php";
 
 
         const response =
             await fetch(
-
                 url,
-
                 {
-
                     method:
                         "POST",
 
+                    credentials:
+                        "same-origin",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+
                     body:
                         formData
-
                 }
-
             );
 
 
@@ -940,10 +1536,31 @@ async function saveCandidate(){
             await response.text();
 
 
-        const result =
-            JSON.parse(
+        let result;
+
+
+        try{
+
+            result =
+                JSON.parse(
+                    text
+                );
+
+        }
+
+        catch(jsonError){
+
+            console.error(
+                "VOTIFY Candidate Save Invalid JSON:",
                 text
             );
+
+
+            throw new Error(
+                "Invalid server response."
+            );
+
+        }
 
 
         if(
@@ -951,39 +1568,58 @@ async function saveCandidate(){
         ){
 
             showToast(
-
                 "success",
 
-                "Success",
+                editMode
+                    ? "Candidate Updated"
+                    : "Candidate Added",
 
                 result.message
-
             );
 
 
             closeCandidateModal();
 
 
-            setTimeout(
-                () => {
+            const tableRefreshed =
+                await refreshCandidateTableFromServer();
 
-                    location.reload();
 
-                },
-                800
-            );
+            if(!tableRefreshed){
+
+                showToast(
+                    "warning",
+                    "Saved Successfully",
+                    "Candidate was saved, but the table could not be refreshed automatically. Please refresh the page once."
+                );
+
+            }
 
         }
         else{
 
-            showToast(
+            if(
+                response.status ===
+                403
+            ){
 
+                window.VOTIFY_CANDIDATES.electionStatus =
+                    "Started";
+
+                applyCandidateModificationLock();
+
+            }
+
+
+            showToast(
                 "error",
 
-                "Failed",
+                response.status === 403
+                    ? "Action Disabled"
+                    : "Failed",
 
-                result.message
-
+                result.message ||
+                "Unable to save candidate."
             );
 
         }
@@ -999,13 +1635,9 @@ async function saveCandidate(){
 
 
         showToast(
-
             "error",
-
             "Server Error",
-
             "Something went wrong."
-
         );
 
     }
@@ -1014,7 +1646,6 @@ async function saveCandidate(){
 
         saveButton.disabled =
             false;
-
 
         saveButton.innerHTML =
             originalButton;
@@ -1025,119 +1656,107 @@ async function saveCandidate(){
 
 
 /* ==========================================================
+   EMPTY STATE INITIALIZATION
+========================================================== */
+
+function initializeCandidateEmptyState(){
+
+    const clearButton =
+        document.getElementById(
+            "clearCandidateSearch"
+        );
+
+    if(!clearButton){
+
+        return;
+
+    }
+
+
+    /*
+     * Clear the current search keyword and
+     * immediately re-apply the table view.
+     */
+
+    clearButton.addEventListener(
+        "click",
+        () => {
+
+            const searchInput =
+                document.getElementById(
+                    "candidateSearch"
+                );
+
+            if(searchInput){
+
+                searchInput.value = "";
+
+            }
+
+
+            refreshCandidateTableView();
+
+        }
+    );
+
+}
+
+
+/* ==========================================================
    FILTER CANDIDATES
 ========================================================== */
 
 function initializeCandidateFilters(){
 
-    const rows =
-        document.querySelectorAll(
-            "#candidatesTableBody tr"
-        );
-
-
     document
-        .getElementById(
-            "filterAll"
-        )
+        .getElementById("filterAll")
         ?.addEventListener(
             "click",
             () => {
 
                 setActiveFilter(
-                    document.getElementById(
-                        "filterAll"
-                    )
+                    document.getElementById("filterAll")
                 );
 
-
-                rows.forEach(
-                    row => {
-
-                        row.style.display =
-                            "";
-
-                    }
-                );
+                refreshCandidateTableView();
 
             }
         );
 
 
     document
-        .getElementById(
-            "filterFirstYear"
-        )
+        .getElementById("filterFirstYear")
         ?.addEventListener(
             "click",
             () => {
 
                 setActiveFilter(
-                    document.getElementById(
-                        "filterFirstYear"
-                    )
+                    document.getElementById("filterFirstYear")
                 );
 
-
-                rows.forEach(
-                    row => {
-
-                        row.style.display =
-
-                            row.dataset.year ===
-                                "1st Year" ||
-
-                            row.dataset.year ===
-                                "I Year"
-
-                            ? ""
-
-                            : "none";
-
-                    }
-                );
+                refreshCandidateTableView();
 
             }
         );
 
 
     document
-        .getElementById(
-            "filterSecondYear"
-        )
+        .getElementById("filterSecondYear")
         ?.addEventListener(
             "click",
             () => {
 
                 setActiveFilter(
-                    document.getElementById(
-                        "filterSecondYear"
-                    )
+                    document.getElementById("filterSecondYear")
                 );
 
-
-                rows.forEach(
-                    row => {
-
-                        row.style.display =
-
-                            row.dataset.year ===
-                                "2nd Year" ||
-
-                            row.dataset.year ===
-                                "II Year"
-
-                            ? ""
-
-                            : "none";
-
-                    }
-                );
+                refreshCandidateTableView();
 
             }
         );
 
 }
+
 
 
 /* ==========================================================
@@ -1163,40 +1782,13 @@ function initializeCandidateSearch(){
         "input",
         () => {
 
-            const keyword =
-                input.value
-                    .toLowerCase();
-
-
-            document
-                .querySelectorAll(
-                    "#candidatesTableBody tr"
-                )
-                .forEach(
-                    row => {
-
-                        const search =
-                            row.dataset.search ||
-                            "";
-
-
-                        row.style.display =
-
-                            search.includes(
-                                keyword
-                            )
-
-                            ? ""
-
-                            : "none";
-
-                    }
-                );
+            refreshCandidateTableView();
 
         }
     );
 
 }
+
 
 
 /* ==========================================================
@@ -1206,6 +1798,13 @@ function initializeCandidateSearch(){
 function setActiveFilter(
     button
 ){
+
+    if(!button){
+
+        return;
+
+    }
+
 
     document
         .querySelectorAll(
@@ -1217,7 +1816,6 @@ function setActiveFilter(
                 btn.classList.remove(
                     "btn-primary"
                 );
-
 
                 btn.classList.add(
                     "btn-outline"
@@ -1237,6 +1835,7 @@ function setActiveFilter(
     );
 
 }
+
 
 
 /* ==========================================================
@@ -1262,44 +1861,21 @@ function initializeEntriesFilter(){
         "change",
         () => {
 
-            const limit =
-                parseInt(
-                    select.value,
-                    10
-                );
-
-
-            const rows =
-                document.querySelectorAll(
-                    "#candidatesTableBody tr"
-                );
-
-
-            rows.forEach(
-                (row, index) => {
-
-                    row.style.display =
-
-                        index < limit
-
-                        ? ""
-
-                        : "none";
-
-                }
-            );
+            refreshCandidateTableView();
 
         }
     );
 
 
-    select.dispatchEvent(
-        new Event(
-            "change"
-        )
-    );
+    /*
+     * Apply the initial entries value after the page
+     * and table rows are available.
+     */
+
+    refreshCandidateTableView();
 
 }
+
 
 
 /* ==========================================================
@@ -1347,7 +1923,38 @@ function initializeEditCandidate(){
 
                 button.addEventListener(
                     "click",
-                    () => {
+                    async () => {
+
+                        const statusChecked =
+                            await refreshCandidateElectionStatus();
+
+
+                        if(
+                            !statusChecked
+                        ){
+
+                            return;
+
+                        }
+
+
+                        if(
+                            isCandidateModificationLocked()
+                        ){
+
+                            showToast(
+                                "error",
+                                "Action Disabled",
+                                "Editing candidates is disabled while the election is running."
+                            );
+
+
+                            applyCandidateModificationLock();
+
+                            return;
+
+                        }
+
 
                         editCandidate(
                             button.dataset.id
@@ -1377,7 +1984,38 @@ function initializeDeleteCandidate(){
 
                 button.addEventListener(
                     "click",
-                    () => {
+                    async () => {
+
+                        const statusChecked =
+                            await refreshCandidateElectionStatus();
+
+
+                        if(
+                            !statusChecked
+                        ){
+
+                            return;
+
+                        }
+
+
+                        if(
+                            isCandidateModificationLocked()
+                        ){
+
+                            showToast(
+                                "error",
+                                "Action Disabled",
+                                "Deleting candidates is disabled while the election is running."
+                            );
+
+
+                            applyCandidateModificationLock();
+
+                            return;
+
+                        }
+
 
                         deleteCandidate(
                             button.dataset.id
@@ -1424,7 +2062,6 @@ function initializeExportExcel(){
 
 }
 
-
 /* ==========================================================
    EXPORT CANDIDATES EXCEL
 ========================================================== */
@@ -1440,10 +2077,6 @@ async function exportCandidatesExcel(
     }
 
 
-    /* ======================================================
-       PREVENT DOUBLE CLICK
-    ====================================================== */
-
     if(
         exportButton.disabled
     ){
@@ -1452,10 +2085,6 @@ async function exportCandidatesExcel(
 
     }
 
-
-    /* ======================================================
-       SEARCH VALUE
-    ====================================================== */
 
     const searchInput =
         document.getElementById(
@@ -1468,10 +2097,6 @@ async function exportCandidatesExcel(
             ? searchInput.value.trim()
             : "";
 
-
-    /* ======================================================
-       CURRENT FILTER
-    ====================================================== */
 
     let filter =
         "all";
@@ -1513,25 +2138,15 @@ async function exportCandidatesExcel(
     }
 
 
-    /* ======================================================
-       BUILD PARAMETERS
-    ====================================================== */
-
     const params =
         new URLSearchParams({
-
             search:
                 search,
 
             filter:
                 filter
-
         });
 
-
-    /* ======================================================
-       STORE ORIGINAL BUTTON
-    ====================================================== */
 
     const originalButtonHTML =
         exportButton.innerHTML;
@@ -1539,16 +2154,11 @@ async function exportCandidatesExcel(
 
     try{
 
-        /* ==================================================
-           BUTTON LOADING
-        ================================================== */
-
         exportButton.disabled =
             true;
 
 
         exportButton.innerHTML = `
-
             <span
                 class="inline-flex items-center justify-center gap-2">
 
@@ -1560,44 +2170,24 @@ async function exportCandidatesExcel(
                 Exporting...
 
             </span>
-
         `;
 
 
-        /* ==================================================
-           FETCH EXPORT
-           
-           IMPORTANT:
-           Do NOT use window.location.href.
-           Fetch keeps the user on the same page.
-        ================================================== */
-
         const response =
             await fetch(
-
                 "../../backend/admin/export-candidates.php?" +
                 params.toString(),
-
                 {
-
                     method:
                         "GET",
 
                     headers: {
-
                         "Accept":
                             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/html,application/json"
-
                     }
-
                 }
-
             );
 
-
-        /* ==================================================
-           HTTP ERROR
-        ================================================== */
 
         if(!response.ok){
 
@@ -1609,10 +2199,6 @@ async function exportCandidatesExcel(
         }
 
 
-        /* ==================================================
-           CONTENT TYPE
-        ================================================== */
-
         const contentType =
             (
                 response.headers.get(
@@ -1622,39 +2208,16 @@ async function exportCandidatesExcel(
             ).toLowerCase();
 
 
-        /* ==================================================
-           NO RECORDS RESPONSE
-           
-           Handles backend responses such as:
-
-           No records available for export.
-
-           OR JSON:
-
-           {
-               "success": false,
-               "message": "No candidates available."
-           }
-        ================================================== */
-
         if(
-
             contentType.includes(
                 "text/plain"
-            )
-
-            ||
-
+            ) ||
             contentType.includes(
                 "text/html"
-            )
-
-            ||
-
+            ) ||
             contentType.includes(
                 "application/json"
             )
-
         ){
 
             const responseText =
@@ -1664,10 +2227,6 @@ async function exportCandidatesExcel(
             let message =
                 responseText.trim();
 
-
-            /* ==================================================
-               TRY JSON RESPONSE
-            ================================================== */
 
             if(
                 contentType.includes(
@@ -1690,19 +2249,12 @@ async function exportCandidatesExcel(
                 }
                 catch(error){
 
-                    /*
-                     * Keep original text if
-                     * response is not valid JSON.
-                     */
+                    /* Keep original message. */
 
                 }
 
             }
 
-
-            /* ==================================================
-               CLEAN HTML RESPONSE
-            ================================================== */
 
             const temp =
                 document.createElement(
@@ -1722,10 +2274,6 @@ async function exportCandidatesExcel(
                 ).trim();
 
 
-            /* ==================================================
-               FALLBACK MESSAGE
-            ================================================== */
-
             if(!message){
 
                 message =
@@ -1734,18 +2282,10 @@ async function exportCandidatesExcel(
             }
 
 
-            /* ==================================================
-               SHOW EXISTING VOTIFY TOAST
-            ================================================== */
-
             showToast(
-
                 "warning",
-
                 "No Records",
-
                 message
-
             );
 
 
@@ -1754,17 +2294,9 @@ async function exportCandidatesExcel(
         }
 
 
-        /* ==================================================
-           EXCEL RESPONSE
-        ================================================== */
-
         const blob =
             await response.blob();
 
-
-        /* ==================================================
-           EMPTY FILE SAFETY CHECK
-        ================================================== */
 
         if(
             !blob ||
@@ -1772,13 +2304,9 @@ async function exportCandidatesExcel(
         ){
 
             showToast(
-
                 "warning",
-
                 "No Records",
-
                 "No candidates available to export."
-
             );
 
 
@@ -1787,27 +2315,15 @@ async function exportCandidatesExcel(
         }
 
 
-        /* ==================================================
-           CREATE TEMPORARY DOWNLOAD URL
-        ================================================== */
-
         const downloadUrl =
             window.URL.createObjectURL(
                 blob
             );
 
 
-        /* ==================================================
-           DEFAULT FILE NAME
-        ================================================== */
-
         let fileName =
             "VOTIFY_Candidates.xlsx";
 
-
-        /* ==================================================
-           READ SERVER FILE NAME
-        ================================================== */
 
         const contentDisposition =
             response.headers.get(
@@ -1850,10 +2366,6 @@ async function exportCandidatesExcel(
         }
 
 
-        /* ==================================================
-           CREATE DOWNLOAD LINK
-        ================================================== */
-
         const downloadLink =
             document.createElement(
                 "a"
@@ -1877,23 +2389,11 @@ async function exportCandidatesExcel(
         );
 
 
-        /* ==================================================
-           START DOWNLOAD
-        ================================================== */
-
         downloadLink.click();
 
 
-        /* ==================================================
-           REMOVE LINK
-        ================================================== */
-
         downloadLink.remove();
 
-
-        /* ==================================================
-           RELEASE OBJECT URL
-        ================================================== */
 
         setTimeout(
             () => {
@@ -1907,18 +2407,10 @@ async function exportCandidatesExcel(
         );
 
 
-        /* ==================================================
-           SUCCESS TOAST
-        ================================================== */
-
         showToast(
-
             "success",
-
             "Exported",
-
             "Candidate data exported successfully."
-
         );
 
     }
@@ -1932,22 +2424,14 @@ async function exportCandidatesExcel(
 
 
         showToast(
-
             "error",
-
             "Export Failed",
-
             "Unable to export candidate data. Please try again."
-
         );
 
     }
 
     finally{
-
-        /* ==================================================
-           RESTORE BUTTON
-        ================================================== */
 
         exportButton.disabled =
             false;
@@ -2084,13 +2568,25 @@ async function viewCandidate(
 
         const response =
             await fetch(
-
                 "../../backend/admin/get-candidate.php?id=" +
-
                 encodeURIComponent(
                     id
-                )
+                ),
+                {
+                    method:
+                        "GET",
 
+                    credentials:
+                        "same-origin",
+
+                    cache:
+                        "no-store",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
             );
 
 
@@ -2103,13 +2599,9 @@ async function viewCandidate(
         ){
 
             showToast(
-
                 "error",
-
                 "Failed",
-
                 result.message
-
             );
 
 
@@ -2125,9 +2617,7 @@ async function viewCandidate(
         document.getElementById(
             "viewCandidatePhoto"
         ).src =
-
             "../../backend/candidate-photo.php?id=" +
-
             encodeURIComponent(
                 candidate.id
             );
@@ -2176,13 +2666,9 @@ async function viewCandidate(
 
 
         showToast(
-
             "error",
-
             "Server Error",
-
             "Unable to load candidate."
-
         );
 
     }
@@ -2202,13 +2688,25 @@ async function editCandidate(
 
         const response =
             await fetch(
-
                 "../../backend/admin/get-candidate.php?id=" +
-
                 encodeURIComponent(
                     id
-                )
+                ),
+                {
+                    method:
+                        "GET",
 
+                    credentials:
+                        "same-origin",
+
+                    cache:
+                        "no-store",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
             );
 
 
@@ -2221,13 +2719,9 @@ async function editCandidate(
         ){
 
             showToast(
-
                 "error",
-
                 "Failed",
-
                 result.message
-
             );
 
 
@@ -2240,12 +2734,42 @@ async function editCandidate(
             result.candidate;
 
 
+        const statusChecked =
+            await refreshCandidateElectionStatus();
+
+
+        if(
+            !statusChecked
+        ){
+
+            return;
+
+        }
+
+
+        if(
+            isCandidateModificationLocked()
+        ){
+
+            showToast(
+                "error",
+                "Action Disabled",
+                "Editing candidates is disabled while the election is running."
+            );
+
+
+            applyCandidateModificationLock();
+
+            return;
+
+        }
+
+
         resetCandidateForm();
 
 
         editMode =
             true;
-
 
         editingCandidateId =
             candidate.id;
@@ -2266,7 +2790,11 @@ async function editCandidate(
         document.getElementById(
             "admissionNo"
         ).value =
-            candidate.admission_no;
+            String(
+                candidate.admission_no || ""
+            )
+                .toUpperCase()
+                .slice(0, 11);
 
 
         document.getElementById(
@@ -2296,9 +2824,7 @@ async function editCandidate(
         document.getElementById(
             "manifestoCount"
         ).textContent =
-
             candidate.manifesto.length +
-
             " / 255";
 
 
@@ -2309,9 +2835,7 @@ async function editCandidate(
 
 
         preview.src =
-
             "../../backend/candidate-photo.php?id=" +
-
             encodeURIComponent(
                 candidate.id
             );
@@ -2321,10 +2845,6 @@ async function editCandidate(
             "hidden"
         );
 
-
-        /* ==================================================
-           EDIT MODE
-        ================================================== */
 
         document.getElementById(
             "admissionNo"
@@ -2383,16 +2903,961 @@ async function editCandidate(
 
 
         showToast(
-
             "error",
-
             "Server Error",
-
             "Unable to load candidate."
-
         );
 
     }
+
+}
+
+
+
+/* ==========================================================
+   REFRESH CANDIDATE TABLE FROM SERVER
+========================================================== */
+
+/*
+ * Refreshes only the candidate table after Add/Edit.
+ *
+ * IMPORTANT:
+ * - Does NOT reload the browser page.
+ * - Does NOT touch the backend.
+ * - Re-reads the server-rendered candidate table.
+ * - Preserves current search/filter/entries state.
+ * - Rebinds View/Edit/Delete actions for the refreshed rows.
+ */
+
+async function refreshCandidateTableFromServer(){
+
+    const searchInput =
+        document.getElementById(
+            "candidateSearch"
+        );
+
+    const currentSearch =
+        searchInput
+            ? searchInput.value
+            : "";
+
+
+    const entriesSelect =
+        document.getElementById(
+            "entriesSelect"
+        );
+
+    const currentEntries =
+        entriesSelect
+            ? entriesSelect.value
+            : "";
+
+
+    let currentFilter =
+        "all";
+
+
+    const firstYearButton =
+        document.getElementById(
+            "filterFirstYear"
+        );
+
+
+    const secondYearButton =
+        document.getElementById(
+            "filterSecondYear"
+        );
+
+
+    if(
+        firstYearButton &&
+        firstYearButton.classList.contains(
+            "btn-primary"
+        )
+    ){
+
+        currentFilter =
+            "first";
+
+    }
+    else if(
+        secondYearButton &&
+        secondYearButton.classList.contains(
+            "btn-primary"
+        )
+    ){
+
+        currentFilter =
+            "second";
+
+    }
+
+
+    try{
+
+        const response =
+            await fetch(
+                window.location.href,
+                {
+                    method:
+                        "GET",
+
+                    credentials:
+                        "same-origin",
+
+                    cache:
+                        "no-store",
+
+                    headers: {
+                        "Accept":
+                            "text/html"
+                    }
+                }
+            );
+
+
+        if(
+            !response.ok
+        ){
+
+            throw new Error(
+                "Unable to refresh candidate table. HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const html =
+            await response.text();
+
+
+        const parser =
+            new DOMParser();
+
+
+        const documentFromServer =
+            parser.parseFromString(
+                html,
+                "text/html"
+            );
+
+
+        const newTableBody =
+            documentFromServer.getElementById(
+                "candidatesTableBody"
+            );
+
+
+        const currentTableBody =
+            document.getElementById(
+                "candidatesTableBody"
+            );
+
+
+        if(
+            !newTableBody ||
+            !currentTableBody
+        ){
+
+            throw new Error(
+                "Candidate table body was not found."
+            );
+
+        }
+
+
+        /*
+         * Replace ONLY the tbody.
+         *
+         * The rest of the page remains untouched.
+         */
+
+        currentTableBody.innerHTML =
+            newTableBody.innerHTML;
+
+
+        /* Re-bind the clear-search control because the tbody was replaced. */
+        initializeCandidateEmptyState();
+
+
+        /*
+         * Refresh candidate statistics if the page
+         * contains these counters.
+         */
+
+        const statisticIds = [
+            "totalCandidates",
+            "firstYearCandidates",
+            "secondYearCandidates"
+        ];
+
+
+        statisticIds.forEach(
+            id => {
+
+                const currentElement =
+                    document.getElementById(
+                        id
+                    );
+
+
+                const newElement =
+                    documentFromServer.getElementById(
+                        id
+                    );
+
+
+                if(
+                    currentElement &&
+                    newElement
+                ){
+
+                    currentElement.textContent =
+                        newElement.textContent;
+
+                }
+
+            }
+        );
+
+
+        /*
+         * Restore search text.
+         */
+
+        if(searchInput){
+
+            searchInput.value =
+                currentSearch;
+
+        }
+
+
+        /*
+         * Restore entries value.
+         */
+
+        if(
+            entriesSelect &&
+            currentEntries !== ""
+        ){
+
+            const matchingOption =
+                Array.from(
+                    entriesSelect.options
+                ).some(
+                    option =>
+                        option.value ===
+                        currentEntries
+                );
+
+
+            if(matchingOption){
+
+                entriesSelect.value =
+                    currentEntries;
+
+            }
+
+        }
+
+
+        /*
+         * Restore active filter button.
+         */
+
+        const allFilterButton =
+            document.getElementById(
+                "filterAll"
+            );
+
+
+        if(
+            currentFilter ===
+            "first"
+        ){
+
+            if(firstYearButton){
+
+                setActiveFilter(
+                    firstYearButton
+                );
+
+            }
+
+        }
+        else if(
+            currentFilter ===
+            "second"
+        ){
+
+            if(secondYearButton){
+
+                setActiveFilter(
+                    secondYearButton
+                );
+
+            }
+
+        }
+        else if(
+            allFilterButton
+        ){
+
+            setActiveFilter(
+                allFilterButton
+            );
+
+        }
+
+
+        /*
+         * Re-bind only row-level actions.
+         *
+         * The old tbody was replaced, so its old listeners
+         * no longer exist.
+         *
+         * Do NOT call initializeCandidateFilters(),
+         * initializeCandidateSearch(), or
+         * initializeEntriesFilter() here because those
+         * controls still exist and already have listeners.
+         */
+
+        initializeViewCandidate();
+
+        initializeEditCandidate();
+
+        initializeDeleteCandidate();
+
+
+        /*
+         * Apply the current election modification lock
+         * to the newly created Edit/Delete buttons.
+         */
+
+        applyCandidateModificationLock();
+
+
+        /*
+         * Finally apply the current search/filter/entries
+         * state to the refreshed rows.
+         */
+
+        refreshCandidateTableView();
+
+
+        return true;
+
+    }
+
+    catch(error){
+
+        console.error(
+            "VOTIFY Candidate Table Refresh Error:",
+            error
+        );
+
+
+        return false;
+
+    }
+
+}
+
+
+/* ==========================================================
+   DELETE TABLE HELPERS
+========================================================== */
+
+function updateCandidateStatistics(deletedYear){
+
+    const rows =
+        document.querySelectorAll(
+            "#candidatesTableBody tr[data-id]"
+        );
+
+
+    const totalElement =
+        document.getElementById("totalCandidates");
+
+    const firstYearElement =
+        document.getElementById("firstYearCandidates");
+
+    const secondYearElement =
+        document.getElementById("secondYearCandidates");
+
+
+    if(totalElement){
+
+        totalElement.textContent = rows.length;
+
+    }
+
+
+    if(firstYearElement){
+
+        firstYearElement.textContent =
+            Array.from(rows).filter(
+                row =>
+                    row.dataset.year === "1st Year" ||
+                    row.dataset.year === "I Year"
+            ).length;
+
+    }
+
+
+    if(secondYearElement){
+
+        secondYearElement.textContent =
+            Array.from(rows).filter(
+                row =>
+                    row.dataset.year === "2nd Year" ||
+                    row.dataset.year === "II Year"
+            ).length;
+
+    }
+
+}
+
+
+function updateCandidateEmptyState(
+    totalRows,
+    matchingRows,
+    activeFilter,
+    keyword
+){
+
+    const emptyState =
+        document.getElementById(
+            "candidatesEmptyState"
+        );
+
+
+    if(!emptyState){
+
+        return;
+
+    }
+
+
+    const icon =
+        document.getElementById(
+            "candidateEmptyIcon"
+        );
+
+
+    const title =
+        document.getElementById(
+            "candidateEmptyTitle"
+        );
+
+
+    const message =
+        document.getElementById(
+            "candidateEmptyMessage"
+        );
+
+
+    const label =
+        document.getElementById(
+            "candidateEmptyLabel"
+        );
+
+
+    const clearButton =
+        document.getElementById(
+            "clearCandidateSearch"
+        );
+
+
+    /*
+     * There are no candidates in the database.
+     */
+
+    if(totalRows === 0){
+
+        emptyState.classList.remove(
+            "hidden"
+        );
+
+
+        if(icon){
+
+            icon.className =
+                "ri-user-add-line text-5xl text-slate-400";
+
+        }
+
+
+        if(label){
+
+            label.innerHTML =
+                '<i class="ri-team-line" aria-hidden="true"></i>' +
+                ' Candidate Directory';
+
+        }
+
+
+        if(title){
+
+            title.textContent =
+                "No Candidates Found";
+
+        }
+
+
+        if(message){
+
+            message.textContent =
+                "No candidates have been added yet. Add a candidate to start building the election directory.";
+
+        }
+
+
+        if(clearButton){
+
+            clearButton.classList.add(
+                "hidden"
+            );
+
+        }
+
+
+        return;
+
+    }
+
+
+    /*
+     * Candidates exist, but the current search/filter
+     * combination produced no matching result.
+     */
+
+    if(matchingRows === 0){
+
+        emptyState.classList.remove(
+            "hidden"
+        );
+
+
+        if(icon){
+
+            icon.className =
+                keyword
+                    ? "ri-search-eye-line text-5xl text-slate-400"
+                    : "ri-filter-off-line text-5xl text-slate-400";
+
+        }
+
+
+        if(label){
+
+            label.innerHTML =
+                keyword
+                    ? '<i class="ri-search-line" aria-hidden="true"></i> Search Result'
+                    : '<i class="ri-filter-3-line" aria-hidden="true"></i> Filter Result';
+
+        }
+
+
+        if(title){
+
+            if(keyword){
+
+                title.textContent =
+                    "No Matching Candidates";
+
+            }
+            else if(activeFilter === "first"){
+
+                title.textContent =
+                    "No 1st Year Candidates";
+
+            }
+            else if(activeFilter === "second"){
+
+                title.textContent =
+                    "No 2nd Year Candidates";
+
+            }
+            else{
+
+                title.textContent =
+                    "No Candidates Found";
+
+            }
+
+        }
+
+
+        if(message){
+
+            if(keyword && activeFilter === "first"){
+
+                message.textContent =
+                    "No 1st Year candidates match your search. Try a different name, admission number, department, year, or manifesto.";
+
+            }
+            else if(keyword && activeFilter === "second"){
+
+                message.textContent =
+                    "No 2nd Year candidates match your search. Try a different name, admission number, department, year, or manifesto.";
+
+            }
+            else if(keyword){
+
+                message.textContent =
+                    "No candidates match your search. Try a different name, admission number, department, year, or manifesto.";
+
+            }
+            else if(activeFilter === "first"){
+
+                message.textContent =
+                    "There are currently no candidates listed under the 1st Year filter.";
+
+            }
+            else if(activeFilter === "second"){
+
+                message.textContent =
+                    "There are currently no candidates listed under the 2nd Year filter.";
+
+            }
+            else{
+
+                message.textContent =
+                    "No candidates match the current view.";
+
+            }
+
+        }
+
+
+        if(clearButton){
+
+            if(keyword){
+
+                clearButton.classList.remove(
+                    "hidden"
+                );
+
+            }
+            else{
+
+                clearButton.classList.add(
+                    "hidden"
+                );
+
+            }
+
+        }
+
+
+        return;
+
+    }
+
+
+    /*
+     * At least one candidate matches.
+     * Hide the empty state.
+     */
+
+    emptyState.classList.add(
+        "hidden"
+    );
+
+
+    if(clearButton){
+
+        clearButton.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+function showEmptyCandidateState(){
+
+    const tbody =
+        document.getElementById(
+            "candidatesTableBody"
+        );
+
+
+    if(!tbody){
+
+        return;
+
+    }
+
+
+    const rows =
+        tbody.querySelectorAll(
+            "tr[data-id]"
+        );
+
+
+    updateCandidateEmptyState(
+        rows.length,
+        0,
+        "all",
+        ""
+    );
+
+}
+
+
+
+function refreshCandidateTableView(){
+
+    const tbody =
+        document.getElementById(
+            "candidatesTableBody"
+        );
+
+
+    if(!tbody){
+
+        return;
+
+    }
+
+
+    const rows =
+        Array.from(
+            tbody.querySelectorAll(
+                "tr[data-id]"
+            )
+        );
+
+
+    const totalRows =
+        rows.length;
+
+
+    const searchInput =
+        document.getElementById(
+            "candidateSearch"
+        );
+
+
+    const keyword =
+        searchInput
+            ? searchInput.value
+                .trim()
+                .toLowerCase()
+            : "";
+
+
+    let activeFilter =
+        "all";
+
+
+    const firstYearButton =
+        document.getElementById(
+            "filterFirstYear"
+        );
+
+
+    const secondYearButton =
+        document.getElementById(
+            "filterSecondYear"
+        );
+
+
+    if(
+        firstYearButton &&
+        firstYearButton.classList.contains(
+            "btn-primary"
+        )
+    ){
+
+        activeFilter =
+            "first";
+
+    }
+    else if(
+        secondYearButton &&
+        secondYearButton.classList.contains(
+            "btn-primary"
+        )
+    ){
+
+        activeFilter =
+            "second";
+
+    }
+
+
+    const select =
+        document.getElementById(
+            "entriesSelect"
+        );
+
+
+    const limit =
+        select
+            ? parseInt(
+                select.value,
+                10
+            )
+            : totalRows;
+
+
+    const safeLimit =
+        Number.isFinite(limit) &&
+        limit > 0
+            ? limit
+            : totalRows;
+
+
+    let matchingRows =
+        0;
+
+
+    let visibleIndex =
+        0;
+
+
+    rows.forEach(
+        row => {
+
+            const searchText =
+                (
+                    row.dataset.search ||
+                    ""
+                )
+                    .toLowerCase();
+
+
+            const year =
+                (
+                    row.dataset.year ||
+                    ""
+                ).trim();
+
+
+            const matchesSearch =
+                searchText.includes(
+                    keyword
+                );
+
+
+            const matchesFilter =
+                activeFilter === "all"
+                    ? true
+                    : activeFilter === "first"
+                        ? (
+                            year === "1st Year" ||
+                            year === "I Year"
+                        )
+                        : (
+                            year === "2nd Year" ||
+                            year === "II Year"
+                        );
+
+
+            if(
+                matchesSearch &&
+                matchesFilter
+            ){
+
+                matchingRows++;
+
+
+                if(
+                    visibleIndex <
+                    safeLimit
+                ){
+
+                    row.style.display =
+                        "";
+
+                    visibleIndex++;
+
+                }
+                else{
+
+                    row.style.display =
+                        "none";
+
+                }
+
+            }
+            else{
+
+                row.style.display =
+                    "none";
+
+            }
+
+        }
+    );
+
+
+    updateCandidateEmptyState(
+        totalRows,
+        matchingRows,
+        activeFilter,
+        keyword
+    );
+
+}
+
+
+function removeCandidateFromTable(candidateId){
+
+    const tbody =
+        document.getElementById("candidatesTableBody");
+
+
+    if(!tbody){
+
+        return;
+
+    }
+
+
+    const rows =
+        tbody.querySelectorAll("tr[data-id]");
+
+
+    let removed = false;
+
+
+    rows.forEach(row => {
+
+        if(
+            String(row.dataset.id) ===
+            String(candidateId)
+        ){
+
+            row.remove();
+            removed = true;
+
+        }
+
+    });
+
+
+    if(!removed){
+
+        console.warn(
+            "VOTIFY: Deleted candidate row was not found in the table.",
+            candidateId
+        );
+
+        return;
+
+    }
+
+
+    updateCandidateStatistics();
+    refreshCandidateTableView();
+    applyCandidateModificationLock();
 
 }
 
@@ -2404,6 +3869,37 @@ async function editCandidate(
 async function deleteCandidate(
     id
 ){
+
+    const statusChecked =
+        await refreshCandidateElectionStatus();
+
+
+    if(
+        !statusChecked
+    ){
+
+        return;
+
+    }
+
+
+    if(
+        isCandidateModificationLocked()
+    ){
+
+        showToast(
+            "error",
+            "Action Disabled",
+            "Deleting candidates is disabled while the election is running."
+        );
+
+
+        applyCandidateModificationLock();
+
+        return;
+
+    }
+
 
     openConfirmationModal({
 
@@ -2422,34 +3918,63 @@ async function deleteCandidate(
         onConfirm:
             async () => {
 
+                const latestStatus =
+                    await refreshCandidateElectionStatus();
+
+
+                if(
+                    !latestStatus
+                ){
+
+                    return false;
+
+                }
+
+
+                if(
+                    isCandidateModificationLocked()
+                ){
+
+                    showToast(
+                        "error",
+                        "Action Disabled",
+                        "Deleting candidates is disabled while the election is running."
+                    );
+
+
+                    applyCandidateModificationLock();
+
+                    return false;
+
+                }
+
+
                 try{
 
                     const response =
                         await fetch(
-
                             "../../backend/admin/delete-candidate.php",
-
                             {
-
                                 method:
                                     "POST",
 
                                 headers: {
-
                                     "Content-Type":
-                                        "application/x-www-form-urlencoded"
+                                        "application/x-www-form-urlencoded",
 
+                                    "Accept":
+                                        "application/json"
                                 },
+
+                                credentials:
+                                    "same-origin",
 
                                 body:
                                     "candidateId=" +
-
                                     encodeURIComponent(
                                         id
                                     )
-
                             }
-
                         );
 
 
@@ -2462,39 +3987,46 @@ async function deleteCandidate(
                     ){
 
                         showToast(
-
                             "success",
-
                             "Deleted",
-
                             result.message
-
                         );
 
 
-                        setTimeout(
-                            () => {
+                        removeCandidateFromTable(id);
 
-                                location.reload();
 
-                            },
-                            800
-                        );
+                        return true;
 
                     }
-                    else{
 
-                        showToast(
 
-                            "error",
+                    if(
+                        response.status ===
+                        403
+                    ){
 
-                            "Delete Failed",
+                        window.VOTIFY_CANDIDATES.electionStatus =
+                            "Started";
 
-                            result.message
-
-                        );
+                        applyCandidateModificationLock();
 
                     }
+
+
+                    showToast(
+                        "error",
+
+                        response.status === 403
+                            ? "Action Disabled"
+                            : "Delete Failed",
+
+                        result.message ||
+                        "Unable to delete candidate."
+                    );
+
+
+                    return false;
 
                 }
 
@@ -2507,14 +4039,13 @@ async function deleteCandidate(
 
 
                     showToast(
-
                         "error",
-
                         "Server Error",
-
                         "Unable to delete candidate."
-
                     );
+
+
+                    return false;
 
                 }
 
@@ -2530,9 +4061,6 @@ async function deleteCandidate(
 ========================================================== */
 
 console.log(
-
     "%cVOTIFY Candidates Ready",
-
     "color:#22C55E;font-size:14px;font-weight:bold;"
-
 );

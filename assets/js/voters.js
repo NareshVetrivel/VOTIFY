@@ -1111,6 +1111,19 @@ function getFilteredRows(){
 
 function updateTable(){
 
+    const tbody =
+        document.getElementById(
+            "votersTableBody"
+        );
+
+
+    if(!tbody){
+
+        return;
+
+    }
+
+
     const rows =
         getFilteredRows();
 
@@ -1210,7 +1223,9 @@ function updateTable(){
     if(showingEnd){
 
         showingEnd.textContent =
-            Math.min(
+            totalRows === 0
+            ? 0
+            : Math.min(
                 end,
                 totalRows
             );
@@ -1226,6 +1241,21 @@ function updateTable(){
     }
 
 
+    /*
+     * IMPORTANT:
+     * When a filter/search returns zero records,
+     * show a proper contextual empty state instead
+     * of leaving the table visually blank.
+     *
+     * This does not touch the backend and does not
+     * reload the page.
+     */
+
+    updateVotersEmptyState(
+        totalRows
+    );
+
+
     if(
         typeof renderPagination ===
         "function"
@@ -1238,6 +1268,7 @@ function updateTable(){
     }
 
 }
+
 
 
 /* ==========================================================
@@ -2928,6 +2959,25 @@ function updateCardsAfterDelete(
 
 function checkEmptyVoters(){
 
+    /*
+     * Keep the empty-state handling in one place.
+     * updateTable() will decide whether the state is:
+     * All / Voted / Unvoted / Search.
+     */
+
+    updateTable();
+
+}
+
+
+/* ==========================================================
+   FILTER / SEARCH EMPTY STATE
+========================================================== */
+
+function updateVotersEmptyState(
+    totalRows
+){
+
     const tbody =
         document.getElementById(
             "votersTableBody"
@@ -2941,56 +2991,221 @@ function checkEmptyVoters(){
     }
 
 
-    if(
-        tbody.querySelectorAll(
-            "tr[data-id]"
-        ).length === 0
-    ){
+    /*
+     * Remove an older dynamically generated
+     * empty-state row before rebuilding it.
+     */
 
-        tbody.innerHTML = `
+    const oldEmptyRow =
+        document.getElementById(
+            "votersEmptyStateRow"
+        );
 
-            <tr>
 
-                <td
-                    colspan="7"
-                    class="py-16 text-center text-slate-400">
+    if(oldEmptyRow){
 
-                    <div
-                        class="flex justify-center mb-6">
-
-                        <i
-                            class="
-                            ri-user-search-line
-                            text-7xl
-                            text-slate-500">
-                        </i>
-
-                    </div>
-
-                    <h3
-                        class="
-                        text-2xl
-                        font-bold
-                        text-white">
-
-                        No Approved Voters
-
-                    </h3>
-
-                    <p
-                        class="mt-3 text-slate-400">
-
-                        No approved students available.
-
-                    </p>
-
-                </td>
-
-            </tr>
-
-        `;
+        oldEmptyRow.remove();
 
     }
+
+
+    /*
+     * The PHP page can contain a static empty row
+     * when there are no approved voters at all.
+     *
+     * If real data exists, remove that static row.
+     */
+
+    const staticEmptyRows =
+        Array.from(
+            tbody.querySelectorAll(
+                "tr:not([data-id])"
+            )
+        );
+
+
+    staticEmptyRows.forEach(
+        row => {
+
+            row.remove();
+
+        }
+    );
+
+
+    /*
+     * If matching records exist, nothing else
+     * should be displayed inside the empty state.
+     */
+
+    if(
+        totalRows > 0
+    ){
+
+        return;
+
+    }
+
+
+    /*
+     * Decide the message according to the
+     * current filter/search state.
+     */
+
+    let icon =
+        "ri-user-search-line";
+
+
+    let title =
+        "No Approved Voters";
+
+
+    let message =
+        "No approved students are available.";
+
+
+    /*
+     * Search has the highest priority because
+     * the user is specifically looking for something.
+     */
+
+    if(searchKeyword){
+
+        icon =
+            "ri-search-eye-line";
+
+
+        title =
+            "No Matching Voters";
+
+
+        message =
+            "No voters match your search. Try a different name, admission number, email, or department.";
+
+    }
+    else if(
+        currentFilter ===
+        "voted"
+    ){
+
+        icon =
+            "ri-checkbox-circle-line";
+
+
+        title =
+            "No Voted Voters Yet";
+
+
+        message =
+            "No approved voters have completed their vote yet.";
+
+    }
+    else if(
+        currentFilter ===
+        "unvoted"
+    ){
+
+        icon =
+            "ri-time-line";
+
+
+        title =
+            "No Unvoted Voters";
+
+
+        message =
+            "All approved voters have completed their vote.";
+
+    }
+
+
+    const emptyRow =
+        document.createElement(
+            "tr"
+        );
+
+
+    emptyRow.id =
+        "votersEmptyStateRow";
+
+
+    emptyRow.innerHTML = `
+
+        <td
+            colspan="7"
+            class="py-16 px-6 text-center">
+
+            <div
+                class="
+                max-w-xl
+                mx-auto
+                flex
+                flex-col
+                items-center
+                justify-center
+                ">
+
+                <div
+                    class="
+                    w-20
+                    h-20
+                    rounded-3xl
+                    bg-white/5
+                    border
+                    border-white/10
+                    flex
+                    items-center
+                    justify-center
+                    mb-6
+                    ">
+
+                    <i
+                        class="
+                        ${icon}
+                        text-5xl
+                        text-slate-400
+                        "
+                        aria-hidden="true">
+                    </i>
+
+                </div>
+
+                <h3
+                    class="
+                    text-2xl
+                    sm:text-3xl
+                    font-bold
+                    text-white
+                    ">
+
+                    ${title}
+
+                </h3>
+
+                <p
+                    class="
+                    mt-3
+                    text-sm
+                    sm:text-base
+                    text-slate-400
+                    max-w-md
+                    leading-relaxed
+                    ">
+
+                    ${message}
+
+                </p>
+
+            </div>
+
+        </td>
+
+    `;
+
+
+    tbody.appendChild(
+        emptyRow
+    );
 
 }
 

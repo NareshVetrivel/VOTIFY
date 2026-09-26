@@ -209,7 +209,19 @@ if (isset($_SESSION["student_id"])) {
                          DATE OF BIRTH
                     ================================================== -->
 
-                    <div class="mb-6">
+                    <!--
+                        IMPORTANT:
+                        This container is isolated above the
+                        surrounding form fields/dropdowns.
+
+                        The date-picker.js creates its own
+                        relative wrapper inside this container.
+                    -->
+
+                    <div
+                        class="mb-6 relative z-[200] isolate"
+                        data-votify-date-picker-container
+                    >
 
                         <label
                             for="dob"
@@ -226,11 +238,13 @@ if (isset($_SESSION["student_id"])) {
 
 
                         <input
-                            type="date"
+                            type="text"
                             id="dob"
                             name="dob"
                             autocomplete="bday"
-                            class="w-full h-14 px-5 rounded-xl bg-white/5 border border-white/10 text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
+                            placeholder="dd-mm-yyyy"
+                            data-votify-date-picker
+                            class="w-full h-14 px-5 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"
                             required
                         >
 
@@ -541,9 +555,7 @@ if (isset($_SESSION["student_id"])) {
                         >
 
 
-                            <!-- ==============================
-                                 MALE
-                            ============================== -->
+                            <!-- MALE -->
 
                             <label
                                 class="gender-card cursor-pointer rounded-2xl border border-white/10 bg-white/5 hover:border-blue-500 hover:bg-blue-500/10 transition-all duration-300"
@@ -577,9 +589,7 @@ if (isset($_SESSION["student_id"])) {
                             </label>
 
 
-                            <!-- ==============================
-                                 FEMALE
-                            ============================== -->
+                            <!-- FEMALE -->
 
                             <label
                                 class="gender-card cursor-pointer rounded-2xl border border-white/10 bg-white/5 hover:border-pink-500 hover:bg-pink-500/10 transition-all duration-300"
@@ -611,9 +621,7 @@ if (isset($_SESSION["student_id"])) {
                             </label>
 
 
-                            <!-- ==============================
-                                 OTHER
-                            ============================== -->
+                            <!-- OTHER -->
 
                             <label
                                 class="gender-card cursor-pointer rounded-2xl border border-white/10 bg-white/5 hover:border-purple-500 hover:bg-purple-500/10 transition-all duration-300"
@@ -705,19 +713,13 @@ if (isset($_SESSION["student_id"])) {
                         </div>
 
 
-                        <!-- ==================================================
-                             PASSWORD ERROR
-                        ================================================== -->
-
                         <p
                             id="passwordError"
                             class="hidden mt-2 text-sm text-red-400 font-medium"
                         ></p>
 
 
-                        <!-- ==================================================
-                             PASSWORD STRENGTH
-                        ================================================== -->
+                        <!-- PASSWORD STRENGTH -->
 
                         <div
                             id="passwordStrength"
@@ -902,6 +904,8 @@ if (isset($_SESSION["student_id"])) {
     <script src="../../assets/js/app.js"></script>
 
     <script src="../../assets/js/dropdown.js"></script>
+
+    <script src="../../assets/js/date-picker.js"></script>
 
     <script src="../../assets/js/register.js"></script>
 

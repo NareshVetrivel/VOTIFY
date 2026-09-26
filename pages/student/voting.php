@@ -139,6 +139,70 @@ if (!$result) {
 
     <?php require "../../components/header.html"; ?>
 
+
+    <!-- ==========================================================
+    MOBILE LOGOUT
+    Mobile only
+    ========================================================== -->
+
+    <div
+        class="
+        lg:hidden
+
+        flex
+        justify-end
+
+        px-5
+        pt-4
+        pb-2
+        ">
+
+        <a
+            href="../../backend/student/logout.php"
+
+            class="
+            inline-flex
+            items-center
+            justify-center
+            gap-2
+
+            px-5
+            py-2.5
+
+            rounded-xl
+
+            border
+            border-red-400/30
+
+            bg-gradient-to-r
+            from-red-500
+            via-red-600
+            to-pink-600
+
+            text-white
+            text-sm
+            font-semibold
+
+            shadow-lg
+            shadow-red-500/10
+
+            transition-all
+            duration-200
+
+            active:scale-95
+            hover:scale-105">
+
+            <i class="ri-logout-box-r-line text-lg"></i>
+
+            <span>
+                Logout
+            </span>
+
+        </a>
+
+    </div>
+
+
     <!-- ==========================================================
     MAIN
     ========================================================== -->
@@ -155,11 +219,13 @@ if (!$result) {
 
     </main>
 
+
     <!-- ==========================================================
     SECURITY ENTRY MODAL
     ========================================================== -->
 
     <?php require "../../components/security_entry_modal.php"; ?>
+
 
     <!-- ==========================================================
     SECURITY MODAL
@@ -167,11 +233,13 @@ if (!$result) {
 
     <?php require "../../components/security_modal.php"; ?>
 
+
     <!-- ==========================================================
     FOOTER
     ========================================================== -->
 
     <?php require "../../components/footer.html"; ?>
+
 
     <!-- ==========================================================
     APP JS
@@ -179,23 +247,26 @@ if (!$result) {
 
     <script src="../../assets/js/app.js"></script>
 
+
     <!-- ==========================================================
     SECURITY GUARD
     ========================================================== -->
 
     <script src="../../assets/js/security_guard.js"></script>
 
-<!-- ==========================================================
-VOTING JS
-========================================================== -->
 
-<script src="../../assets/js/voting.js"></script>
+    <!-- ==========================================================
+    VOTING JS
+    ========================================================== -->
 
-<!-- ==========================================================
-CANDIDATE CONFIRMATION JS
-========================================================== -->
+    <script src="../../assets/js/voting.js"></script>
 
-<script src="../../assets/js/candidate_confirmation.js"></script>
+
+    <!-- ==========================================================
+    CANDIDATE CONFIRMATION JS
+    ========================================================== -->
+
+    <script src="../../assets/js/candidate_confirmation.js"></script>
 
 </body>
 

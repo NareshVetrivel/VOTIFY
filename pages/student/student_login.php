@@ -420,9 +420,17 @@ if (
 
                     <!-- ==================================================
                          DATE OF BIRTH
+                         VOTIFY CUSTOM DATE PICKER
                     ================================================== -->
 
-                    <div>
+                    <div
+                        class="
+                        relative
+                        z-[200]
+                        isolate
+                        "
+                        data-votify-date-picker-container
+                    >
 
                         <label
                             for="dob"
@@ -445,34 +453,39 @@ if (
 
                         <div class="relative">
 
-                            <i
-                                class="
-                                ri-calendar-line
-                                absolute
-                                left-4
-                                top-1/2
-                                transform
-                                -translate-y-1/2
-                                text-slate-400
-                                text-xl
-                                "
-                            ></i>
+                            <!--
+                                IMPORTANT:
+                                No static calendar icon here.
 
+                                The reusable VOTIFY date-picker.js
+                                automatically creates the calendar
+                                button on the right side.
+
+                                Visible format:
+                                DD-MM-YYYY
+
+                                Backend value:
+                                YYYY-MM-DD
+                            -->
 
                             <input
-                                type="date"
+                                type="text"
                                 id="dob"
                                 name="dob"
+                                autocomplete="bday"
+                                placeholder="dd-mm-yyyy"
+                                data-votify-date-picker
                                 class="
                                 w-full
                                 h-14
-                                pl-12
-                                pr-5
+                                px-5
+                                pr-14
                                 rounded-xl
                                 bg-white/5
                                 border
                                 border-white/10
                                 text-white
+                                placeholder:text-slate-500
                                 focus:border-blue-500
                                 focus:ring-4
                                 focus:ring-blue-500/20
@@ -828,8 +841,7 @@ if (
                                 ></i>
 
                                 <span
-                                    class="text-slate-300
-                                    "
+                                    class="text-slate-300"
                                 >
 
                                     Four-Step Identity Verification
@@ -983,6 +995,20 @@ if (
 
     <script
         src="../../assets/js/toast.js"
+    ></script>
+
+
+    <!-- ==========================================================
+         VOTIFY CUSTOM DATE PICKER
+
+         MUST LOAD BEFORE login.js
+
+         Same reusable picker used by
+         student registration.
+    ========================================================== -->
+
+    <script
+        src="../../assets/js/date-picker.js"
     ></script>
 
 

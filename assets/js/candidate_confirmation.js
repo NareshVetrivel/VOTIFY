@@ -1,315 +1,459 @@
+/* ==========================================================
+   VOTIFY
+   Candidate Confirmation
+   File : assets/js/candidate_confirmation.js
+========================================================== */
+
+"use strict";
+
+
+/* ==========================================================
+   DOM READY
+========================================================== */
+
 document.addEventListener(
-
     "DOMContentLoaded",
-
     () => {
 
         /* ==================================================
            ELEMENTS
         ================================================== */
 
-        const backButton = document.getElementById(
+        const backButton =
+            document.getElementById(
+                "backButton"
+            );
 
-            "backButton"
+        const confirmVoteButton =
+            document.getElementById(
+                "confirmVoteButton"
+            );
 
-        );
+        const confirmationModal =
+            document.getElementById(
+                "confirmationModal"
+            );
 
-        const confirmVoteButton = document.getElementById(
+        const cancelConfirmation =
+            document.getElementById(
+                "cancelConfirmation"
+            );
 
-            "confirmVoteButton"
+        const modalConfirmationCheckbox =
+            document.getElementById(
+                "modalConfirmationCheckbox"
+            );
 
-        );
+        const submitVoteButton =
+            document.getElementById(
+                "submitVoteButton"
+            );
 
-        const confirmationModal = document.getElementById(
 
-            "confirmationModal"
+        /* ==================================================
+           SAFETY CHECK
+        ================================================== */
 
-        );
+        if (
+            !backButton ||
+            !confirmVoteButton ||
+            !confirmationModal ||
+            !cancelConfirmation ||
+            !modalConfirmationCheckbox ||
+            !submitVoteButton
+        ) {
 
-        const cancelConfirmation = document.getElementById(
+            console.error(
+                "VOTIFY: Candidate confirmation elements not found."
+            );
 
-            "cancelConfirmation"
+            return;
 
-        );
+        }
 
-        const modalConfirmationCheckbox = document.getElementById(
-            "modalConfirmationCheckbox"
-        );
 
-        const submitVoteButton = document.getElementById(
+        /* ==================================================
+           OPEN CONFIRMATION MODAL
+        ================================================== */
 
-            "submitVoteButton"
+        function openConfirmationModal() {
 
-        );
+            confirmationModal.classList.remove(
+                "hidden"
+            );
 
-if (
+            confirmationModal.classList.add(
+                "flex"
+            );
 
-    !backButton ||
+        }
 
-    !confirmVoteButton ||
 
-    !confirmationModal ||
+        /* ==================================================
+           CLOSE CONFIRMATION MODAL
+        ================================================== */
 
-    !cancelConfirmation ||
+        function closeModal() {
 
-    !modalConfirmationCheckbox ||
+            confirmationModal.classList.remove(
+                "flex"
+            );
 
-    !submitVoteButton
+            confirmationModal.classList.add(
+                "hidden"
+            );
 
-){
-    return;
-}
+        }
+
+
+        /* ==================================================
+           RESET MODAL
+        ================================================== */
+
+        function resetConfirmationModal() {
+
+            modalConfirmationCheckbox.checked =
+                false;
+
+            submitVoteButton.disabled =
+                true;
+
+            submitVoteButton.classList.add(
+                "opacity-50",
+                "cursor-not-allowed"
+            );
+
+            submitVoteButton.innerHTML = `
+                <i class="ri-check-double-line mr-2"></i>
+                Submit Vote
+            `;
+
+        }
+
 
         /* ==================================================
            BACK BUTTON
         ================================================== */
 
-backButton.addEventListener(
+        backButton.addEventListener(
+            "click",
+            () => {
 
-    "click",
+                closeModal();
 
-    () => {
+                resetConfirmationModal();
 
-        closeModal();
 
-        /* Reset Confirmation */
+                /* ==========================================
+                   RESET CONTINUE BUTTON
+                ========================================== */
 
-        modalConfirmationCheckbox.checked = false;
+                const continueButton =
+                    document.getElementById(
+                        "continueButton"
+                    );
 
-        submitVoteButton.disabled = true;
 
-        submitVoteButton.classList.add(
+                if (continueButton) {
 
-            "opacity-50",
+                    continueButton.disabled =
+                        false;
 
-            "cursor-not-allowed"
+                    continueButton.innerHTML = `
+                        Continue
+                        <i class="ri-arrow-right-line ml-2"></i>
+                    `;
 
+                    continueButton.classList.remove(
+                        "cursor-not-allowed",
+                        "bg-slate-700",
+                        "text-slate-400"
+                    );
+
+                }
+
+
+                /* ==========================================
+                   SHOW SELECTION SECTION
+                ========================================== */
+
+                const confirmationSection =
+                    document.getElementById(
+                        "candidateConfirmationSection"
+                    );
+
+                const selectionSection =
+                    document.getElementById(
+                        "candidateSelectionSection"
+                    );
+
+
+                if (confirmationSection) {
+
+                    confirmationSection.classList.add(
+                        "hidden"
+                    );
+
+                }
+
+
+                if (selectionSection) {
+
+                    selectionSection.classList.remove(
+                        "hidden"
+                    );
+
+                }
+
+
+                /* ==========================================
+                   SCROLL TOP
+                ========================================== */
+
+                window.scrollTo({
+
+                    top: 0,
+
+                    behavior: "smooth"
+
+                });
+
+            }
         );
 
-const continueButton = document.getElementById("continueButton");
-
-if (continueButton) {
-
-    continueButton.disabled = false;
-
-    continueButton.innerHTML = `
-        Continue
-        <i class="ri-arrow-right-line ml-2"></i>
-    `;
-
-    continueButton.classList.remove(
-        "cursor-not-allowed",
-        "bg-slate-700",
-        "text-slate-400"
-    );
-
-}
-
-        document
-            .getElementById("candidateConfirmationSection")
-            .classList.add("hidden");
-
-        document
-            .getElementById("candidateSelectionSection")
-            .classList.remove("hidden");
-
-        window.scrollTo({
-
-            top: 0,
-
-            behavior: "smooth"
-
-        });
-
-    }
-
-);
 
         /* ==================================================
            OPEN MODAL
+           
+           Production:
+           - Request fullscreen
+           - Require fullscreen
+           
+           Testing:
+           - Skip fullscreen requirement
+           - Open modal directly
         ================================================== */
 
         confirmVoteButton.addEventListener(
-
             "click",
-
             async () => {
 
-                await requestFullscreen();
+                /*
+                    Check whether security guard testing mode
+                    is enabled.
 
-                if (!document.fullscreenElement) {
+                    security_guard.js loads before this file.
+                */
+
+                const testingMode =
+                    typeof VOTIFY_TESTING_MODE !== "undefined" &&
+                    VOTIFY_TESTING_MODE;
+
+
+                /* ==========================================
+                   TESTING MODE
+                ========================================== */
+
+                if (testingMode) {
+
+                    console.info(
+                        "VOTIFY: Confirmation fullscreen skipped (Testing Mode)."
+                    );
+
+                    openConfirmationModal();
 
                     return;
 
                 }
 
-                confirmationModal.classList.remove(
 
-                    "hidden"
+                /* ==========================================
+                   PRODUCTION SECURITY MODE
+                ========================================== */
 
-                );
+                if (
+                    typeof requestFullscreen !==
+                    "function"
+                ) {
 
-                confirmationModal.classList.add(
+                    console.error(
+                        "VOTIFY: requestFullscreen function not available."
+                    );
 
-                    "flex"
+                    return;
 
-                );
+                }
+
+
+                await requestFullscreen();
+
+
+                if (!document.fullscreenElement) {
+
+                    console.warn(
+                        "VOTIFY: Confirmation modal blocked because fullscreen was not entered."
+                    );
+
+                    return;
+
+                }
+
+
+                openConfirmationModal();
 
             }
-
         );
+
 
         /* ==================================================
            CLOSE MODAL
         ================================================== */
 
-        function closeModal(){
-
-            confirmationModal.classList.remove(
-
-                "flex"
-
-            );
-
-            confirmationModal.classList.add(
-
-                "hidden"
-
-            );
-
-        }
-
         cancelConfirmation.addEventListener(
-
             "click",
+            () => {
 
-            closeModal
+                closeModal();
 
+            }
         );
+
 
         /* ==================================================
            OUTSIDE CLICK
         ================================================== */
 
         confirmationModal.addEventListener(
-
             "click",
+            (event) => {
 
-            (event)=>{
-
-                if(
-
-                    event.target === confirmationModal
-
-                ){
+                if (
+                    event.target ===
+                    confirmationModal
+                ) {
 
                     closeModal();
 
                 }
 
             }
-
         );
+
 
         /* ==================================================
            CHECKBOX ENABLE
         ================================================== */
 
         modalConfirmationCheckbox.addEventListener(
-
             "change",
-
             () => {
 
-                if(
-
+                if (
                     modalConfirmationCheckbox.checked
+                ) {
 
-                ){
-
-                    submitVoteButton.disabled = false;
+                    submitVoteButton.disabled =
+                        false;
 
                     submitVoteButton.classList.remove(
-
                         "opacity-50",
-
                         "cursor-not-allowed"
-
                     );
 
                 }
 
-                else{
+                else {
 
-                    submitVoteButton.disabled = true;
+                    submitVoteButton.disabled =
+                        true;
 
                     submitVoteButton.classList.add(
-
                         "opacity-50",
-
                         "cursor-not-allowed"
-
                     );
 
                 }
 
             }
-
         );
 
+
         /* ==================================================
-           SUBMIT BUTTON
+           SUBMIT VOTE
         ================================================== */
 
         submitVoteButton.addEventListener(
-
             "click",
-
             () => {
 
-                if(
-
+                if (
                     !modalConfirmationCheckbox.checked
+                ) {
 
-                ){
                     return;
+
                 }
 
-                /* Disable Multiple Click */
-
-                submitVoteButton.disabled = true;
-
-                submitVoteButton.innerHTML = `
-
-                    <i class="ri-loader-4-line animate-spin"></i>
-
-                    Submitting Vote...
-
-                `;
 
                 /* ==========================================
-                   REDIRECT
-                   (Backend Part 5)
+                   PREVENT MULTIPLE SUBMISSIONS
                 ========================================== */
 
-setTimeout(() => {
+                submitVoteButton.disabled =
+                    true;
 
-    const form = document.createElement("form");
+                submitVoteButton.innerHTML = `
+                    <i class="ri-loader-4-line animate-spin mr-2"></i>
+                    Submitting Vote...
+                `;
 
-    form.method = "POST";
 
-    form.action = "../../backend/student/submit_vote.php";
+                /* ==========================================
+                   SUBMIT TO BACKEND
+                ========================================== */
 
-    document.body.appendChild(form);
+                setTimeout(
+                    () => {
 
-    form.submit();
+                        const form =
+                            document.createElement(
+                                "form"
+                            );
 
-}, 800);
+
+                        form.method =
+                            "POST";
+
+
+                        form.action =
+                            "../../backend/student/submit_vote.php";
+
+
+                        document.body.appendChild(
+                            form
+                        );
+
+
+                        form.submit();
+
+                    },
+                    800
+                );
 
             }
-
         );
 
-    }
 
+        /* ==================================================
+           INITIAL MODAL STATE
+        ================================================== */
+
+        resetConfirmationModal();
+
+    }
 );
+
+
+/* ==========================================================
+   END OF FILE
+========================================================== */

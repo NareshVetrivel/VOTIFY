@@ -3,22 +3,40 @@
    VOTIFY
    Email Configuration
    File : config/email.php
+   Environment : ByetHost
 ========================================================== */
 
 $config = [
 
-    // Gmail SMTP
-    "smtp_host" => "smtp.gmail.com",
+    /* ======================================================
+       SMTP SETTINGS
+    ====================================================== */
+
+    "smtp_host" => "",
     "smtp_port" => 587,
     "smtp_secure" => "tls",
 
-    // These values are loaded from email.local.php
+    /*
+     * These must be the credentials of the
+     * Byet-hosted email account used by VOTIFY.
+     *
+     * DO NOT put Gmail credentials here.
+     */
     "smtp_username" => "",
     "smtp_password" => "",
 
-    // Sender details
+
+    /* ======================================================
+       SENDER
+    ====================================================== */
+
     "from_email" => "",
     "from_name" => "VOTIFY",
+
+
+    /* ======================================================
+       OTP SETTINGS
+    ====================================================== */
 
     // OTP validity: 5 minutes
     "otp_expiry" => 300,
@@ -32,12 +50,15 @@ $config = [
 
 
 /* ==========================================================
-   LOAD LOCAL SECRET CONFIG
+   OPTIONAL LOCAL SECRET CONFIG
+   ----------------------------------------------------------
+   email.local.php is intentionally NOT committed to Git.
+   It may exist only on the production server.
 ========================================================== */
 
 $localConfigFile = __DIR__ . "/email.local.php";
 
-if (file_exists($localConfigFile)) {
+if (is_file($localConfigFile)) {
 
     $localConfig = require $localConfigFile;
 
@@ -52,29 +73,51 @@ if (file_exists($localConfigFile)) {
 
 
 /* ==========================================================
-   VALIDATE REQUIRED SMTP CONFIG
-========================================================== */
-
-if (
-    empty($config["smtp_username"]) ||
-    empty($config["smtp_password"])
-) {
-
-    error_log(
-        "VOTIFY: SMTP username or password is missing."
-    );
-}
-
-
-/* ==========================================================
    SET FROM EMAIL
-   If from_email is empty, use SMTP username
 ========================================================== */
 
 if (empty($config["from_email"])) {
 
     $config["from_email"] =
         $config["smtp_username"];
+}
+
+
+/* ==========================================================
+   VALIDATE SMTP CONFIGURATION
+========================================================== */
+
+$requiredEmailSettings = [
+    "smtp_host",
+    "smtp_username",
+    "smtp_password",
+    "from_email"
+];
+
+$emailConfigValid = true;
+
+foreach ($requiredEmailSettings as $setting) {
+
+    if (
+        !isset($config[$setting]) ||
+        trim((string) $config[$setting]) === ""
+    ) {
+
+        $emailConfigValid = false;
+        break;
+    }
+}
+
+
+/* ==========================================================
+   CONFIGURATION ERROR
+========================================================== */
+
+if (!$emailConfigValid) {
+
+    error_log(
+        "VOTIFY: Email service is not configured correctly."
+    );
 }
 
 

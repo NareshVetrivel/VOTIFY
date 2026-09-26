@@ -81,9 +81,11 @@ header("Expires: 0");
 
 /* ==========================================================
    REDIRECT
+   Admin Logout → VOTIFY Landing Page
 ========================================================== */
 
-header("Location: ../../pages/admin/login.html");
+header("Location: ../../index.html");
 
 exit();
+
 ?>
